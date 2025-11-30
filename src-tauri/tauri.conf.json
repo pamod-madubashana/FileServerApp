@@ -20,9 +20,6 @@
         "fullscreen": false,
         "visible": true,
         "decorations": true
-      },
-      {
-        "url": "/"
       }
     ],
     "security": {
