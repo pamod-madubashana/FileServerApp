@@ -8,6 +8,23 @@ import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import { FcGoogle } from "react-icons/fc";
 import { BackendUrlUpdater } from "@/components/BackendUrlUpdater";
 
+// Import Tauri log plugin
+let log: typeof import('@tauri-apps/plugin-log') | null = null;
+let isTauriEnv = false;
+let logReady: Promise<void> | null = null;
+
+// Check if we're running in Tauri
+if (typeof window !== 'undefined' && (window as any).__TAURI__) {
+  isTauriEnv = true;
+  // Dynamically import the Log plugin only in Tauri environment
+  logReady = import('@tauri-apps/plugin-log').then((module) => {
+    log = module;
+  }).catch((error) => {
+    console.error('[Login] Failed to load Tauri Log plugin:', error);
+    logReady = null;
+  });
+}
+
 // Declare google.accounts for TypeScript
 declare global {
   interface Window {
@@ -24,6 +41,15 @@ const sendLogToBackend = async (message: string, data?: any) => {
       // In Tauri, we could use the event system to send logs to the backend
       // For now, we'll just console.log since that's what we can see
       console.log(`[FRONTEND LOG] ${message}`, data);
+      
+      // Also send to Tauri log plugin if available
+      if (log) {
+        try {
+          log.info(`[FRONTEND LOG] ${message}: ${data ? JSON.stringify(data) : ''}`);
+        } catch (e) {
+          // Ignore log errors
+        }
+      }
     } else {
       console.log(`[FRONTEND LOG] ${message}`, data);
     }
