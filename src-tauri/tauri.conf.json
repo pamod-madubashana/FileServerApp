@@ -20,7 +20,9 @@
         "resizable": true,
         "fullscreen": false,
         "visible": true,
-        "decorations": true
+        "decorations": true,
+        "devPath": "../dist",
+        "devtools": true
       }
     ],
     "security": {
