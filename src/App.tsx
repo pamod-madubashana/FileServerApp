@@ -3,7 +3,8 @@ import { useEffect } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { AdaptiveRouter } from "@/lib/router-config";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -66,13 +67,13 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <BrowserRouter>
+        <AdaptiveRouter>
           <div className="flex flex-col min-h-screen bg-background text-foreground">
             <AppRoutes />
             <Toaster />
             <Sonner />
           </div>
-        </BrowserRouter>
+        </AdaptiveRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
