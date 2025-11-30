@@ -26,17 +26,7 @@
     "security": {
       "assetProtocol": {
         "scope": ["**"]
-      },
-      "freezePrototype": false,
-      "dangerousDisableAssetCspModification": false
-    },
-    "webview": {
-      "active": true
-    },
-    "assetResolver": {
-      "frontendDist": "../dist",
-      "fallback": "index.html",
-      "preferFallback": true
+      }
     }
   },
   "bundle": {
