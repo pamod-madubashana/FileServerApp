@@ -169,14 +169,15 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
         // Return the response directly as it's already a standard Response object
         return response;
       } else {
-        console.warn('[API] Tauri HTTP plugin not available after waiting');
+        console.warn('[API] Tauri HTTP plugin not available after waiting, falling back to standard fetch');
       }
     } catch (error) {
-      console.error('[API] Tauri HTTP request failed:', error);
+      console.error('[API] Tauri HTTP request failed, falling back to standard fetch:', error);
     }
-    // In Tauri, if HTTP plugin fails, we should throw error instead of falling back to fetch
-    // because standard fetch in Tauri webview will be intercepted by asset handler
-    throw new Error('Failed to make HTTP request in Tauri environment');
+    
+    // Fall back to standard fetch if Tauri HTTP plugin fails
+    console.log('[API] Falling back to standard fetch for request to:', url);
+  }
   }
   
   // Standard browser fetch with timeout (for non-Tauri environments)
