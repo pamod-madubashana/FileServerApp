@@ -19,6 +19,9 @@ tauri-plugin-shell = "2.3.0"
 tauri-plugin-dialog = "2.4.0"
 tauri-plugin-http = "2.5.4"
 tauri-plugin-log = "2.7.1"
+env_logger = "0.10.0"
+log = "0.4.14"
+chrono = { version = "0.4.23", features = ["clock"] }
 
 [features]
 default = [ "custom-protocol" ]
