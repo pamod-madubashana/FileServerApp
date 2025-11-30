@@ -170,6 +170,8 @@ const Login = () => {
         body: JSON.stringify({ username, password }),
       };
       
+      sendLogToBackend("Making login request to", `${apiUrl}/auth/login`);
+      
       const response = await fetchWithTimeout(`${apiUrl}/auth/login`, fetchOptions, 5000);
 
       sendLogToBackend("Login response", { status: response.status, headers: [...response.headers.entries()] });
@@ -200,6 +202,8 @@ const Login = () => {
       }
     } catch (err) {
       sendLogToBackend("Login error", err);
+      sendLogToBackend("Error type", typeof err);
+      sendLogToBackend("Error message", err.message || "Unknown error");
       setError("Unable to connect to the backend server. Please check your backend URL configuration.");
       setShowBackendConfig(true);
     } finally {

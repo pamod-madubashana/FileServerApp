@@ -92,6 +92,7 @@ let httpReady: Promise<void> | null = null;
 // Check if we're running in Tauri
 if (typeof window !== 'undefined' && (window as any).__TAURI__) {
   isTauriEnv = true;
+  console.log('[API] Detected Tauri environment');
   // Dynamically import the HTTP plugin only in Tauri environment
   httpReady = import('@tauri-apps/plugin-http').then((module) => {
     http = module;
@@ -147,11 +148,15 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
     mergedOptions.credentials = options.credentials;
   }
 
+  console.log('[API] fetchWithTimeout called with:', { url, options, timeout });
+
   // Use Tauri HTTP plugin if available (in Tauri environment)
   if (isTauriEnv) {
+    console.log('[API] Running in Tauri environment');
     try {
       // Wait for Tauri HTTP plugin to load if it's still loading
       if (httpReady) {
+        console.log('[API] Waiting for Tauri HTTP plugin to load');
         await httpReady;
       }
       
@@ -180,11 +185,12 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
   }
   
   // Standard browser fetch with timeout (for non-Tauri environments)
+  console.log('[API] Using standard fetch for request to:', url);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
   
   try {
-    console.log('[API] Using standard fetch for request to:', url);
+    console.log('[API] Making fetch request with options:', mergedOptions);
     const response = await fetch(url, {
       ...mergedOptions,
       signal: controller.signal
