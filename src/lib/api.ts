@@ -95,6 +95,14 @@ let logReady: Promise<void> | null = null;
 if (typeof window !== 'undefined' && (window as any).__TAURI__) {
   isTauriEnv = true;
   console.log('[API] Detected Tauri environment');
+  // Forward log to Rust backend
+  if (log) {
+    try {
+      log.info('[API] Detected Tauri environment');
+    } catch (e) {
+      // Ignore log errors
+    }
+  }
   // Dynamically import the HTTP plugin only in Tauri environment
   httpReady = import('@tauri-apps/plugin-http').then((module) => {
     http = module;
@@ -160,10 +168,27 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
   }
 
   console.log('[API] fetchWithTimeout called with:', { url, options, timeout });
+  
+  // Forward log to Rust backend if in Tauri environment
+  if (isTauriEnv && log) {
+    try {
+      log.info(`[API] fetchWithTimeout called with: ${JSON.stringify({ url, options, timeout })}`);
+    } catch (e) {
+      // Ignore log errors
+    }
+  }
 
   // Use Tauri HTTP plugin if available (in Tauri environment)
   if (isTauriEnv) {
     console.log('[API] Running in Tauri environment');
+    // Forward log to Rust backend
+    if (log) {
+      try {
+        log.info('[API] Running in Tauri environment');
+      } catch (e) {
+        // Ignore log errors
+      }
+    }
     try {
       // Wait for Tauri HTTP plugin to load if it's still loading
       if (httpReady) {
@@ -171,8 +196,22 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
         await httpReady;
       }
       
+      // Wait for Tauri Log plugin to load if it's still loading
+      if (logReady) {
+        console.log('[API] Waiting for Tauri Log plugin to load');
+        await logReady;
+      }
+      
       if (http) {
         console.log('[API] Using Tauri HTTP plugin for request to:', url);
+        // Forward log to Rust backend
+        if (log) {
+          try {
+            log.info(`[API] Using Tauri HTTP plugin for request to: ${url}`);
+          } catch (e) {
+            // Ignore log errors
+          }
+        }
         // Make the request using Tauri's HTTP plugin
         const response = await http.fetch(url, {
           method: mergedOptions.method || 'GET',
@@ -182,6 +221,14 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
         });
         
         console.log('[API] Tauri HTTP response status:', response.status);
+        // Forward log to Rust backend
+        if (log) {
+          try {
+            log.info(`[API] Tauri HTTP response status: ${response.status}`);
+          } catch (e) {
+            // Ignore log errors
+          }
+        }
         // Return the response directly as it's already a standard Response object
         return response;
       } else {
@@ -193,21 +240,53 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
     
     // Fall back to standard fetch if Tauri HTTP plugin fails
     console.log('[API] Falling back to standard fetch for request to:', url);
+    // Forward log to Rust backend
+    if (log) {
+      try {
+        log.info(`[API] Falling back to standard fetch for request to: ${url}`);
+      } catch (e) {
+        // Ignore log errors
+      }
+    }
   }
   
   // Standard browser fetch with timeout (for non-Tauri environments)
   console.log('[API] Using standard fetch for request to:', url);
+  // Forward log to Rust backend
+  if (isTauriEnv && log) {
+    try {
+      log.info(`[API] Using standard fetch for request to: ${url}`);
+    } catch (e) {
+      // Ignore log errors
+    }
+  }
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
   
   try {
     console.log('[API] Making fetch request with options:', mergedOptions);
+    // Forward log to Rust backend
+    if (isTauriEnv && log) {
+      try {
+        log.info(`[API] Making fetch request with options: ${JSON.stringify(mergedOptions)}`);
+      } catch (e) {
+        // Ignore log errors
+      }
+    }
     const response = await fetch(url, {
       ...mergedOptions,
       signal: controller.signal
     });
     clearTimeout(timeoutId);
     console.log('[API] Standard fetch response status:', response.status);
+    // Forward log to Rust backend
+    if (isTauriEnv && log) {
+      try {
+        log.info(`[API] Standard fetch response status: ${response.status}`);
+      } catch (e) {
+        // Ignore log errors
+      }
+    }
     return response;
   } catch (error) {
     clearTimeout(timeoutId);
