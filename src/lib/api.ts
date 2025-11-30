@@ -178,7 +178,6 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
     // Fall back to standard fetch if Tauri HTTP plugin fails
     console.log('[API] Falling back to standard fetch for request to:', url);
   }
-  }
   
   // Standard browser fetch with timeout (for non-Tauri environments)
   const controller = new AbortController();
