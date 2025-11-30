@@ -12,6 +12,21 @@ dist
 dist-ssr
 *.local
 
+# Tauri
+src-tauri/target
+src-tauri/**/*.so
+src-tauri/**/*.dll
+src-tauri/**/*.dylib
+src-tauri/**/*.pdb
+src-tauri/**/*.dSYM
+src-tauri/**/*.app
+src-tauri/**/*.exe
+src-tauri/**/*.deb
+src-tauri/**/*.rpm
+src-tauri/**/*.AppImage
+src-tauri/**/*.msi
+src-tauri/**/*.appx
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
