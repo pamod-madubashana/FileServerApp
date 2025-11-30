@@ -88,6 +88,8 @@ export const getFullApiUrl = (endpoint: string): string => {
 let http: typeof import('@tauri-apps/plugin-http') | null = null;
 let isTauriEnv = false;
 let httpReady: Promise<void> | null = null;
+let log: typeof import('@tauri-apps/plugin-log') | null = null;
+let logReady: Promise<void> | null = null;
 
 // Check if we're running in Tauri
 if (typeof window !== 'undefined' && (window as any).__TAURI__) {
@@ -100,6 +102,15 @@ if (typeof window !== 'undefined' && (window as any).__TAURI__) {
   }).catch((error) => {
     console.error('[API] Failed to load Tauri HTTP plugin:', error);
     httpReady = null;
+  });
+  
+  // Dynamically import the Log plugin only in Tauri environment
+  logReady = import('@tauri-apps/plugin-log').then((module) => {
+    log = module;
+    console.log('[API] Tauri Log plugin loaded successfully');
+  }).catch((error) => {
+    console.error('[API] Failed to load Tauri Log plugin:', error);
+    logReady = null;
   });
 }
 
