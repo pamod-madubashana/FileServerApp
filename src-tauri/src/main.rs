@@ -1,35 +1,9 @@
 // Always show console window for debugging - removed conditional compilation
 #![windows_subsystem = "console"]
 
-use std::io::Write;
-
 fn main() {
-  // Initialize logging with custom format
-  env_logger::builder()
-    .format(|buf, record| {
-      writeln!(buf,
-        "{} [{}] - {}",
-        chrono::Local::now().format("%Y-%m-%dT%H:%M:%S"),
-        record.level(),
-        record.args()
-      )
-    })
-    .init();
-  
-  log::info!("Starting Telegram File Server application");
-  log::info!("Current working directory: {:?}", std::env::current_dir());
-  
-  // Log environment variables that might be relevant
-  if let Ok(rust_log) = std::env::var("RUST_LOG") {
-    log::info!("RUST_LOG environment variable: {}", rust_log);
-  }
-  
   // Generate context and log information about it
-  log::info!("Generating Tauri context...");
   let context = tauri::generate_context!();
-  log::info!("Context generated successfully");
-  log::info!("Package name: {}", context.package_info().name);
-  log::info!("Package version: {}", context.package_info().version);
   
   let result = tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
