@@ -36,7 +36,15 @@ fn main() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_http::init())
     // Initialize Tauri log plugin without conflicting with env_logger
-    .plugin(tauri_plugin_log::Builder::new().build())
+    .plugin(
+      tauri_plugin_log::Builder::new()
+        .level(log::LevelFilter::Info)
+        .targets([
+          tauri_plugin_log::Target::Stdout,
+          tauri_plugin_log::Target::Webview,
+        ])
+        .build()
+    )
     .invoke_handler(tauri::generate_handler![])
     .setup(|_app| {
       log::info!("Application setup completed successfully");
