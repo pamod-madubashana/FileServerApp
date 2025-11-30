@@ -21,7 +21,6 @@
         "fullscreen": false,
         "visible": true,
         "decorations": true,
-        "devPath": "../dist",
         "devtools": true
       }
     ],
