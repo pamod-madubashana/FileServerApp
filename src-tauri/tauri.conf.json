@@ -28,6 +28,9 @@
         "scope": ["**"]
       }
       
+    },
+    "webview": {
+      "active": true
     }
   },
   "bundle": {
