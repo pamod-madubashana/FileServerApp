@@ -39,10 +39,6 @@ fn main() {
     .plugin(
       tauri_plugin_log::Builder::new()
         .level(log::LevelFilter::Info)
-        .targets([
-          tauri_plugin_log::Target::Stdout,
-          tauri_plugin_log::Target::Webview,
-        ])
         .build()
     )
     .invoke_handler(tauri::generate_handler![])
