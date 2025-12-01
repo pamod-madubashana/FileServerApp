@@ -7,7 +7,7 @@ const Index = () => {
   logger.info("Index page rendered");
   return (
     <AuthWrapper>
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-background select-none">
         <NavigationSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <FileExplorer />

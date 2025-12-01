@@ -117,7 +117,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
         {isOpen && (
           <motion.div
             className={cn(
-              "fixed left-0 top-0 z-50 h-full bg-sidebar shadow-lg",
+              "fixed left-0 top-0 z-50 h-full bg-sidebar shadow-lg select-none",
               isMobile 
                 ? "w-64" 
                 : "w-80"

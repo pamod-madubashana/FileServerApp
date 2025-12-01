@@ -143,7 +143,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background select-none">
       <NavigationSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-auto bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6">

@@ -145,7 +145,7 @@ export const FileGrid = ({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-background">
+    <div className="flex-1 flex flex-col bg-background select-none">
       <div
         className="flex-1 overflow-y-auto p-4"
         onContextMenu={(e) => {

@@ -57,8 +57,8 @@ export const Sidebar = ({ currentPath, onNavigate, onDrop, files, selectedFilter
   }
 
   return (
-    <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col relative">
-      <div className="py-4 px-4 border-b border-sidebar-border flex items-center justify-between">
+    <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col relative select-none">
+      <div className="py-4 px-4 border-b border-sidebar-border flex items-center">
         <div className="rounded-full bg-primary p-1.5 cursor-pointer" onClick={() => {
           // Dispatch event to toggle Navigation sidebar
           const event = new CustomEvent('toggleNavigationSidebar');
@@ -69,9 +69,11 @@ export const Sidebar = ({ currentPath, onNavigate, onDrop, files, selectedFilter
             <circle cx="12" cy="7" r="4"></circle>
           </svg>
         </div>
-        <div className="flex items-center gap-2">
-          <FolderOpen className="w-5 h-5 text-primary" />
-          <span className="font-semibold text-sidebar-foreground">File Server</span>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-center gap-2">
+            <FolderOpen className="w-5 h-5 text-primary" />
+            <span className="font-semibold text-sidebar-foreground text-lg">File Server</span>
+          </div>
         </div>
       </div>
 

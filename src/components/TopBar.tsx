@@ -26,7 +26,7 @@ export const TopBar = ({
   onPaste,
 }: TopBarProps) => {
   return (
-    <div className="bg-background border-b border-border">
+    <div className="bg-background border-b border-border select-none">
       <div className="flex items-center gap-2 px-4 py-2">
         <div className="flex items-center gap-1">
           <Button

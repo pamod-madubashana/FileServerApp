@@ -574,7 +574,7 @@ export const FileExplorer = () => {
   }, [currentPath, selectedFilter]);
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
+    <div className="flex h-screen bg-background text-foreground select-none">
       <Sidebar
         currentPath={currentPath}
         onNavigate={handleFilterChange}
