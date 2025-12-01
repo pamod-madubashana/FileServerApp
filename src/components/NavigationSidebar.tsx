@@ -202,18 +202,6 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
                   <p className="text-sm text-muted-foreground">Online</p>
                 </div>
               </div>
-              <button 
-                onClick={() => {
-                  // Don't close sidebar when on profile or settings pages
-                  if (location.pathname === '/profile' || location.pathname === '/settings') {
-                    return;
-                  }
-                  setIsOpen(false);
-                }}
-                className="rounded-full p-1 hover:bg-sidebar-accent"
-              >
-                <X className="h-5 w-5 text-sidebar-foreground" />
-              </button>
             </div>
 
             {/* Menu Items */}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { X } from "lucide-react";
 import { api, getApiBaseUrl, fetchWithTimeout, UserProfile } from "@/lib/api";
 import logger from "@/lib/logger";
 
@@ -137,13 +138,12 @@ export const ProfileContent = ({ onBack }: ProfileContentProps) => {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">User Profile</h1>
-          <Button 
-            variant="outline" 
+          <button
             onClick={onBack}
-            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="rounded-full p-2 hover:bg-gray-200 dark:hover:bg-gray-700"
           >
-            Back to Files
-          </Button>
+            <X className="h-5 w-5 text-gray-900 dark:text-white" />
+          </button>
         </div>
         
         <Card className="mb-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
