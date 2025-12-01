@@ -687,6 +687,7 @@ export const FileExplorer = () => {
               onSearchChange={setSearchQuery}
               onViewModeChange={setViewMode}
               onBack={() => window.history.back()}
+              onRefresh={refetch}
               onBreadcrumbClick={handleBreadcrumbClick}
               onPaste={hasClipboard ? handlePaste : undefined}
             />

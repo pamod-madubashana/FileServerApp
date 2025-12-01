@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ChevronDown, Search, Grid3x3, List, MoreHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Search, Grid3x3, List, MoreHorizontal, RefreshCw } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 
@@ -9,6 +9,7 @@ interface TopBarProps {
   onSearchChange: (query: string) => void;
   onViewModeChange: (mode: "grid" | "list") => void;
   onBack: () => void;
+  onRefresh: () => void;
   onBreadcrumbClick: (index: number) => void;
   onPaste?: () => void;
 }
@@ -20,6 +21,7 @@ export const TopBar = ({
   onSearchChange,
   onViewModeChange,
   onBack,
+  onRefresh,
   onBreadcrumbClick,
   onPaste,
 }: TopBarProps) => {
@@ -42,6 +44,14 @@ export const TopBar = ({
             className="h-8 w-8"
           >
             <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onRefresh}
+            className="h-8 w-8"
+          >
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
 
