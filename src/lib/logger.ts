@@ -1,4 +1,6 @@
 // src/lib/logger.ts
+import { invoke } from '@tauri-apps/api/core';
+
 let log: typeof import('@tauri-apps/plugin-log') | null = null;
 let isTauriEnv = false;
 let logReady: Promise<void> | null = null;
@@ -110,6 +112,17 @@ export const testLogging = async () => {
   logger.info('[Logger] Testing Tauri logging');
   logger.warn('[Logger] Testing warning logging');
   logger.error('[Logger] Testing error logging');
+  
+  // Test calling the Tauri test logging command
+  if (isTauriEnv) {
+    try {
+      logger.info('[Logger] Calling Tauri test_logging command');
+      await invoke('test_logging');
+      logger.info('[Logger] Tauri test_logging command completed');
+    } catch (error) {
+      logger.error('[Logger] Failed to call Tauri test_logging command', error);
+    }
+  }
 };
 
 export default logger;
