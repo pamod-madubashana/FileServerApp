@@ -10,7 +10,15 @@ fn main() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_http::init())
     // Initialize Tauri log plugin with default configuration
-    .plugin(tauri_plugin_log::Builder::new().build())
+    // .plugin(tauri_plugin_log::Builder::new().build())
+    .plugin(
+      tauri_plugin_log::Builder::new()
+                .targets([
+                    Target::new(TargetKind::Stdout), // Optional: also log to stdout
+                    Target::new(TargetKind::Webview), // Essential for console.log redirection
+                ])
+                .build(),
+    )
     .invoke_handler(tauri::generate_handler![])
     .setup(|_app| {
       // Log startup messages after logger is initialized
