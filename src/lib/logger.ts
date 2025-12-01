@@ -146,23 +146,5 @@ export const logger = {
   }
 };
 
-// Add a function to test if logging is working
-export const testLogging = async () => {
-  console.log('[Logger] Testing console logging');
-  logger.info('[Logger] Testing Tauri logging');
-  logger.warn('[Logger] Testing warning logging');
-  logger.error('[Logger] Testing error logging');
-  
-  // Test calling the Tauri test logging command
-  if (isTauriEnv) {
-    try {
-      logger.info('[Logger] Calling Tauri test_logging command');
-      await invoke('test_logging');
-      logger.info('[Logger] Tauri test_logging command completed');
-    } catch (error) {
-      logger.error('[Logger] Failed to call Tauri test_logging command', error);
-    }
-  }
-};
 
 export default logger;

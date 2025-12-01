@@ -37,6 +37,8 @@
     "icon": ["icons/icon.ico"]
   },
   "plugins": {
-    "http": null
+    "http": {
+      "scope": ["http://**", "https://**"]
+    }
   }
 }
