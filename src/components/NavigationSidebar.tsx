@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, FolderOpen, User, Settings, LogOut, Info, X } from "lucide-react";
+import { Home, FolderOpen, User, Settings, LogOut, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,9 +12,10 @@ interface NavigationSidebarProps {
 }
 
 export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
+  // Initialize sidebar as closed by default
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const isOpenRef = useRef(isOpen);
-  const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
   const manuallyOpenedRef = useRef(false); // Track if sidebar was manually opened
@@ -28,17 +29,17 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     }
   }, [isOpen]);
 
-  // Close sidebar when resizing from mobile to desktop, but keep it open on profile/settings pages
+  // Close sidebar when resizing from mobile to desktop
   useEffect(() => {
     const handleResize = () => {
-      // Automatically open sidebar when on profile or settings pages
-      if ((location.pathname === '/profile' || location.pathname === '/settings') && !isOpenRef.current) {
-        manuallyOpenedRef.current = false; // Reset manual flag when auto-opening
-        setIsOpen(true);
+      const newIsMobile = window.innerWidth < 768; // Standard mobile breakpoint
+      
+      // Close sidebar when switching to desktop mode unless manually opened
+      if (!newIsMobile && !manuallyOpenedRef.current) {
+        setIsOpen(false);
       }
-      // Keep sidebar open on profile or settings pages, regardless of device size
-      // But only close if it was not manually opened
-      else if (!manuallyOpenedRef.current && !isMobile && isOpenRef.current && location.pathname !== '/profile' && location.pathname !== '/settings') {
+      // Close sidebar on mobile unless manually opened
+      else if (newIsMobile && !manuallyOpenedRef.current) {
         setIsOpen(false);
       }
     };
@@ -47,7 +48,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [isMobile, location.pathname]);
+  }, []);
 
   const toggleSidebar = () => {
     manuallyOpenedRef.current = true;
@@ -84,25 +85,14 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     }
   };
 
-  // For mobile/desktop behavior - keep sidebar open on profile/settings pages
+  // For mobile/desktop behavior
   useEffect(() => {
-    // Automatically open sidebar when navigating to profile or settings pages
-    // But only if it wasn't manually closed
-    if ((location.pathname === '/profile' || location.pathname === '/settings') && !isOpen && !manuallyOpenedRef.current) {
-      manuallyOpenedRef.current = false; // Reset manual flag when auto-opening
-      setIsOpen(true);
-    }
-    // Close sidebar when navigating away from profile/settings pages to other pages
-    // But only if it was not manually opened
-    else if (!manuallyOpenedRef.current && location.pathname !== '/profile' && location.pathname !== '/settings' && isOpen) {
+    // Close sidebar on mobile unless manually opened
+    if (isMobile && !manuallyOpenedRef.current) {
       setIsOpen(false);
     }
-    // Reset manual flag when closing sidebar automatically
-    else if (!isOpen && location.pathname !== '/profile' && location.pathname !== '/settings') {
-      manuallyOpenedRef.current = false;
-    }
-  }, [isMobile, location.pathname, isOpen]);
-  
+  }, [isMobile]);
+
   // Handle manual toggle events
   useEffect(() => {
     const handleToggleEvent = () => {
@@ -115,18 +105,6 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       window.removeEventListener("toggleNavigationSidebar", handleToggleEvent);
     };
   }, []);
-
-  // Notify when sidebar closes
-  useEffect(() => {
-    // Only redirect if the sidebar has actually been opened and then closed
-    // Redirect when sidebar closes while on profile or settings pages
-    if (hasBeenOpenedRef.current && !isOpen && (location.pathname === '/profile' || location.pathname === '/settings')) {
-      // When sidebar closes while on profile or settings page, redirect to home
-      navigate("/");
-      // Reset the manually opened flag since we're navigating away
-      manuallyOpenedRef.current = false;
-    }
-  }, [isOpen, location.pathname, navigate]);
 
   // Handle clicks outside the sidebar to close it
   useEffect(() => {

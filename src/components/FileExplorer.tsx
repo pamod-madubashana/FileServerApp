@@ -113,6 +113,7 @@ export const FileExplorer = () => {
   useEffect(() => {
     const handleShowProfile = () => {
       setShowProfile(true);
+      setShowSettings(false);
     };
 
     window.addEventListener('showProfile', handleShowProfile);
@@ -125,6 +126,7 @@ export const FileExplorer = () => {
   useEffect(() => {
     const handleShowSettings = () => {
       setShowSettings(true);
+      setShowProfile(false);
     };
 
     window.addEventListener('showSettings', handleShowSettings);
@@ -133,20 +135,18 @@ export const FileExplorer = () => {
     };
   }, []);
 
-  // Detect when we're on the /profile route
+  // Listen for showFiles event (when closing profile/settings)
   useEffect(() => {
-    if (location.pathname === '/profile') {
-      setShowProfile(true);
-      setShowSettings(false);
-    } else if (location.pathname === '/settings') {
-      setShowSettings(true);
-      setShowProfile(false);
-    } else if (showProfile || showSettings) {
-      // Only hide profile/settings if we're not manually showing it
+    const handleShowFiles = () => {
       setShowProfile(false);
       setShowSettings(false);
-    }
-  }, [location.pathname, showProfile, showSettings]);
+    };
+
+    window.addEventListener('showFiles', handleShowFiles);
+    return () => {
+      window.removeEventListener('showFiles', handleShowFiles);
+    };
+  }, []);
 
   // Define virtual folders
   const virtualFolders: FileItem[] = [

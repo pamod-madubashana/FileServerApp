@@ -7,8 +7,9 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
-import logger from "@/lib/logger";
+import { NavigationSidebar } from "@/components/NavigationSidebar";
 import { AuthWrapper } from "@/components/AuthWrapper";
+import logger from "@/lib/logger";
 
 const queryClient = new QueryClient();
 
@@ -26,8 +27,8 @@ const AppRoutes = () => {
       <RouteDebugger />
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/settings" element={<Index />} />
+        <Route path="/profile" element={<Index />} />
         <Route path="/" element={<Index />} />
         {/* Handle dynamic paths for file explorer */}
         <Route path="/:path/*" element={<Index />} />
@@ -69,9 +70,12 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div className="flex flex-col min-h-screen bg-background text-foreground">
-          <AppRoutes />
-          <Toaster />
+        <div className="flex h-screen bg-background select-none">
+          <NavigationSidebar />
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <AppRoutes />
+            <Toaster />
+          </div>
         </div>
       </BrowserRouter>
     </QueryClientProvider>

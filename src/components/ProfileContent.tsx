@@ -142,12 +142,14 @@ export const ProfileContent = ({ onBack }: ProfileContentProps) => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">User Profile</h1>
           <button
             onClick={() => {
-              // Close the sidebar
-              const event = new CustomEvent('toggleNavigationSidebar');
-              window.dispatchEvent(event);
-              // Close the profile page and navigate to home
+              // Close the navigation sidebar
+              window.dispatchEvent(new CustomEvent('toggleNavigationSidebar'));
+              // Close the profile page and navigate back to file explorer
               onBack();
-              navigate("/");
+              // Update the browser history to reflect we're back on the main page
+              window.history.pushState({ path: ["Home"] }, '', '/');
+              // Dispatch event to show file explorer
+              window.dispatchEvent(new CustomEvent('showFiles'));
             }}
             className="rounded-full p-2 hover:bg-gray-200 dark:hover:bg-gray-700"
           >
