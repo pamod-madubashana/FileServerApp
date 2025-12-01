@@ -9,9 +9,26 @@ if (typeof window !== 'undefined' && (window as any).__TAURI__) {
   // Dynamically import the Log plugin only in Tauri environment
   logReady = import('@tauri-apps/plugin-log').then((module) => {
     log = module;
+    // Use both console.log and alert the user that the plugin loaded
     console.log('[Logger] Tauri Log plugin loaded successfully');
+    // Also send to Tauri log if available
+    if (log) {
+      try {
+        log.info('[Logger] Tauri Log plugin loaded successfully');
+      } catch (e) {
+        // Ignore errors
+      }
+    }
   }).catch((error) => {
     console.error('[Logger] Failed to load Tauri Log plugin:', error);
+    // Also send to Tauri log if available
+    if (log) {
+      try {
+        log.error(`[Logger] Failed to load Tauri Log plugin: ${error}`);
+      } catch (e) {
+        // Ignore errors
+      }
+    }
     logReady = null;
   });
 }
@@ -85,6 +102,14 @@ export const logger = {
       }
     }
   }
+};
+
+// Add a function to test if logging is working
+export const testLogging = async () => {
+  console.log('[Logger] Testing console logging');
+  logger.info('[Logger] Testing Tauri logging');
+  logger.warn('[Logger] Testing warning logging');
+  logger.error('[Logger] Testing error logging');
 };
 
 export default logger;
