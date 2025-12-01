@@ -9,18 +9,19 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { resetApiBaseUrl } from "./lib/api";
+import logger from "@/lib/logger";
 
 const queryClient = new QueryClient();
 
 // Debug component to log current route
 const RouteDebugger = () => {
   const location = useLocation();
-  console.log("Current route:", location.pathname);
+  logger.info("Current route", location.pathname);
   return null;
 };
 
 const AppRoutes = () => {
-  console.log("Rendering AppRoutes component");
+  logger.info("Rendering AppRoutes component");
   return (
     <>
       <RouteDebugger />
@@ -37,7 +38,7 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  console.log("Initializing App component");
+  logger.info("Initializing App component");
   
   useEffect(() => {
     // Check system preference
@@ -46,10 +47,10 @@ const App = () => {
     const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
       if (e.matches) {
         document.documentElement.classList.add('dark');
-        console.log("Dark mode enabled");
+        logger.info("Dark mode enabled");
       } else {
         document.documentElement.classList.remove('dark');
-        console.log("Light mode enabled");
+        logger.info("Light mode enabled");
       }
     };
 
