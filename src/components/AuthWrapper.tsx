@@ -1,23 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
-
-// Function to send logs to backend
-const sendLogToBackend = async (message: string, data?: any) => {
-  try {
-    // Check if we're in Tauri environment
-    const isTauri = !!(window as any).__TAURI__;
-    if (isTauri) {
-      // In Tauri, we could use the event system to send logs to the backend
-      // For now, we'll just console.log since that's what we can see
-      console.log(`[FRONTEND AUTH LOG] ${message}`, data);
-    } else {
-      console.log(`[FRONTEND AUTH LOG] ${message}`, data);
-    }
-  } catch (error) {
-    console.error("Error sending log to backend:", error);
-  }
-};
+import logger from "@/lib/logger";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -31,11 +15,11 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
   const location = useLocation();
 
   useEffect(() => {
-    sendLogToBackend("AuthWrapper mounted, checking authentication...");
+    logger.info("AuthWrapper mounted, checking authentication...");
     
     // Skip auth check on login page
     if (location.pathname === "/login") {
-      sendLogToBackend("On login page, skipping auth check");
+      logger.info("On login page, skipping auth check");
       setIsLoading(false);
       setIsAuthenticated(false);
       return;
@@ -44,7 +28,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
     const checkAuth = async () => {
       // Check if we're running in Tauri
       const isTauri = !!(window as any).__TAURI__;
-      sendLogToBackend("Running in Tauri environment", isTauri);
+      logger.info("Running in Tauri environment", isTauri);
       
       try {
         
@@ -55,14 +39,14 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
             try {
               const authData = JSON.parse(tauri_auth);
               if (authData.authenticated) {
-                sendLogToBackend("Found valid auth token in Tauri localStorage", authData);
+                logger.info("Found valid auth token in Tauri localStorage", authData);
                 setIsAuthenticated(true);
                 setBackendError(false);
                 setIsLoading(false);
                 return;
               }
             } catch (e) {
-              sendLogToBackend("Failed to parse Tauri auth token", e);
+              logger.error("Failed to parse Tauri auth token", e);
             }
           }
         }
@@ -70,7 +54,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
-        sendLogToBackend("Checking authentication", { url: `${apiUrl}/auth/check`, baseUrl });
+        logger.info("Checking authentication", { url: `${apiUrl}/auth/check`, baseUrl });
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -90,27 +74,27 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
                   ...fetchOptions.headers,
                   'X-Auth-Token': authData.auth_token
                 };
-                sendLogToBackend("Adding auth token to request headers");
+                logger.info("Adding auth token to request headers");
               }
             } catch (e) {
-              sendLogToBackend("Failed to extract auth token from localStorage", e);
+              logger.error("Failed to extract auth token from localStorage", e);
             }
           }
         }
         
         const response = await fetchWithTimeout(`${apiUrl}/auth/check`, fetchOptions, 3000);
 
-        sendLogToBackend("Auth check response", { status: response.status, headers: [...response.headers.entries()] });
+        logger.info("Auth check response", { status: response.status, headers: [...response.headers.entries()] });
         
         if (response.ok) {
           const data = await response.json();
-          sendLogToBackend("Auth check response data", data);
+          logger.info("Auth check response data", data);
           setIsAuthenticated(data.authenticated);
           setBackendError(false);
           
           // If not authenticated, redirect to login
           if (!data.authenticated) {
-            sendLogToBackend("Not authenticated, redirecting to login");
+            logger.info("Not authenticated, redirecting to login");
             // Clear Tauri auth token if it exists
             if (isTauri) {
               localStorage.removeItem('tauri_auth_token');
@@ -118,7 +102,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
             navigate("/login");
             return;
           } else {
-            sendLogToBackend("User is authenticated, showing content");
+            logger.info("User is authenticated, showing content");
             // Update Tauri auth token
             if (isTauri) {
               localStorage.setItem('tauri_auth_token', JSON.stringify({ 
@@ -130,7 +114,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
             }
           }
         } else {
-          sendLogToBackend("Auth check failed with status", response.status);
+          logger.warn("Auth check failed with status", response.status);
           // Redirect to login but indicate there might be a backend issue
           setIsAuthenticated(false);
           // Clear Tauri auth token on failure
@@ -144,7 +128,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
       } catch (error) {
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
-        sendLogToBackend("Auth check failed with error", error);
+        logger.error("Auth check failed with error", error);
         // Redirect to login and indicate there's a backend connectivity issue
         setIsAuthenticated(false);
         // Clear Tauri auth token on error
@@ -164,7 +148,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
 
   // Show loading state while checking authentication
   if (isLoading || isAuthenticated === null) {
-    sendLogToBackend("Showing loading state");
+    logger.info("Showing loading state");
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -175,7 +159,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
     );
   }
 
-  sendLogToBackend("Rendering children", { isAuthenticated });
+  logger.info("Rendering children", { isAuthenticated });
   // If authenticated, render children; otherwise, redirect handled by useEffect
   return isAuthenticated ? <>{children}</> : null;
 };
