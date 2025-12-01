@@ -35,6 +35,12 @@ fn main() {
         log::info!("RUST_LOG environment variable: {}", rust_log);
       }
       
+      // Test logging at different levels
+      log::debug!("This is a debug message from Rust");
+      log::info!("This is an info message from Rust");
+      log::warn!("This is a warning message from Rust");
+      log::error!("This is an error message from Rust");
+      
       log::info!("Application setup completed successfully");
       
       // Use the correct method for getting webview window in Tauri v2

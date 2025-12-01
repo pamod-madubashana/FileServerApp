@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { resetApiBaseUrl } from "./lib/api";
 import logger from "@/lib/logger";
+import LoggerTest from "@/components/LoggerTest";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ const App = () => {
       <TooltipProvider>
         <AdaptiveRouter>
           <div className="flex flex-col min-h-screen bg-background text-foreground">
+            <LoggerTest />
             <AppRoutes />
             <Toaster />
             <Sonner />
