@@ -10,6 +10,11 @@ interface CopyMoveRequest {
   target_path: string;
 }
 
+interface MoveRequest {
+  file_id: string;
+  target_path: string;
+}
+
 interface ClipboardItem {
   item: FileItem;
   operation: "copy" | "cut";
@@ -51,6 +56,15 @@ export const useFileOperations = () => {
     });
 
     try {
+      // Ensure paths are properly formatted
+      const sourcePath = clipboard.sourcePath.replace(/\/+/g, '/'); // Remove duplicate slashes
+      targetPath = targetPath.replace(/\/+/g, '/'); // Remove duplicate slashes
+      
+      // Ensure targetPath doesn't end with a slash unless it's the root
+      if (targetPath !== "/" && targetPath.endsWith("/")) {
+        targetPath = targetPath.slice(0, -1);
+      }
+
       const baseUrl = getApiBaseUrl();
       // For the default case, we need to append /api to the base URL
       const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
@@ -73,7 +87,15 @@ export const useFileOperations = () => {
         if (!response.ok) {
           const errorText = await response.text();
           logger.error("Failed to copy file", { status: response.status, error: errorText });
-          throw new Error(`Failed to copy file: ${errorText}`);
+          
+          // Handle specific error cases
+          if (response.status === 404) {
+            throw new Error(`File not found: ${clipboard.item.name}`);
+          } else if (response.status === 500) {
+            throw new Error(`Server error while copying file: ${errorText}`);
+          } else {
+            throw new Error(`Failed to copy file: ${errorText}`);
+          }
         }
         
         logger.info("File copied successfully");
@@ -94,16 +116,24 @@ export const useFileOperations = () => {
         if (!response.ok) {
           const errorText = await response.text();
           logger.error("Failed to move file", { status: response.status, error: errorText });
-          throw new Error(`Failed to move file: ${errorText}`);
+          
+          // Handle specific error cases
+          if (response.status === 404) {
+            throw new Error(`File not found: ${clipboard.item.name}`);
+          } else if (response.status === 500) {
+            throw new Error(`Server error while moving file: ${errorText}`);
+          } else {
+            throw new Error(`Failed to move file: ${errorText}`);
+          }
         }
         
         logger.info("File moved successfully");
         // For move operations, refresh both source and target paths
-        queryClient.invalidateQueries({ queryKey: ['files', clipboard.sourcePath] });
+        queryClient.invalidateQueries({ queryKey: ['files', sourcePath] });
         queryClient.invalidateQueries({ queryKey: ['files', targetPath] });
         
         // Force a refetch of the source path data to immediately update the UI
-        queryClient.refetchQueries({ queryKey: ['files', clipboard.sourcePath] });
+        queryClient.refetchQueries({ queryKey: ['files', sourcePath] });
       }
 
       // Clear clipboard after successful operation
@@ -115,6 +145,70 @@ export const useFileOperations = () => {
     }
   };
 
+  const moveItem = async (item: FileItem, targetPath: string, sourcePath: string) => {
+    logger.info("Moving item", { 
+      item: item.name, 
+      sourcePath, 
+      targetPath 
+    });
+
+    try {
+      // Ensure paths are properly formatted
+      sourcePath = sourcePath.replace(/\/+/g, '/'); // Remove duplicate slashes
+      targetPath = targetPath.replace(/\/+/g, '/'); // Remove duplicate slashes
+      
+      // Ensure targetPath doesn't end with a slash unless it's the root
+      if (targetPath !== "/" && targetPath.endsWith("/")) {
+        targetPath = targetPath.slice(0, -1);
+      }
+
+      const baseUrl = getApiBaseUrl();
+      // For the default case, we need to append /api to the base URL
+      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const request: MoveRequest = {
+        file_id: item.id || "",
+        target_path: targetPath
+      };
+
+      logger.info("Performing move operation", { request });
+      const response = await fetchWithTimeout(`${apiUrl}/files/move`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(request),
+      }, 3000); // 3 second timeout
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error("Failed to move file", { status: response.status, error: errorText });
+        
+        // Handle specific error cases
+        if (response.status === 404) {
+          throw new Error(`File not found: ${item.name}`);
+        } else if (response.status === 500) {
+          throw new Error(`Server error while moving file: ${errorText}`);
+        } else {
+          throw new Error(`Failed to move file: ${errorText}`);
+        }
+      }
+      
+      logger.info("File moved successfully");
+      // For move operations, refresh both source and target paths
+      queryClient.invalidateQueries({ queryKey: ['files', sourcePath] });
+      queryClient.invalidateQueries({ queryKey: ['files', targetPath] });
+      
+      // Force a refetch of the source path data to immediately update the UI
+      queryClient.refetchQueries({ queryKey: ['files', sourcePath] });
+      
+      return true;
+    } catch (error) {
+      logger.error("Error during move operation", error);
+      throw error;
+    }
+  };
+
   return {
     clipboard,
     copyItem,
@@ -122,5 +216,6 @@ export const useFileOperations = () => {
     clearClipboard,
     hasClipboard,
     pasteItem,
+    moveItem,
   };
 };

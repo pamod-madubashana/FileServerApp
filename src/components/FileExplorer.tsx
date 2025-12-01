@@ -173,7 +173,7 @@ export const FileExplorer = () => {
       : `/${currentPath.slice(1).join('/')}`;
 
   const { files, isLoading, isError, error, refetch } = useFiles(currentApiPath);
-  const { clipboard, copyItem, cutItem, clearClipboard, hasClipboard, pasteItem } = useFileOperations();
+  const { clipboard, copyItem, cutItem, clearClipboard, hasClipboard, pasteItem, moveItem } = useFileOperations();
 
   // Filter files based on current path and search query
   const getFilteredItems = (): FileItem[] => {
@@ -294,7 +294,6 @@ export const FileExplorer = () => {
       
       await pasteItem(targetPath);
       toast.success("Operation completed successfully");
-      refetch(); // Refresh the file list
     } catch (error: any) {
       toast.error(error.message || "Failed to complete operation");
     }
@@ -371,7 +370,7 @@ export const FileExplorer = () => {
       }
 
       toast.success(`Moved "${item.name}" to ${targetFolderName}`);
-      refetch(); // Refresh the file list
+      // Removed refetch() call as useFileOperations hook handles query invalidation
     } catch (error: any) {
       toast.error(error.message || "Failed to move file");
     }
@@ -413,8 +412,7 @@ export const FileExplorer = () => {
 
       toast.success(`Folder "${folderName}" created successfully`);
       setNewFolderDialogOpen(false);
-      // Refresh the file list for current path
-      refetch();
+      // Removed refetch() call as useFileOperations hook handles query invalidation
     } catch (error: any) {
       toast.error(error.message || "Failed to create folder");
     }
@@ -458,9 +456,76 @@ export const FileExplorer = () => {
     setRenamingItem({ item, index: 0 }); // Index is not used in this context
   };
 
-  const handleMove = (item: FileItem) => {
-    // This would typically open a move dialog, but for now we'll just show a toast
-    toast.info(`Move functionality for "${item.name}" would be implemented here`);
+  const handleMove = async (item: FileItem, targetFolder: FileItem) => {
+    try {
+      // Construct the source path correctly
+      let sourcePath = "/";
+      if (currentPath.length > 1) {
+        // For virtual folders, we need to construct the path differently
+        if (isVirtualFolder) {
+          sourcePath = `/${currentPath.join('/')}`;
+        } else {
+          sourcePath = `/${currentPath.slice(1).join('/')}`;
+        }
+      }
+      
+      // Construct the target path based on the target folder
+      let targetPath = "/";
+      
+      // Handle moving to Home (root)
+      if (targetFolder.name === "Home") {
+        targetPath = "/";
+      } 
+      // Handle virtual folders
+      else if (targetFolder.name === "Images" || 
+               targetFolder.name === "Documents" || 
+               targetFolder.name === "Videos" || 
+               targetFolder.name === "Audio" || 
+               targetFolder.name === "Voice Messages") {
+        targetPath = `/Home/${targetFolder.name}`;
+      }
+      // Handle user-created folders
+      else {
+        // If we're currently in a virtual folder, the target path should be constructed accordingly
+        if (currentPath.length > 1 && currentPath[0] === "Home" && 
+            (currentPath[1] === "Images" || currentPath[1] === "Documents" || 
+             currentPath[1] === "Videos" || currentPath[1] === "Audio" || 
+             currentPath[1] === "Voice Messages")) {
+          // We're in a virtual folder, so construct the path as /Home/FolderName/targetFolderName
+          targetPath = `/${currentPath.slice(0, 2).join('/')}/${targetFolder.name}`;
+        } else {
+          // We're in a regular folder structure
+          if (currentPath.length > 1) {
+            if (currentPath[0] === "Home") {
+              // We're in a user-created folder under Home
+              targetPath = `/${currentPath.slice(1).join('/')}/${targetFolder.name}`;
+            } else {
+              // We're in a user-created folder not under Home
+              targetPath = `/${currentPath.join('/')}/${targetFolder.name}`;
+            }
+          } else {
+            // We're at root level
+            targetPath = `/${targetFolder.name}`;
+          }
+        }
+      }
+      
+      // Ensure paths are properly formatted
+      sourcePath = sourcePath.replace(/\/+/g, '/'); // Remove duplicate slashes
+      targetPath = targetPath.replace(/\/+/g, '/'); // Remove duplicate slashes
+      
+      // Ensure targetPath doesn't end with a slash unless it's the root
+      if (targetPath !== "/" && targetPath.endsWith("/")) {
+        targetPath = targetPath.slice(0, -1);
+      }
+      
+      await moveItem(item, targetPath, sourcePath);
+      toast.success(`Moved "${item.name}" to ${targetFolder.name}`);
+      // Removed refetch() call as useFileOperations hook handles query invalidation
+    } catch (error: any) {
+      logger.error("Error moving file", { error, item, targetFolder });
+      toast.error(error.message || "Failed to move file");
+    }
   };
 
   const handleDownload = (item: FileItem) => {
@@ -527,8 +592,7 @@ export const FileExplorer = () => {
 
       toast.success(`Renamed "${item.name}" to "${newName}"`);
       setRenamingItem(null);
-      // Refresh the file list for current path
-      refetch();
+      // Removed refetch() call as useFileOperations hook handles query invalidation
     } catch (error: any) {
       toast.error(error.message || "Failed to rename file");
     }
