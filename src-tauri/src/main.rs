@@ -24,15 +24,6 @@ fn log_error(message: &str) {
     log::error!("{}", message);
 }
 
-// Function to test logging
-#[tauri::command]
-fn test_logging() {
-    log::debug!("Test debug message from Tauri command");
-    log::info!("Test info message from Tauri command");
-    log::warn!("Test warning message from Tauri command");
-    log::error!("Test error message from Tauri command");
-}
-
 fn main() {
   // Set default log level if not already set
   if std::env::var("RUST_LOG").is_err() {
