@@ -37,14 +37,6 @@
     "icon": ["icons/icon.ico"]
   },
   "plugins": {
-    "http": {
-      "permissions": [
-        {
-          "identifier": "http:default",
-          "allow": [{ "url": "*" }],
-          "deny": []
-        }
-      ]
-    }
+   "http": null
   }
 }
