@@ -322,6 +322,8 @@ export const FileExplorer = () => {
       
       await pasteItem(targetPath);
       toast.success("Operation completed successfully");
+      // Refresh current location after paste
+      refetch();
     } catch (error: any) {
       toast.error(error.message || "Failed to complete operation");
     }
@@ -394,7 +396,8 @@ export const FileExplorer = () => {
       }
 
       toast.success(`Moved "${item.name}" to ${targetFolderName}`);
-      // Removed refetch() call as useFileOperations hook handles query invalidation
+      // Refresh current location after drag and drop
+      refetch();
     } catch (error: any) {
       toast.error(error.message || "Failed to move file");
     }
@@ -432,7 +435,8 @@ export const FileExplorer = () => {
 
       toast.success(`Folder "${folderName}" created successfully`);
       setNewFolderDialogOpen(false);
-      // Removed refetch() call as useFileOperations hook handles query invalidation
+      // Refresh current location after creating folder
+      refetch();
     } catch (error: any) {
       toast.error(error.message || "Failed to create folder");
     }
@@ -523,7 +527,8 @@ export const FileExplorer = () => {
       
       await moveItem(item, targetPath, sourcePath);
       toast.success(`Moved "${item.name}" to ${targetFolder.name}`);
-      // Removed refetch() call as useFileOperations hook handles query invalidation
+      // Refresh current location after move
+      refetch();
     } catch (error: any) {
       logger.error("Error moving file", { error, item, targetFolder });
       toast.error(error.message || "Failed to move file");
@@ -590,7 +595,8 @@ export const FileExplorer = () => {
 
       toast.success(`Renamed "${item.name}" to "${newName}"`);
       setRenamingItem(null);
-      // Removed refetch() call as useFileOperations hook handles query invalidation
+      // Refresh current location after renaming file
+      refetch();
     } catch (error: any) {
       toast.error(error.message || "Failed to rename file");
     }
@@ -631,7 +637,8 @@ export const FileExplorer = () => {
 
       toast.success(`Deleted "${item.name}"`);
       setDeleteDialog(null);
-      // Removed refetch() call as useFileOperations hook handles query invalidation
+      // Refresh current location after deleting file
+      refetch();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete file");
     }
