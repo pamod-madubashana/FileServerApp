@@ -2,23 +2,8 @@
 #![windows_subsystem = "console"]
 
 fn main() {
-  // Initialize logging through Tauri log plugin instead of manually with env_logger
-  // to avoid conflicts
-  
-  println!("Starting Telegram File Server application");
-  println!("Current working directory: {:?}", std::env::current_dir());
-  
-  // Print environment variables that might be relevant
-  if let Ok(rust_log) = std::env::var("RUST_LOG") {
-    println!("RUST_LOG environment variable: {}", rust_log);
-  }
-  
-  // Generate context and print information about it
-  println!("Generating Tauri context...");
-  let context = tauri::generate_context!();
-  println!("Context generated successfully");
-  println!("Package name: {}", context.package_info().name);
-  println!("Package version: {}", context.package_info().version);
+  // Initialize logging through Tauri log plugin 
+  // This needs to be done before any logging calls
   
   let result = tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
@@ -28,6 +13,22 @@ fn main() {
     .plugin(tauri_plugin_log::Builder::new().build())
     .invoke_handler(tauri::generate_handler![])
     .setup(|_app| {
+      // Log startup messages after logger is initialized
+      log::info!("Starting Telegram File Server application");
+      log::info!("Current working directory: {:?}", std::env::current_dir());
+      
+      // Log environment variables that might be relevant
+      if let Ok(rust_log) = std::env::var("RUST_LOG") {
+        log::info!("RUST_LOG environment variable: {}", rust_log);
+      }
+      
+      // Log context information
+      log::info!("Generating Tauri context...");
+      let context = tauri::generate_context!();
+      log::info!("Context generated successfully");
+      log::info!("Package name: {}", context.package_info().name);
+      log::info!("Package version: {}", context.package_info().version);
+      
       // Use the correct method for getting webview window in Tauri v2
       #[cfg(debug_assertions)]
       if let Some(window) = _app.get_webview_window("main") {
@@ -36,7 +37,7 @@ fn main() {
       log::info!("Application setup completed successfully");
       Ok(())
     })
-    .run(context);
+    .run(tauri::generate_context!());
     
   match result {
     Ok(_) => {
