@@ -112,9 +112,11 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   // Notify when sidebar closes
   useEffect(() => {
     // Only redirect if the sidebar has actually been opened and then closed
+    // But don't redirect when on profile or settings pages as sidebar should stay open
     if (hasBeenOpenedRef.current && !isOpen && (location.pathname === '/profile' || location.pathname === '/settings')) {
       // When sidebar closes while on profile or settings page, redirect to home
-      navigate("/");
+      // Actually, we don't want to redirect - sidebar should stay open on these pages
+      // navigate("/");
     }
   }, [isOpen, location.pathname, navigate]);
 
@@ -203,11 +205,11 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
               </div>
               <button 
                 onClick={() => {
-                  setIsOpen(false);
-                  // If we're on profile or settings page, also navigate away
+                  // Don't close sidebar when on profile or settings pages
                   if (location.pathname === '/profile' || location.pathname === '/settings') {
-                    navigate("/");
+                    return;
                   }
+                  setIsOpen(false);
                 }}
                 className="rounded-full p-1 hover:bg-sidebar-accent"
               >
