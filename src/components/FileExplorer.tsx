@@ -18,7 +18,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import logger from "@/lib/logger";
-import { TelegramSidebar } from "./TelegramSidebar";
 
 export const FileExplorer = () => {
   const location = useLocation();
@@ -576,7 +575,6 @@ export const FileExplorer = () => {
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      <TelegramSidebar />
       <Sidebar
         currentPath={currentPath}
         onNavigate={handleFilterChange}
