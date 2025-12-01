@@ -59,11 +59,15 @@ export const Sidebar = ({ currentPath, onNavigate, onDrop, files, selectedFilter
   return (
     <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col relative select-none">
       <div className="py-4 px-4 border-b border-sidebar-border flex items-center">
-        <div className="rounded-full bg-primary p-1.5 cursor-pointer" onClick={() => {
-          // Dispatch event to toggle Navigation sidebar
-          const event = new CustomEvent('toggleNavigationSidebar');
-          window.dispatchEvent(event);
-        }}>
+        <div 
+          className="rounded-full bg-primary p-1.5 cursor-pointer" 
+          onClick={() => {
+            // Dispatch event to toggle Navigation sidebar
+            const event = new CustomEvent('toggleNavigationSidebar');
+            window.dispatchEvent(event);
+          }}
+          data-sidebar-trigger="true"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-primary-foreground">
             <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>

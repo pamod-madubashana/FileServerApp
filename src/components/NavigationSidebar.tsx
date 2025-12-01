@@ -17,39 +17,44 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
+  const manuallyOpenedRef = useRef(false); // Track if sidebar was manually opened
+  
+  console.log('NavigationSidebar rendered - initial isOpen:', isOpen, 'location:', location.pathname);
 
   // Update ref when state changes
   useEffect(() => {
+    console.log('Sidebar state changed - isOpen:', isOpen);
     isOpenRef.current = isOpen;
   }, [isOpen]);
 
   // Close sidebar when resizing from mobile to desktop, but keep it open on profile/settings pages
   useEffect(() => {
     const handleResize = () => {
-      // Keep sidebar open on profile or settings pages, regardless of device size
-      if (!isMobile && isOpenRef.current && location.pathname !== '/profile' && location.pathname !== '/settings') {
-        setIsOpen(false);
-      }
+      console.log('Resize event - isMobile:', isMobile, 'pathname:', location.pathname, 'isOpenRef.current:', isOpenRef.current, 'manuallyOpened:', manuallyOpenedRef.current);
+      
       // Automatically open sidebar when on profile or settings pages
-      else if (location.pathname === '/profile' || location.pathname === '/settings') {
+      if ((location.pathname === '/profile' || location.pathname === '/settings') && !isOpenRef.current) {
+        console.log('Auto-opening sidebar on resize for profile/settings');
+        manuallyOpenedRef.current = false; // Reset manual flag when auto-opening
         setIsOpen(true);
       }
-    };
-
-    // Listen for toggle event from the header icon
-    const handleToggleEvent = () => {
-      setIsOpen(!isOpenRef.current);
+      // Keep sidebar open on profile or settings pages, regardless of device size
+      // But only close if it was not manually opened
+      else if (!manuallyOpenedRef.current && !isMobile && isOpenRef.current && location.pathname !== '/profile' && location.pathname !== '/settings') {
+        console.log('Closing sidebar on resize for desktop view');
+        setIsOpen(false);
+      }
     };
 
     window.addEventListener("resize", handleResize);
-    window.addEventListener("toggleNavigationSidebar", handleToggleEvent);
     return () => {
       window.removeEventListener("resize", handleResize);
-      window.removeEventListener("toggleNavigationSidebar", handleToggleEvent);
     };
   }, [isMobile, location.pathname]);
 
   const toggleSidebar = () => {
+    console.log('Toggle sidebar called, current state:', isOpen, 'new state will be:', !isOpen);
+    manuallyOpenedRef.current = true;
     setIsOpen(!isOpen);
   };
 
@@ -65,8 +70,6 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       navigate("/profile");
     } else if (path) {
       navigate(path);
-    } else {
-      console.log(`${item} clicked`);
     }
     
     // Close sidebar on mobile after navigation
@@ -77,15 +80,39 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
 
   // For mobile/desktop behavior - keep sidebar open on profile/settings pages
   useEffect(() => {
-    // Only close sidebar when switching to desktop if not on profile or settings pages
-    if (!isMobile && location.pathname !== '/profile' && location.pathname !== '/settings') {
-      setIsOpen(false);
-    }
+    console.log('Main useEffect - isMobile:', isMobile, 'pathname:', location.pathname, 'isOpen:', isOpen, 'manuallyOpened:', manuallyOpenedRef.current);
+    
     // Automatically open sidebar when navigating to profile or settings pages
-    else if (location.pathname === '/profile' || location.pathname === '/settings') {
+    if ((location.pathname === '/profile' || location.pathname === '/settings') && !isOpen) {
+      console.log('Auto-opening sidebar for profile/settings');
+      manuallyOpenedRef.current = false; // Reset manual flag when auto-opening
       setIsOpen(true);
     }
-  }, [isMobile, location.pathname]);
+    // Close sidebar when navigating away from profile/settings pages to other pages
+    // But only if it was not manually opened
+    else if (!manuallyOpenedRef.current && location.pathname !== '/profile' && location.pathname !== '/settings' && isOpen) {
+      console.log('Closing sidebar automatically (not manually opened)');
+      setIsOpen(false);
+    }
+    // Reset manual flag when closing sidebar automatically
+    else if (!isOpen) {
+      manuallyOpenedRef.current = false;
+    }
+  }, [isMobile, location.pathname, isOpen]);
+  
+  // Handle manual toggle events
+  useEffect(() => {
+    const handleToggleEvent = () => {
+      console.log('Toggle event received, current state:', isOpenRef.current);
+      manuallyOpenedRef.current = true;
+      setIsOpen(!isOpenRef.current);
+    };
+
+    window.addEventListener("toggleNavigationSidebar", handleToggleEvent);
+    return () => {
+      window.removeEventListener("toggleNavigationSidebar", handleToggleEvent);
+    };
+  }, []);
 
   // Notify when sidebar closes
   useEffect(() => {
@@ -99,12 +126,24 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (isOpen && !isMobile) {
-        // Close sidebar when clicking outside, but not on the profile icon
-        const profileIcon = document.querySelector('.rounded-full.bg-primary.p-1.5.cursor-pointer');
-        if (profileIcon && profileIcon.contains(event.target as Node)) {
-          return; // Don't close if clicking the profile icon
+        // Get the sidebar element
+        const sidebar = document.querySelector('[data-navigation-sidebar]');
+        if (sidebar && sidebar.contains(event.target as Node)) {
+          return; // Don't close if clicking inside the sidebar
         }
+        
+        // Check if the click was on the profile trigger icon
+        const profileTrigger = document.querySelector('[data-sidebar-trigger]');
+        if (profileTrigger && profileTrigger.contains(event.target as Node)) {
+          return; // Don't close if clicking the profile trigger icon
+        }
+        
+        // Close sidebar when clicking outside
         setIsOpen(false);
+        // If we're on profile or settings page, also navigate away
+        if (location.pathname === '/profile' || location.pathname === '/settings') {
+          navigate("/");
+        }
       }
     };
 
@@ -112,8 +151,9 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, isMobile]);
+  }, [isOpen, isMobile, location.pathname, navigate]);
 
+  // Add data attribute to identify this sidebar component
   return (
     <>
       {/* Overlay for mobile */}
@@ -125,7 +165,13 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false);
+                // If we're on profile or settings page, also navigate away
+                if (location.pathname === '/profile' || location.pathname === '/settings') {
+                  navigate("/");
+                }
+              }}
             />
           )}
         </AnimatePresence>
@@ -145,6 +191,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            data-navigation-sidebar="true"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-sidebar-border py-3 px-4">
@@ -158,7 +205,13 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
                 </div>
               </div>
               <button 
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false);
+                  // If we're on profile or settings page, also navigate away
+                  if (location.pathname === '/profile' || location.pathname === '/settings') {
+                    navigate("/");
+                  }
+                }}
                 className="rounded-full p-1 hover:bg-sidebar-accent"
               >
                 <X className="h-5 w-5 text-sidebar-foreground" />
