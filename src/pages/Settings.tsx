@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getApiBaseUrl, resetApiBaseUrl } from "@/lib/api";
 import { X } from "lucide-react";
+import { NavigationSidebar } from "@/components/NavigationSidebar";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -71,7 +72,7 @@ export default function Settings() {
     setServerUrl(tempServerUrl);
     
     // Show a success message or trigger a refresh if needed
-    window.location.reload();
+    // window.location.reload();
   };
 
   const handleReset = () => {
@@ -84,62 +85,68 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
-          <button
-            onClick={() => navigate("/")}
-            className="rounded-full p-2 hover:bg-gray-200 dark:hover:bg-gray-700"
-          >
-            <X className="h-5 w-5 text-gray-900 dark:text-white" />
-          </button>
-        </div>
-        
-        <Card className="mb-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
-          <CardHeader>
-            <CardTitle className="text-2xl text-gray-900 dark:text-white">Server Configuration</CardTitle>
-            <CardDescription className="text-gray-600 dark:text-gray-400">
-              Configure the backend server URL for API connections
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 py-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="server-url" className="text-gray-700 dark:text-gray-300">Backend Server URL</Label>
-                <Input
-                  id="server-url"
-                  value={tempServerUrl}
-                  onChange={(e) => {
-                    setTempServerUrl(e.target.value);
-                    if (error) setError(""); // Clear error when user types
-                  }}
-                  placeholder="https://your-server.com"
-                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                />
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Enter the full URL to your backend server. Current default is {((): string => {
-                    const url = new URL(window.location.origin);
-                    url.port = "8000";
-                    return url.origin;
-                  })()}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Tip: Press Ctrl+Alt+R anywhere to reset to default settings
-                </p>
-              </div>
+    <div className="flex h-screen bg-background">
+      <NavigationSidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/")}
+                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Back to Files
+              </Button>
             </div>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={handleReset} className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-              Reset to Default
-            </Button>
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
-              Save Changes
-            </Button>
-          </CardFooter>
-        </Card>
+            
+            <Card className="mb-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
+              <CardHeader>
+                <CardTitle className="text-2xl text-gray-900 dark:text-white">Server Configuration</CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">
+                  Configure the backend server URL for API connections
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 py-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="server-url" className="text-gray-700 dark:text-gray-300">Backend Server URL</Label>
+                    <Input
+                      id="server-url"
+                      value={tempServerUrl}
+                      onChange={(e) => {
+                        setTempServerUrl(e.target.value);
+                        if (error) setError(""); // Clear error when user types
+                      }}
+                      placeholder="https://your-server.com"
+                      className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                    />
+                    {error && <p className="text-sm text-red-500">{error}</p>}
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Enter the full URL to your backend server. Current default is {((): string => {
+                        const url = new URL(window.location.origin);
+                        url.port = "8000";
+                        return url.origin;
+                      })()}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Tip: Press Ctrl+Alt+R anywhere to reset to default settings
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={handleReset} className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  Reset to Default
+                </Button>
+                <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  Save Changes
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

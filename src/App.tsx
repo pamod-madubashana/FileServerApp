@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
@@ -26,7 +27,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/profile" element={<Index />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/" element={<Index />} />
         {/* Handle dynamic paths for file explorer */}
         <Route path="/:path/*" element={<Index />} />
