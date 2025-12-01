@@ -26,7 +26,7 @@
     ],
     "security": {
       "assetProtocol": {
-        "scope": ["**"]        
+        "scope": ["http://localhost:8000/**"]    
       }
     },
     "withGlobalTauri": true
