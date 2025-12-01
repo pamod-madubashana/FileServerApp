@@ -293,12 +293,8 @@ export const FileExplorer = () => {
     // Construct the source path correctly
     let sourcePath = "/";
     if (currentPath.length > 1) {
-      // For virtual folders, we need to construct the path differently
-      if (isVirtualFolder) {
-        sourcePath = `/${currentPath.join('/')}`;
-      } else {
-        sourcePath = `/${currentPath.slice(1).join('/')}`;
-      }
+      // For all folder types, we construct the path consistently
+      sourcePath = `/${currentPath.join('/')}`;
     }
     copyItem(item, sourcePath);
     toast.success(`Copied "${item.name}"`);
@@ -308,12 +304,8 @@ export const FileExplorer = () => {
     // Construct the source path correctly
     let sourcePath = "/";
     if (currentPath.length > 1) {
-      // For virtual folders, we need to construct the path differently
-      if (isVirtualFolder) {
-        sourcePath = `/${currentPath.join('/')}`;
-      } else {
-        sourcePath = `/${currentPath.slice(1).join('/')}`;
-      }
+      // For all folder types, we construct the path consistently
+      sourcePath = `/${currentPath.join('/')}`;
     }
     cutItem(item, sourcePath);
     toast.success(`Cut "${item.name}"`);
@@ -324,12 +316,8 @@ export const FileExplorer = () => {
       // Construct the target path
       let targetPath = "/";
       if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          targetPath = `/${currentPath.join('/')}`;
-        } else {
-          targetPath = `/${currentPath.slice(1).join('/')}`;
-        }
+        // For all folder types, we construct the path consistently
+        targetPath = `/${currentPath.join('/')}`;
       }
       
       await pasteItem(targetPath);
@@ -365,12 +353,8 @@ export const FileExplorer = () => {
       // Construct the source path correctly
       let sourcePath = "/";
       if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          sourcePath = `/${currentPath.join('/')}`;
-        } else {
-          sourcePath = `/${currentPath.slice(1).join('/')}`;
-        }
+        // For all folder types, we construct the path consistently
+        sourcePath = `/${currentPath.join('/')}`;
       }
       
       // Construct the target path
@@ -421,12 +405,8 @@ export const FileExplorer = () => {
       // Construct the correct path for the backend
       let backendPath = "/";
       if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          backendPath = `/${currentPath.join('/')}`;
-        } else {
-          backendPath = `/${currentPath.slice(1).join('/')}`;
-        }
+        // For all folder types, we construct the path consistently
+        backendPath = `/${currentPath.join('/')}`;
       }
       
       const baseUrl = getApiBaseUrl();
@@ -501,12 +481,8 @@ export const FileExplorer = () => {
       // Construct the source path correctly
       let sourcePath = "/";
       if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          sourcePath = `/${currentPath.join('/')}`;
-        } else {
-          sourcePath = `/${currentPath.slice(1).join('/')}`;
-        }
+        // For all folder types, we construct the path consistently
+        sourcePath = `/${currentPath.join('/')}`;
       }
       
       // Construct the target path based on the target folder
@@ -526,27 +502,13 @@ export const FileExplorer = () => {
       }
       // Handle user-created folders
       else {
-        // If we're currently in a virtual folder, the target path should be constructed accordingly
-        if (currentPath.length > 1 && currentPath[0] === "Home" && 
-            (currentPath[1] === "Images" || currentPath[1] === "Documents" || 
-             currentPath[1] === "Videos" || currentPath[1] === "Audio" || 
-             currentPath[1] === "Voice Messages")) {
-          // We're in a virtual folder, so construct the path as /Home/FolderName/targetFolderName
-          targetPath = `/${currentPath.slice(0, 2).join('/')}/${targetFolder.name}`;
+        // Construct the target path consistently
+        if (currentPath.length > 1) {
+          // For all cases, we join the currentPath and append the target folder name
+          targetPath = `/${currentPath.join('/')}/${targetFolder.name}`;
         } else {
-          // We're in a regular folder structure
-          if (currentPath.length > 1) {
-            if (currentPath[0] === "Home") {
-              // We're in a user-created folder under Home
-              targetPath = `/${currentPath.slice(1).join('/')}/${targetFolder.name}`;
-            } else {
-              // We're in a user-created folder not under Home
-              targetPath = `/${currentPath.join('/')}/${targetFolder.name}`;
-            }
-          } else {
-            // We're at root level
-            targetPath = `/${targetFolder.name}`;
-          }
+          // We're at root level
+          targetPath = `/${targetFolder.name}`;
         }
       }
       
@@ -601,12 +563,8 @@ export const FileExplorer = () => {
       // Construct the correct path for the backend
       let backendPath = "/";
       if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          backendPath = `/${currentPath.join('/')}`;
-        } else {
-          backendPath = `/${currentPath.slice(1).join('/')}`;
-        }
+        // For all folder types, we construct the path consistently
+        backendPath = `/${currentPath.join('/')}`;
       }
       
       const baseUrl = getApiBaseUrl();
@@ -647,12 +605,8 @@ export const FileExplorer = () => {
       // Construct the correct path for the backend
       let backendPath = "/";
       if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          backendPath = `/${currentPath.join('/')}`;
-        } else {
-          backendPath = `/${currentPath.slice(1).join('/')}`;
-        }
+        // For all folder types, we construct the path consistently
+        backendPath = `/${currentPath.join('/')}`;
       }
       
       const baseUrl = getApiBaseUrl();
