@@ -37,6 +37,19 @@
     "icon": ["icons/icon.ico"]
   },
   "plugins": {
-    "http": null
+    "http": null,
+    "log": {
+      "filter": "debug",
+      "targets": [
+        {
+          "kind": "stdout",
+          "level": "debug"
+        },
+        {
+          "kind": "webview",
+          "level": "debug"
+        }
+      ]
+    }
   }
 }
