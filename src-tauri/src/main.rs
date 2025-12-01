@@ -4,41 +4,40 @@
 use std::io::Write;
 
 fn main() {
-  // Initialize logging with custom format
-  env_logger::builder()
-    .format(|buf, record| {
-      writeln!(buf,
-        "{} [{}] - {}",
-        chrono::Local::now().format("%Y-%m-%dT%H:%M:%S"),
-        record.level(),
-        record.args()
-      )
-    })
-    .init();
+  // Initialize logging through Tauri log plugin instead of manually with env_logger
+  // to avoid conflicts
   
-  log::info!("Starting Telegram File Server application");
-  log::info!("Current working directory: {:?}", std::env::current_dir());
+  println!("Starting Telegram File Server application");
+  println!("Current working directory: {:?}", std::env::current_dir());
   
-  // Log environment variables that might be relevant
+  // Print environment variables that might be relevant
   if let Ok(rust_log) = std::env::var("RUST_LOG") {
-    log::info!("RUST_LOG environment variable: {}", rust_log);
+    println!("RUST_LOG environment variable: {}", rust_log);
   }
   
-  // Generate context and log information about it
-  log::info!("Generating Tauri context...");
+  // Generate context and print information about it
+  println!("Generating Tauri context...");
   let context = tauri::generate_context!();
-  log::info!("Context generated successfully");
-  log::info!("Package name: {}", context.package_info().name);
-  log::info!("Package version: {}", context.package_info().version);
+  println!("Context generated successfully");
+  println!("Package name: {}", context.package_info().name);
+  println!("Package version: {}", context.package_info().version);
   
   let result = tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_http::init())
-    // Initialize Tauri log plugin without conflicting with env_logger
+    // Initialize Tauri log plugin with custom format
     .plugin(
       tauri_plugin_log::Builder::new()
-        .level(log::LevelFilter::Info)
+        .level(log::LevelFilter::Debug)
+        .format(tauri_plugin_log::Format::Custom(Box::new(|record| {
+          format!(
+            "{} [{}] - {}",
+            chrono::Local::now().format("%Y-%m-%dT%H:%M:%S"),
+            record.level(),
+            record.args()
+          )
+        })))
         .build()
     )
     .invoke_handler(tauri::generate_handler![])
