@@ -53,6 +53,16 @@ export const logger = {
     const formattedMessage = formatMessage(LogLevel.DEBUG, message, data);
     console.debug(formattedMessage);
     
+    // Try to use Tauri commands for logging if available
+    if (isTauriEnv) {
+      try {
+        await invoke('log_debug', { message: formattedMessage });
+        return;
+      } catch (e) {
+        // Fall back to plugin or console logging
+      }
+    }
+    
     if (isTauriEnv && log) {
       try {
         if (logReady) await logReady;
@@ -66,6 +76,16 @@ export const logger = {
   info: async (message: string, data?: any) => {
     const formattedMessage = formatMessage(LogLevel.INFO, message, data);
     console.info(formattedMessage);
+    
+    // Try to use Tauri commands for logging if available
+    if (isTauriEnv) {
+      try {
+        await invoke('log_info', { message: formattedMessage });
+        return;
+      } catch (e) {
+        // Fall back to plugin or console logging
+      }
+    }
     
     if (isTauriEnv && log) {
       try {
@@ -81,6 +101,16 @@ export const logger = {
     const formattedMessage = formatMessage(LogLevel.WARN, message, data);
     console.warn(formattedMessage);
     
+    // Try to use Tauri commands for logging if available
+    if (isTauriEnv) {
+      try {
+        await invoke('log_warn', { message: formattedMessage });
+        return;
+      } catch (e) {
+        // Fall back to plugin or console logging
+      }
+    }
+    
     if (isTauriEnv && log) {
       try {
         if (logReady) await logReady;
@@ -94,6 +124,16 @@ export const logger = {
   error: async (message: string, data?: any) => {
     const formattedMessage = formatMessage(LogLevel.ERROR, message, data);
     console.error(formattedMessage);
+    
+    // Try to use Tauri commands for logging if available
+    if (isTauriEnv) {
+      try {
+        await invoke('log_error', { message: formattedMessage });
+        return;
+      } catch (e) {
+        // Fall back to plugin or console logging
+      }
+    }
     
     if (isTauriEnv && log) {
       try {
