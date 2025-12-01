@@ -8,7 +8,7 @@ import { AdaptiveRouter } from "@/lib/router-config";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
-import Profile from "./pages/Profile";
+// Profile route removed since we'll use overlay
 import { resetApiBaseUrl } from "./lib/api";
 import logger from "@/lib/logger";
 
@@ -28,7 +28,7 @@ const AppRoutes = () => {
       <RouteDebugger />
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/profile" element={<Profile />} />
+        {/* Profile route removed since we'll use overlay */}
         <Route path="/" element={<Index />} />
         {/* Handle dynamic paths for file explorer */}
         <Route path="/:path/*" element={<Index />} />
