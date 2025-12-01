@@ -37,6 +37,14 @@
     "icon": ["icons/icon.ico"]
   },
   "plugins": {
-    "http": null
+    "http": {
+      "permissions": [
+        {
+          "identifier": "http:default",
+          "allow": [{ "url": "http://localhost:8000/*" }],
+          "deny": []
+        }
+      ]
+    }
   }
 }
