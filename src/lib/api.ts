@@ -1,4 +1,6 @@
 // API base URL - will use proxy in development
+import logger from '@/lib/logger';
+
 const getDefaultApiUrl = () => {
   const savedUrl = localStorage.getItem("serverUrl");
   if (savedUrl) {
@@ -88,37 +90,19 @@ export const getFullApiUrl = (endpoint: string): string => {
 let http: typeof import('@tauri-apps/plugin-http') | null = null;
 let isTauriEnv = false;
 let httpReady: Promise<void> | null = null;
-let log: typeof import('@tauri-apps/plugin-log') | null = null;
-let logReady: Promise<void> | null = null;
 
 // Check if we're running in Tauri
 if (typeof window !== 'undefined' && (window as any).__TAURI__) {
   isTauriEnv = true;
-  console.log('[API] Detected Tauri environment');
-  // Forward log to Rust backend
-  if (log) {
-    try {
-      log.info('[API] Detected Tauri environment');
-    } catch (e) {
-      // Ignore log errors
-    }
-  }
+  logger.info('[API] Detected Tauri environment');
+  
   // Dynamically import the HTTP plugin only in Tauri environment
   httpReady = import('@tauri-apps/plugin-http').then((module) => {
     http = module;
-    console.log('[API] Tauri HTTP plugin loaded successfully');
+    logger.info('[API] Tauri HTTP plugin loaded successfully');
   }).catch((error) => {
-    console.error('[API] Failed to load Tauri HTTP plugin:', error);
+    logger.error('[API] Failed to load Tauri HTTP plugin:', error);
     httpReady = null;
-  });
-  
-  // Dynamically import the Log plugin only in Tauri environment
-  logReady = import('@tauri-apps/plugin-log').then((module) => {
-    log = module;
-    console.log('[API] Tauri Log plugin loaded successfully');
-  }).catch((error) => {
-    console.error('[API] Failed to load Tauri Log plugin:', error);
-    logReady = null;
   });
 }
 
@@ -135,15 +119,15 @@ const getAuthHeaders = (): Record<string, string> => {
         const authData = JSON.parse(tauri_auth);
         if (authData.auth_token) {
           headers['X-Auth-Token'] = authData.auth_token;
-          console.log('[API] Adding auth token to request:', { token: authData.auth_token.substring(0, 10) + '...' });
+          logger.info('[API] Adding auth token to request', { token: authData.auth_token.substring(0, 10) + '...' });
         } else {
-          console.log('[API] tauri_auth_token exists but no auth_token field');
+          logger.warn('[API] tauri_auth_token exists but no auth_token field');
         }
       } else {
-        console.log('[API] No tauri_auth_token in localStorage');
+        logger.info('[API] No tauri_auth_token in localStorage');
       }
     } catch (e) {
-      console.error('[API] Failed to get auth token from localStorage:', e);
+      logger.error('[API] Failed to get auth token from localStorage:', e);
     }
   }
   
@@ -167,51 +151,20 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
     mergedOptions.credentials = options.credentials;
   }
 
-  console.log('[API] fetchWithTimeout called with:', { url, options, timeout });
-  
-  // Forward log to Rust backend if in Tauri environment
-  if (isTauriEnv && log) {
-    try {
-      log.info(`[API] fetchWithTimeout called with: ${JSON.stringify({ url, options, timeout })}`);
-    } catch (e) {
-      // Ignore log errors
-    }
-  }
+  logger.info('[API] fetchWithTimeout called with:', { url, options, timeout });
 
   // Use Tauri HTTP plugin if available (in Tauri environment)
   if (isTauriEnv) {
-    console.log('[API] Running in Tauri environment');
-    // Forward log to Rust backend
-    if (log) {
-      try {
-        log.info('[API] Running in Tauri environment');
-      } catch (e) {
-        // Ignore log errors
-      }
-    }
+    logger.info('[API] Running in Tauri environment');
     try {
       // Wait for Tauri HTTP plugin to load if it's still loading
       if (httpReady) {
-        console.log('[API] Waiting for Tauri HTTP plugin to load');
+        logger.info('[API] Waiting for Tauri HTTP plugin to load');
         await httpReady;
       }
       
-      // Wait for Tauri Log plugin to load if it's still loading
-      if (logReady) {
-        console.log('[API] Waiting for Tauri Log plugin to load');
-        await logReady;
-      }
-      
       if (http) {
-        console.log('[API] Using Tauri HTTP plugin for request to:', url);
-        // Forward log to Rust backend
-        if (log) {
-          try {
-            log.info(`[API] Using Tauri HTTP plugin for request to: ${url}`);
-          } catch (e) {
-            // Ignore log errors
-          }
-        }
+        logger.info('[API] Using Tauri HTTP plugin for request to:', url);
         // Make the request using Tauri's HTTP plugin
         const response = await http.fetch(url, {
           method: mergedOptions.method || 'GET',
@@ -220,77 +173,37 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
           credentials: mergedOptions.credentials === 'include' ? 'include' : 'omit',
         });
         
-        console.log('[API] Tauri HTTP response status:', response.status);
-        // Forward log to Rust backend
-        if (log) {
-          try {
-            log.info(`[API] Tauri HTTP response status: ${response.status}`);
-          } catch (e) {
-            // Ignore log errors
-          }
-        }
+        logger.info('[API] Tauri HTTP response status:', response.status);
         // Return the response directly as it's already a standard Response object
         return response;
       } else {
-        console.warn('[API] Tauri HTTP plugin not available after waiting, falling back to standard fetch');
+        logger.warn('[API] Tauri HTTP plugin not available after waiting, falling back to standard fetch');
       }
     } catch (error) {
-      console.error('[API] Tauri HTTP request failed, falling back to standard fetch:', error);
+      logger.error('[API] Tauri HTTP request failed, falling back to standard fetch:', error);
     }
     
     // Fall back to standard fetch if Tauri HTTP plugin fails
-    console.log('[API] Falling back to standard fetch for request to:', url);
-    // Forward log to Rust backend
-    if (log) {
-      try {
-        log.info(`[API] Falling back to standard fetch for request to: ${url}`);
-      } catch (e) {
-        // Ignore log errors
-      }
-    }
+    logger.info('[API] Falling back to standard fetch for request to:', url);
   }
   
   // Standard browser fetch with timeout (for non-Tauri environments)
-  console.log('[API] Using standard fetch for request to:', url);
-  // Forward log to Rust backend
-  if (isTauriEnv && log) {
-    try {
-      log.info(`[API] Using standard fetch for request to: ${url}`);
-    } catch (e) {
-      // Ignore log errors
-    }
-  }
+  logger.info('[API] Using standard fetch for request to:', url);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
   
   try {
-    console.log('[API] Making fetch request with options:', mergedOptions);
-    // Forward log to Rust backend
-    if (isTauriEnv && log) {
-      try {
-        log.info(`[API] Making fetch request with options: ${JSON.stringify(mergedOptions)}`);
-      } catch (e) {
-        // Ignore log errors
-      }
-    }
+    logger.info('[API] Making fetch request with options:', mergedOptions);
     const response = await fetch(url, {
       ...mergedOptions,
       signal: controller.signal
     });
     clearTimeout(timeoutId);
-    console.log('[API] Standard fetch response status:', response.status);
-    // Forward log to Rust backend
-    if (isTauriEnv && log) {
-      try {
-        log.info(`[API] Standard fetch response status: ${response.status}`);
-      } catch (e) {
-        // Ignore log errors
-      }
-    }
+    logger.info('[API] Standard fetch response status:', response.status);
     return response;
   } catch (error) {
     clearTimeout(timeoutId);
-    console.error('[API] Standard fetch error:', error);
+    logger.error('[API] Standard fetch error:', error);
     throw error;
   }
 };
@@ -319,7 +232,7 @@ export const api = {
                         };
                     }
                 } catch (e) {
-                    console.error('Failed to parse Tauri auth token:', e);
+                    logger.error('Failed to parse Tauri auth token:', e);
                 }
             }
         }
@@ -356,7 +269,7 @@ export const api = {
                         };
                     }
                 } catch (e) {
-                    console.error('Failed to parse Tauri auth token:', e);
+                    logger.error('Failed to parse Tauri auth token:', e);
                 }
             }
         }

@@ -7,25 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import { FcGoogle } from "react-icons/fc";
 import { BackendUrlUpdater } from "@/components/BackendUrlUpdater";
-
-// Import Tauri log plugin
-let log: typeof import('@tauri-apps/plugin-log') | null = null;
-let isTauriEnv = false;
-let logReady: Promise<void> | null = null;
-
-// Check if we're running in Tauri
-if (typeof window !== 'undefined' && (window as any).__TAURI__) {
-  isTauriEnv = true;
-  // Dynamically import the Log plugin only in Tauri environment
-  logReady = import('@tauri-apps/plugin-log').then((module) => {
-    log = module;
-    // Log that the plugin was loaded successfully
-    console.log('[Login] Tauri Log plugin loaded successfully');
-  }).catch((error) => {
-    console.error('[Login] Failed to load Tauri Log plugin:', error);
-    logReady = null;
-  });
-}
+import logger from "@/lib/logger";
 
 // Declare google.accounts for TypeScript
 declare global {
@@ -33,34 +15,6 @@ declare global {
     google: any;
   }
 }
-
-// Function to send logs to backend
-const sendLogToBackend = async (message: string, data?: any) => {
-  try {
-    // Always log to console first so we can see it
-    console.log(`[FRONTEND LOG] ${message}`, data);
-    
-    // Check if we're in Tauri environment
-    const isTauri = !!(window as any).__TAURI__;
-    if (isTauri) {
-      // Also send to Tauri log plugin if available
-      if (log) {
-        try {
-          // Wait for the log plugin to be ready if it's still loading
-          if (logReady) {
-            await logReady;
-          }
-          log.info(`[FRONTEND LOG] ${message}: ${data ? JSON.stringify(data) : ''}`);
-        } catch (e) {
-          // If there's an error with Tauri logging, still show in console
-          console.error('[Login] Error with Tauri logging:', e);
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error sending log to backend:", error);
-  }
-};
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -71,10 +25,10 @@ const Login = () => {
   const [showBackendConfig, setShowBackendConfig] = useState(false);
   const navigate = useNavigate();
   
-  sendLogToBackend("Login component initialized");
+  logger.info("Login component initialized");
 
   useEffect(() => {
-    sendLogToBackend("Login page mounted");
+    logger.info("Login page mounted");
     
     // Dynamically load Google Identity Services script
     const script = document.createElement("script");
@@ -89,7 +43,7 @@ const Login = () => {
   }, []);
 
   const handleCredentialResponse = async (response: any) => {
-    sendLogToBackend("Google credential response received", response);
+    logger.info("Google credential response received", response);
     setIsLoading(true);
     setError("");
 
@@ -97,7 +51,7 @@ const Login = () => {
       const baseUrl = getApiBaseUrl();
       const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
       
-      sendLogToBackend("Attempting Google login with baseUrl", { baseUrl, apiUrl: `${apiUrl}/auth/google` });
+      logger.info("Attempting Google login with baseUrl", { baseUrl, apiUrl: `${apiUrl}/auth/google` });
       
       const res = await fetchWithTimeout(`${apiUrl}/auth/google`, {
         method: "POST",
@@ -108,21 +62,21 @@ const Login = () => {
         body: JSON.stringify({ token: response.credential }),
       }, 5000);
 
-      sendLogToBackend("Google login response", { status: res.status, headers: [...res.headers.entries()] });
+      logger.info("Google login response", { status: res.status, headers: [...res.headers.entries()] });
       
       if (res.ok) {
         const responseData = await res.json();
-        sendLogToBackend("Google login successful", responseData);
+        logger.info("Google login successful", responseData);
         // Force a small delay to ensure session is properly set
         await new Promise(resolve => setTimeout(resolve, 100));
         navigate("/");
       } else {
         const errorData = await res.json();
-        sendLogToBackend("Google login failed", errorData);
+        logger.error("Google login failed", errorData);
         setError(errorData.detail || "Google authentication failed");
       }
     } catch (err) {
-      sendLogToBackend("Google login error", err);
+      logger.error("Google login error", err);
       setError("Unable to connect to the backend server. Please check your backend URL configuration.");
       setShowBackendConfig(true);
     } finally {
@@ -132,7 +86,7 @@ const Login = () => {
 
   const initializeGoogleSignIn = () => {
     if (window.google && window.google.accounts) {
-      sendLogToBackend("Initializing Google Sign-In");
+      logger.info("Initializing Google Sign-In");
       window.google.accounts.id.initialize({
         client_id: "YOUR_GOOGLE_CLIENT_ID_HERE", // This should be replaced with actual client ID
         callback: handleCredentialResponse,
@@ -148,24 +102,24 @@ const Login = () => {
         }
       );
     } else {
-      sendLogToBackend("Google accounts not available yet");
+      logger.warn("Google accounts not available yet");
     }
   };
 
   useEffect(() => {
-    sendLogToBackend("Checking for Google accounts availability");
+    logger.info("Checking for Google accounts availability");
     if (window.google && window.google.accounts) {
-      sendLogToBackend("Google accounts available, initializing");
+      logger.info("Google accounts available, initializing");
       initializeGoogleSignIn();
     } else {
       // Retry initialization after a delay if google script hasn't loaded yet
-      sendLogToBackend("Google accounts not available, scheduling retry");
+      logger.warn("Google accounts not available, scheduling retry");
       const timer = setTimeout(() => {
         if (window.google && window.google.accounts) {
-          sendLogToBackend("Google accounts available on retry, initializing");
+          logger.info("Google accounts available on retry, initializing");
           initializeGoogleSignIn();
         } else {
-          sendLogToBackend("Google accounts still not available after retry");
+          logger.warn("Google accounts still not available after retry");
         }
       }, 1000);
       
@@ -175,7 +129,7 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    sendLogToBackend("Login form submitted", { username, password });
+    logger.info("Login form submitted", { username, password });
     
     setIsLoading(true);
     setError("");
@@ -184,11 +138,11 @@ const Login = () => {
       const baseUrl = getApiBaseUrl();
       const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
       
-      sendLogToBackend("Attempting login with baseUrl", { baseUrl, apiUrl: `${apiUrl}/auth/login` });
+      logger.info("Attempting login with baseUrl", { baseUrl, apiUrl: `${apiUrl}/auth/login` });
       
       // Check if we're running in Tauri
       const isTauri = !!(window as any).__TAURI__;
-      sendLogToBackend("Running in Tauri environment", isTauri);
+      logger.info("Running in Tauri environment", isTauri);
       
       // Prepare fetch options
       const fetchOptions: RequestInit = {
@@ -200,19 +154,19 @@ const Login = () => {
         body: JSON.stringify({ username, password }),
       };
       
-      sendLogToBackend("Making login request to", `${apiUrl}/auth/login`);
+      logger.info("Making login request to", `${apiUrl}/auth/login`);
       
       const response = await fetchWithTimeout(`${apiUrl}/auth/login`, fetchOptions, 5000);
 
-      sendLogToBackend("Login response", { status: response.status, headers: [...response.headers.entries()] });
+      logger.info("Login response", { status: response.status, headers: [...response.headers.entries()] });
       
       if (response.ok) {
         const responseData = await response.json();
-        sendLogToBackend("Login response data", responseData);
+        logger.info("Login response data", responseData);
         
         // For Tauri, we might need to manually handle cookies
         if (isTauri) {
-          sendLogToBackend("In Tauri environment, storing auth state locally");
+          logger.info("In Tauri environment, storing auth state locally");
           localStorage.setItem('tauri_auth_token', JSON.stringify({ 
             authenticated: true, 
             username: responseData.username,
@@ -223,17 +177,15 @@ const Login = () => {
         
         // Force a small delay to ensure session is properly set
         await new Promise(resolve => setTimeout(resolve, 100));
-        sendLogToBackend("Navigating to home page after successful login");
+        logger.info("Navigating to home page after successful login");
         navigate("/");
       } else {
         const errorData = await response.json();
-        sendLogToBackend("Login failed with error", errorData);
+        logger.error("Login failed with error", errorData);
         setError(errorData.detail || "Login failed");
       }
     } catch (err) {
-      sendLogToBackend("Login error", err);
-      sendLogToBackend("Error type", typeof err);
-      sendLogToBackend("Error message", err.message || "Unknown error");
+      logger.error("Login error", { error: err, type: typeof err, message: err.message || "Unknown error" });
       setError("Unable to connect to the backend server. Please check your backend URL configuration.");
       setShowBackendConfig(true);
     } finally {
@@ -242,7 +194,7 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
-    sendLogToBackend("Google login initiated");
+    logger.info("Google login initiated");
     
     if (window.google && window.google.accounts) {
       window.google.accounts.id.prompt();
