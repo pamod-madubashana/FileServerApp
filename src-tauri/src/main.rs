@@ -36,13 +36,13 @@ fn main() {
     .plugin(tauri_plugin_dialog::init())
     // .plugin(tauri_plugin_http::init())
     .plugin(
-          HttpBuilder::new()
-              .permissions(vec![
-                  Permission::new("http:default")
-                      .allow(vec!["*"]) // allow all URLs, or use specific pattern
-                      .deny(vec![]),
-              ])
-              .build()
+        HttpBuilder::new()
+            .permissions(vec![
+                Permission::new("http:default")
+                    .allow(vec!["*"]) // allow all URLs, or use specific pattern
+                    .deny(vec![]),
+            ])
+            .build()
       )
     .invoke_handler(tauri::generate_handler![
       log_debug,
