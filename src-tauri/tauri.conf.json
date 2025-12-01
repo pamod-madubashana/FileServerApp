@@ -38,11 +38,7 @@
   },
   "plugins": {
     "http": {
-      "scope": [
-        "http://localhost:8000/**",
-        "https://localhost:8000/**"
-      ]
-    },
-    "log": null
+      "scope": ["http://localhost:8000/**", "https://localhost:8000/**"]
+    }
   }
 }
