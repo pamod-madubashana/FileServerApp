@@ -7,9 +7,10 @@ import { useNavigate } from "react-router-dom";
 
 interface TelegramSidebarProps {
   className?: string;
+  onProfileClick?: () => void; // Add callback for profile click
 }
 
-export const TelegramSidebar = ({ className }: TelegramSidebarProps) => {
+export const TelegramSidebar = ({ className, onProfileClick }: TelegramSidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const isOpenRef = useRef(isOpen);
   const isMobile = useIsMobile();
@@ -53,7 +54,10 @@ export const TelegramSidebar = ({ className }: TelegramSidebarProps) => {
 
   const handleMenuClick = (item: string) => {
     if (item === "Profile") {
-      navigate("/profile");
+      // Instead of navigating, call the callback to open profile overlay
+      if (onProfileClick) {
+        onProfileClick();
+      }
     } else {
       console.log(`${item} clicked`);
     }
