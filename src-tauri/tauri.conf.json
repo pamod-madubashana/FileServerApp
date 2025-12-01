@@ -38,18 +38,6 @@
   },
   "plugins": {
     "http": null,
-    "log": {
-      "filter": "debug",
-      "targets": [
-        {
-          "kind": "stdout",
-          "level": "debug"
-        },
-        {
-          "kind": "webview",
-          "level": "debug"
-        }
-      ]
-    }
+    "log": null
   }
 }
