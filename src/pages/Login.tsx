@@ -19,6 +19,8 @@ if (typeof window !== 'undefined' && (window as any).__TAURI__) {
   // Dynamically import the Log plugin only in Tauri environment
   logReady = import('@tauri-apps/plugin-log').then((module) => {
     log = module;
+    // Log that the plugin was loaded successfully
+    console.log('[Login] Tauri Log plugin loaded successfully');
   }).catch((error) => {
     console.error('[Login] Failed to load Tauri Log plugin:', error);
     logReady = null;
@@ -35,23 +37,25 @@ declare global {
 // Function to send logs to backend
 const sendLogToBackend = async (message: string, data?: any) => {
   try {
+    // Always log to console first so we can see it
+    console.log(`[FRONTEND LOG] ${message}`, data);
+    
     // Check if we're in Tauri environment
     const isTauri = !!(window as any).__TAURI__;
     if (isTauri) {
-      // In Tauri, we could use the event system to send logs to the backend
-      // For now, we'll just console.log since that's what we can see
-      console.log(`[FRONTEND LOG] ${message}`, data);
-      
       // Also send to Tauri log plugin if available
       if (log) {
         try {
+          // Wait for the log plugin to be ready if it's still loading
+          if (logReady) {
+            await logReady;
+          }
           log.info(`[FRONTEND LOG] ${message}: ${data ? JSON.stringify(data) : ''}`);
         } catch (e) {
-          // Ignore log errors
+          // If there's an error with Tauri logging, still show in console
+          console.error('[Login] Error with Tauri logging:', e);
         }
       }
-    } else {
-      console.log(`[FRONTEND LOG] ${message}`, data);
     }
   } catch (error) {
     console.error("Error sending log to backend:", error);
