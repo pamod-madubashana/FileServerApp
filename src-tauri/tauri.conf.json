@@ -34,7 +34,10 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": ["icons/icon.ico"]
+    "icon": ["icons/icon.ico"],
+    "windows": {
+      "console": true
+    }
   },
   "plugins": {
     "http": null
