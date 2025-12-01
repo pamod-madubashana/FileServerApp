@@ -28,6 +28,8 @@ fn main() {
     .plugin(tauri_plugin_log::Builder::new().build())
     .invoke_handler(tauri::generate_handler![])
     .setup(|_app| {
+      let window = app.get_window("main").unwrap();
+      window.open_devtools();
       log::info!("Application setup completed successfully");
       Ok(())
     })
