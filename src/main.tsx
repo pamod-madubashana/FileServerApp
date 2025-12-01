@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import logger, { testLogging } from '@/lib/logger'
+import logger from '@/lib/logger'
 
 // Initialize logger
 logger.info('Starting Telegram File Server frontend application')
