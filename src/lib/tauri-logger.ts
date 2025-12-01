@@ -61,19 +61,6 @@ export const tauriLogger = {
     } else {
       console.error(`[Web] ${formattedMessage}`);
     }
-  },
-  
-  // Test function
-  test: async () => {
-    if (isTauri) {
-      try {
-        await invoke('test_logging');
-      } catch (error) {
-        console.error('[TauriLogger] Failed to call test_logging command:', error);
-      }
-    } else {
-      console.log('[TauriLogger] Test function called in web environment');
-    }
   }
 };
 
