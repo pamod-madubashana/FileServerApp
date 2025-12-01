@@ -134,12 +134,13 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
           return; // Don't close if clicking the profile trigger icon
         }
         
+        // Don't close sidebar when on profile or settings pages
+        if (location.pathname === '/profile' || location.pathname === '/settings') {
+          return;
+        }
+        
         // Close sidebar when clicking outside
         setIsOpen(false);
-        // If we're on profile or settings page, also navigate away
-        if (location.pathname === '/profile' || location.pathname === '/settings') {
-          navigate("/");
-        }
       }
     };
 
@@ -147,7 +148,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, isMobile, location.pathname, navigate]);
+  }, [isOpen, isMobile, location.pathname]);
 
   // Add data attribute to identify this sidebar component
   return (
@@ -162,11 +163,11 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => {
-                setIsOpen(false);
-                // If we're on profile or settings page, also navigate away
+                // Don't close sidebar when on profile or settings pages
                 if (location.pathname === '/profile' || location.pathname === '/settings') {
-                  navigate("/");
+                  return;
                 }
+                setIsOpen(false);
               }}
             />
           )}
