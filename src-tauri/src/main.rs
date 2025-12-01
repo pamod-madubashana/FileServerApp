@@ -3,6 +3,27 @@
 
 use tauri_plugin_log::{Target, TargetKind};
 
+// Logging commands that can be called from the frontend
+#[tauri::command]
+fn log_debug(message: &str) {
+    log::debug!("{}", message);
+}
+
+#[tauri::command]
+fn log_info(message: &str) {
+    log::info!("{}", message);
+}
+
+#[tauri::command]
+fn log_warn(message: &str) {
+    log::warn!("{}", message);
+}
+
+#[tauri::command]
+fn log_error(message: &str) {
+    log::error!("{}", message);
+}
+
 // Function to test logging
 #[tauri::command]
 fn test_logging() {
@@ -33,7 +54,13 @@ fn main() {
         ])
         .build()
     )
-    .invoke_handler(tauri::generate_handler![test_logging])
+    .invoke_handler(tauri::generate_handler![
+      log_debug,
+      log_info,
+      log_warn,
+      log_error,
+      test_logging
+    ])
     .setup(|_app| {
       // Log startup messages after logger is initialized
       log::info!("Starting Telegram File Server application");
