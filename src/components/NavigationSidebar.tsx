@@ -18,12 +18,9 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const manuallyOpenedRef = useRef(false); // Track if sidebar was manually opened
-  
-  console.log('NavigationSidebar rendered - initial isOpen:', isOpen, 'location:', location.pathname);
 
   // Update ref when state changes
   useEffect(() => {
-    console.log('Sidebar state changed - isOpen:', isOpen);
     isOpenRef.current = isOpen;
   }, [isOpen]);
 
