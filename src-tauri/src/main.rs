@@ -1,8 +1,6 @@
 // Always show console window for debugging - removed conditional compilation
 #![windows_subsystem = "console"]
 
-use std::io::Write;
-
 fn main() {
   // Initialize logging through Tauri log plugin instead of manually with env_logger
   // to avoid conflicts
@@ -26,20 +24,8 @@ fn main() {
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_http::init())
-    // Initialize Tauri log plugin with custom format
-    .plugin(
-      tauri_plugin_log::Builder::new()
-        .level(log::LevelFilter::Debug)
-        .format(tauri_plugin_log::Format::Custom(Box::new(|record| {
-          format!(
-            "{} [{}] - {}",
-            chrono::Local::now().format("%Y-%m-%dT%H:%M:%S"),
-            record.level(),
-            record.args()
-          )
-        })))
-        .build()
-    )
+    // Initialize Tauri log plugin with default configuration
+    .plugin(tauri_plugin_log::Builder::new().build())
     .invoke_handler(tauri::generate_handler![])
     .setup(|_app| {
       log::info!("Application setup completed successfully");
