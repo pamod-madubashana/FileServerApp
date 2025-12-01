@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import logger from "@/lib/logger";
+import { exampleDirectUsage } from "@/lib/logger-example";
 
 const LoggerTest = () => {
   useEffect(() => {
@@ -26,6 +27,9 @@ const LoggerTest = () => {
     };
     
     testAsyncLogging();
+    
+    // Test the example direct usage
+    exampleDirectUsage();
   }, []);
 
   return (
