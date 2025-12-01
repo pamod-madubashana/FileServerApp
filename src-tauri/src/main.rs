@@ -28,7 +28,6 @@ fn main() {
     std::env::set_var("RUST_LOG", "debug");
   }
   
-  // Initialize logging through env_logger for simplicity
   env_logger::init();
   
   tauri::Builder::default()
@@ -50,12 +49,6 @@ fn main() {
       if let Ok(rust_log) = std::env::var("RUST_LOG") {
         log::info!("RUST_LOG environment variable: {}", rust_log);
       }
-      
-      // Test logging at different levels
-      log::debug!("This is a debug message from Rust");
-      log::info!("This is an info message from Rust");
-      log::warn!("This is a warning message from Rust");
-      log::error!("This is an error message from Rust");
       
       log::info!("Application setup completed successfully");
       
