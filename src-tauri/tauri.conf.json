@@ -9,6 +9,13 @@
     "frontendDist": "../dist",
     "devUrl": "http://localhost:8080"
   },
+  "permissions": [
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "**" }],
+      "deny": []
+    }
+  ],
   "app": {
     "windows": [
       {
@@ -37,8 +44,6 @@
     "icon": ["icons/icon.ico"]
   },
   "plugins": {
-    "http": {
-      "scope": ["**"]   
-    }
+    "http": null
   }
 }
