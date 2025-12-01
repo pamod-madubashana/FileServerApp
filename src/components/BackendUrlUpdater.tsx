@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateApiBaseUrl, getApiBaseUrl } from "@/lib/api";
+import logger from "@/lib/logger";
 
 interface BackendUrlUpdaterProps {
   onErrorUpdate?: (error: string) => void;
@@ -22,11 +23,13 @@ export const BackendUrlUpdater = ({ onErrorUpdate, onSuccess }: BackendUrlUpdate
 
   const handleSave = () => {
     try {
+      logger.info("Saving backend URL", { backendUrl });
       updateApiBaseUrl(backendUrl);
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
+      logger.error("Failed to save backend URL", error);
       if (onErrorUpdate) {
         onErrorUpdate("Failed to save backend URL");
       }
@@ -43,6 +46,7 @@ export const BackendUrlUpdater = ({ onErrorUpdate, onSuccess }: BackendUrlUpdate
     setTestResult(null);
 
     try {
+      logger.info("Testing connection to backend", { backendUrl });
       // Test connection to the backend
       const testUrl = backendUrl.endsWith('/api') ? `${backendUrl}/health` : `${backendUrl}/api/health`;
       
@@ -58,11 +62,14 @@ export const BackendUrlUpdater = ({ onErrorUpdate, onSuccess }: BackendUrlUpdate
       clearTimeout(timeoutId);
       
       if (response.ok) {
+        logger.info("Backend connection test successful");
         setTestResult({ success: true, message: "Connection successful!" });
       } else {
+        logger.warn("Backend connection test failed", { status: response.status });
         setTestResult({ success: false, message: `Server responded with status ${response.status}` });
       }
     } catch (error) {
+      logger.error("Backend connection test failed", error);
       // clearTimeout(timeoutId); // Make sure to clear the timeout
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -79,6 +86,7 @@ export const BackendUrlUpdater = ({ onErrorUpdate, onSuccess }: BackendUrlUpdate
   };
 
   const handleReset = () => {
+    logger.info("Resetting backend URL to default");
     setBackendUrl("");
     updateApiBaseUrl("");
     setTestResult(null);
