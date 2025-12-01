@@ -1,8 +1,6 @@
 // Always show console window for debugging - removed conditional compilation
 #![windows_subsystem = "console"]
 
-use tauri::Manager;
-
 // Logging commands that can be called from the frontend
 #[tauri::command]
 fn log_debug(message: &str) {
@@ -41,8 +39,7 @@ fn main() {
       log_debug,
       log_info,
       log_warn,
-      log_error,
-      test_logging
+      log_error
     ])
     .setup(|_app| {
       // Log startup messages after logger is initialized
@@ -61,12 +58,6 @@ fn main() {
       log::error!("This is an error message from Rust");
       
       log::info!("Application setup completed successfully");
-      
-      // Use the correct method for getting webview window in Tauri v2
-      #[cfg(debug_assertions)]
-      if let Some(window) = _app.get_webview_window("main") {
-        window.open_devtools();
-      }
       
       Ok(())
     })
