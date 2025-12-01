@@ -1,8 +1,9 @@
 import { FileExplorer } from "@/components/FileExplorer";
 import { AuthWrapper } from "@/components/AuthWrapper";
+import logger from "@/lib/logger";
 
 const Index = () => {
-  console.log("Index page rendered");
+  logger.info("Index page rendered");
   return (
     <AuthWrapper>
       <FileExplorer />
