@@ -24,8 +24,6 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showBackendConfig, setShowBackendConfig] = useState(false);
   const navigate = useNavigate();
-  
-  logger.info("Login component initialized");
 
   useEffect(() => {
     logger.info("Login page mounted");
