@@ -18,10 +18,14 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const manuallyOpenedRef = useRef(false); // Track if sidebar was manually opened
+  const hasBeenOpenedRef = useRef(false); // Track if sidebar has ever been opened
 
   // Update ref when state changes
   useEffect(() => {
     isOpenRef.current = isOpen;
+    if (isOpen) {
+      hasBeenOpenedRef.current = true;
+    }
   }, [isOpen]);
 
   // Close sidebar when resizing from mobile to desktop, but keep it open on profile/settings pages
@@ -103,7 +107,8 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
 
   // Notify when sidebar closes
   useEffect(() => {
-    if (!isOpen && (location.pathname === '/profile' || location.pathname === '/settings')) {
+    // Only redirect if the sidebar has actually been opened and then closed
+    if (hasBeenOpenedRef.current && !isOpen && (location.pathname === '/profile' || location.pathname === '/settings')) {
       // When sidebar closes while on profile or settings page, redirect to home
       navigate("/");
     }
