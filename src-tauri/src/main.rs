@@ -2,10 +2,14 @@
 #![windows_subsystem = "console"]
 
 fn main() {
-  // Initialize logging through Tauri log plugin 
-  // This needs to be done before any logging calls
+  // Set default log level if not already set
+  if std::env::var("RUST_LOG").is_err() {
+    std::env::set_var("RUST_LOG", "debug");
+  }
   
-  let result = tauri::Builder::default()
+  // Initialize logging through Tauri log plugin 
+  
+  tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_http::init())
@@ -13,12 +17,11 @@ fn main() {
     // .plugin(tauri_plugin_log::Builder::new().build())
     .plugin(
       tauri_plugin_log::Builder::new()
-                .targets([
-                    Target::new(TargetKind::Stdout), // Optional: also log to stdout
-                    Target::new(TargetKind::Webview), // Essential for console.log redirection
-                ])
-                .build(),
-    )
+          .targets([
+              Target::new(TargetKind::Stdout), // Optional: also log to stdout
+              Target::new(TargetKind::Webview), // Essential for console.log redirection
+          ])
+          .build(),)
     .invoke_handler(tauri::generate_handler![])
     .setup(|_app| {
       // Log startup messages after logger is initialized
@@ -30,31 +33,16 @@ fn main() {
         log::info!("RUST_LOG environment variable: {}", rust_log);
       }
       
-      // Log context information
-      log::info!("Generating Tauri context...");
-      let context = tauri::generate_context!();
-      log::info!("Context generated successfully");
-      log::info!("Package name: {}", context.package_info().name);
-      log::info!("Package version: {}", context.package_info().version);
+      log::info!("Application setup completed successfully");
       
       // Use the correct method for getting webview window in Tauri v2
       #[cfg(debug_assertions)]
       if let Some(window) = _app.get_webview_window("main") {
         window.open_devtools();
       }
-      log::info!("Application setup completed successfully");
+      
       Ok(())
     })
-    .run(tauri::generate_context!());
-    
-  match result {
-    Ok(_) => {
-      log::info!("Application exited successfully");
-    },
-    Err(e) => {
-      log::error!("Application exited with error: {}", e);
-      log::error!("Error details: {:?}", e);
-      std::process::exit(1);
-    }
-  }
+    .run(tauri::generate_context!())
+    .expect("error while running tauri application");
 }
