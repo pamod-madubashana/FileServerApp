@@ -1,16 +1,6 @@
 // API base URL - will use proxy in development
 import logger from '@/lib/logger';
 
-const getDefaultApiUrl = () => {
-  const savedUrl = localStorage.getItem("serverUrl");
-  if (savedUrl) {
-    return savedUrl;
-  }
-  return import.meta.env.VITE_API_URL || '/api';
-};
-
-const API_BASE_URL = getDefaultApiUrl();
-
 export interface ApiFile {
     id: string;
     chat_id: number;
@@ -27,6 +17,26 @@ export interface ApiFile {
 export interface FilesResponse {
     files: ApiFile[];
 }
+
+export interface UserProfile {
+  username: string;
+  email?: string;
+  telegram_user_id?: number;
+  telegram_username?: string;
+  telegram_first_name?: string;
+  telegram_last_name?: string;
+  telegram_profile_picture?: string;
+}
+
+const getDefaultApiUrl = () => {
+  const savedUrl = localStorage.getItem("serverUrl");
+  if (savedUrl) {
+    return savedUrl;
+  }
+  return import.meta.env.VITE_API_URL || '/api';
+};
+
+const API_BASE_URL = getDefaultApiUrl();
 
 const SERVER_URL_KEY = "serverUrl";
 
@@ -294,6 +304,22 @@ export const api = {
 
         if (!response.ok) {
             throw new Error(`Failed to logout: ${response.statusText}`);
+        }
+
+        return response.json();
+    },
+
+    async fetchUserProfile(): Promise<UserProfile> {
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const response = await fetchWithTimeout(`${apiUrl}/user/profile`, {
+            method: 'GET',
+            credentials: 'include',
+        }, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch user profile: ${response.statusText}`);
         }
 
         return response.json();

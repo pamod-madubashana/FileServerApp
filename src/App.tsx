@@ -8,7 +8,7 @@ import { AdaptiveRouter } from "@/lib/router-config";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
-import { resetApiBaseUrl } from "./lib/api";
+import Profile from "./pages/Profile";
 import logger from "@/lib/logger";
 
 const queryClient = new QueryClient();
@@ -27,6 +27,7 @@ const AppRoutes = () => {
       <RouteDebugger />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/" element={<Index />} />
         {/* Handle dynamic paths for file explorer */}
         <Route path="/:path/*" element={<Index />} />
