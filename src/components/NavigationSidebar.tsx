@@ -63,7 +63,10 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
 
   const handleMenuClick = (item: string, path?: string) => {
     if (item === "Profile") {
-      navigate("/profile");
+      // Instead of navigating to /profile, we'll use a custom event to signal
+      // that the profile should be shown in the file explorer area
+      const event = new CustomEvent('showProfile');
+      window.dispatchEvent(event);
     } else if (path) {
       navigate(path);
     }
@@ -177,7 +180,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
               "fixed left-0 top-0 z-50 h-full bg-sidebar shadow-lg select-none",
               isMobile 
                 ? "w-64" 
-                : "w-80"
+                : "w-64"
             )}
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}

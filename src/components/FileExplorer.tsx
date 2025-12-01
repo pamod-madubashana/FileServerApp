@@ -12,6 +12,7 @@ import { DeleteDialog } from "./DeleteDialog";
 import { NewFolderDialog } from "./NewFolderDialog";
 import { RenameInput } from "./RenameInput";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
+import { ProfileContent } from "./ProfileContent";
 import { getApiBaseUrl, resetApiBaseUrl, updateApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -49,6 +50,7 @@ export const FileExplorer = () => {
     return ["Home"];
   });
   
+  const [showProfile, setShowProfile] = useState(false); // State to track if profile should be shown
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
@@ -103,6 +105,18 @@ export const FileExplorer = () => {
   // Log when the component mounts
   useEffect(() => {
     logger.info("FileExplorer component mounted", { currentPath, location: window.location.pathname });
+  }, []);
+
+  // Listen for showProfile event
+  useEffect(() => {
+    const handleShowProfile = () => {
+      setShowProfile(true);
+    };
+
+    window.addEventListener('showProfile', handleShowProfile);
+    return () => {
+      window.removeEventListener('showProfile', handleShowProfile);
+    };
   }, []);
 
   // Define virtual folders
@@ -583,38 +597,44 @@ export const FileExplorer = () => {
         selectedFilter={selectedFilter}
       />
 
-      <div className="flex-1 flex flex-col">
-        <TopBar
-          currentPath={currentPath}
-          searchQuery={searchQuery}
-          viewMode={viewMode}
-          onSearchChange={setSearchQuery}
-          onViewModeChange={setViewMode}
-          onBack={() => window.history.back()}
-          onBreadcrumbClick={handleBreadcrumbClick}
-          onPaste={hasClipboard ? handlePaste : undefined}
-        />
+      {showProfile ? (
+        <ProfileContent onBack={() => setShowProfile(false)} />
+      ) : (
+        <>
+          <div className="flex-1 flex flex-col">
+            <TopBar
+              currentPath={currentPath}
+              searchQuery={searchQuery}
+              viewMode={viewMode}
+              onSearchChange={setSearchQuery}
+              onViewModeChange={setViewMode}
+              onBack={() => window.history.back()}
+              onBreadcrumbClick={handleBreadcrumbClick}
+              onPaste={hasClipboard ? handlePaste : undefined}
+            />
 
-        <FileGrid
-          items={filteredItems}
-          viewMode={viewMode}
-          onNavigate={handleNavigate}
-          itemCount={filteredItems.length}
-          onCopy={handleCopy}
-          onCut={handleCut}
-          onPaste={hasClipboard ? handlePaste : undefined}
-          onDelete={handleDelete}
-          onRename={handleRename}
-          onMove={handleMove}
-          onDownload={handleDownload}
-          renamingItem={renamingItem}
-          onRenameConfirm={confirmRename}
-          onRenameCancel={() => setRenamingItem(null)}
-          currentFolder={currentFolder}
-          onNewFolder={() => setNewFolderDialogOpen(true)}
-          isLoading={isLoading}
-        />
-      </div>
+            <FileGrid
+              items={filteredItems}
+              viewMode={viewMode}
+              onNavigate={handleNavigate}
+              itemCount={filteredItems.length}
+              onCopy={handleCopy}
+              onCut={handleCut}
+              onPaste={hasClipboard ? handlePaste : undefined}
+              onDelete={handleDelete}
+              onRename={handleRename}
+              onMove={handleMove}
+              onDownload={handleDownload}
+              renamingItem={renamingItem}
+              onRenameConfirm={confirmRename}
+              onRenameCancel={() => setRenamingItem(null)}
+              currentFolder={currentFolder}
+              onNewFolder={() => setNewFolderDialogOpen(true)}
+              isLoading={isLoading}
+            />
+          </div>
+        </>
+      )}
 
       <DeleteConfirmDialog
         open={!!deleteDialog}
