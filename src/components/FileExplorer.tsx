@@ -13,6 +13,7 @@ import { NewFolderDialog } from "./NewFolderDialog";
 import { RenameInput } from "./RenameInput";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { ProfileContent } from "./ProfileContent";
+import { SettingsContent } from "./SettingsContent";
 import { getApiBaseUrl, resetApiBaseUrl, updateApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -51,6 +52,7 @@ export const FileExplorer = () => {
   });
   
   const [showProfile, setShowProfile] = useState(false); // State to track if profile should be shown
+  const [showSettings, setShowSettings] = useState(false); // State to track if settings should be shown
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
@@ -119,15 +121,32 @@ export const FileExplorer = () => {
     };
   }, []);
 
+  // Listen for showSettings event
+  useEffect(() => {
+    const handleShowSettings = () => {
+      setShowSettings(true);
+    };
+
+    window.addEventListener('showSettings', handleShowSettings);
+    return () => {
+      window.removeEventListener('showSettings', handleShowSettings);
+    };
+  }, []);
+
   // Detect when we're on the /profile route
   useEffect(() => {
     if (location.pathname === '/profile') {
       setShowProfile(true);
-    } else if (showProfile) {
-      // Only hide profile if we're not manually showing it
+      setShowSettings(false);
+    } else if (location.pathname === '/settings') {
+      setShowSettings(true);
       setShowProfile(false);
+    } else if (showProfile || showSettings) {
+      // Only hide profile/settings if we're not manually showing it
+      setShowProfile(false);
+      setShowSettings(false);
     }
-  }, [location.pathname, showProfile]);
+  }, [location.pathname, showProfile, showSettings]);
 
   // Define virtual folders
   const virtualFolders: FileItem[] = [
@@ -609,6 +628,8 @@ export const FileExplorer = () => {
 
       {showProfile ? (
         <ProfileContent onBack={() => setShowProfile(false)} />
+      ) : showSettings ? (
+        <SettingsContent onBack={() => setShowSettings(false)} />
       ) : (
         <>
           <div className="flex-1 flex flex-col">

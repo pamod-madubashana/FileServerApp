@@ -1,15 +1,13 @@
-import { Toaster } from "@/components/ui/toaster";
 import { useEffect } from "react";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, useLocation } from "react-router-dom";
-import { AdaptiveRouter } from "@/lib/router-config";
-import Index from "./pages/Index";
+import { Toaster } from "@/components/ui/sonner";
 import Login from "./pages/Login";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import Profile from "./pages/Profile";
+import Index from "./pages/Index";
 import logger from "@/lib/logger";
+import { AuthWrapper } from "@/components/AuthWrapper";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +25,7 @@ const AppRoutes = () => {
       <RouteDebugger />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Index />} />
         <Route path="/" element={<Index />} />
         {/* Handle dynamic paths for file explorer */}
@@ -68,15 +67,12 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AdaptiveRouter>
-          <div className="flex flex-col min-h-screen bg-background text-foreground">
-            <AppRoutes />
-            <Toaster />
-            <Sonner />
-          </div>
-        </AdaptiveRouter>
-      </TooltipProvider>
+      <BrowserRouter>
+        <div className="flex flex-col min-h-screen bg-background text-foreground">
+          <AppRoutes />
+          <Toaster />
+        </div>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 };

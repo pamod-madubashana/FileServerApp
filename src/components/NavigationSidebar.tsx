@@ -68,6 +68,12 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       window.dispatchEvent(event);
       // Also navigate to the profile route
       navigate("/profile");
+    } else if (item === "Settings") {
+      // Dispatch event to show settings in file explorer area
+      const event = new CustomEvent('showSettings');
+      window.dispatchEvent(event);
+      // Also navigate to the settings route
+      navigate("/settings");
     } else if (path) {
       navigate(path);
     }
@@ -81,7 +87,8 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   // For mobile/desktop behavior - keep sidebar open on profile/settings pages
   useEffect(() => {
     // Automatically open sidebar when navigating to profile or settings pages
-    if ((location.pathname === '/profile' || location.pathname === '/settings') && !isOpen) {
+    // But only if it wasn't manually closed
+    if ((location.pathname === '/profile' || location.pathname === '/settings') && !isOpen && !manuallyOpenedRef.current) {
       manuallyOpenedRef.current = false; // Reset manual flag when auto-opening
       setIsOpen(true);
     }
@@ -91,7 +98,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       setIsOpen(false);
     }
     // Reset manual flag when closing sidebar automatically
-    else if (!isOpen) {
+    else if (!isOpen && location.pathname !== '/profile' && location.pathname !== '/settings') {
       manuallyOpenedRef.current = false;
     }
   }, [isMobile, location.pathname, isOpen]);
@@ -116,6 +123,8 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     if (hasBeenOpenedRef.current && !isOpen && (location.pathname === '/profile' || location.pathname === '/settings')) {
       // When sidebar closes while on profile or settings page, redirect to home
       navigate("/");
+      // Reset the manually opened flag since we're navigating away
+      manuallyOpenedRef.current = false;
     }
   }, [isOpen, location.pathname, navigate]);
 

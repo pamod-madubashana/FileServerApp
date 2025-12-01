@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +12,7 @@ interface ProfileContentProps {
 }
 
 export const ProfileContent = ({ onBack }: ProfileContentProps) => {
+  const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -139,7 +141,14 @@ export const ProfileContent = ({ onBack }: ProfileContentProps) => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">User Profile</h1>
           <button
-            onClick={onBack}
+            onClick={() => {
+              // Close the sidebar
+              const event = new CustomEvent('toggleNavigationSidebar');
+              window.dispatchEvent(event);
+              // Close the profile page and navigate to home
+              onBack();
+              navigate("/");
+            }}
             className="rounded-full p-2 hover:bg-gray-200 dark:hover:bg-gray-700"
           >
             <X className="h-5 w-5 text-gray-900 dark:text-white" />
