@@ -41,7 +41,7 @@
       "permissions": [
         {
           "identifier": "http:default",
-          "allow": [{ "url": "http://localhost:8000/*" }],
+          "allow": [{ "url": "*" }],
           "deny": []
         }
       ]
