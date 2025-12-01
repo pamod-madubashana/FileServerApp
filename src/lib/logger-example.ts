@@ -1,5 +1,6 @@
 // Example of how to use the logger module in other parts of the application
 import logger from '@/lib/logger';
+import { invoke } from '@tauri-apps/api/core';
 
 // Example usage in a service or utility function
 export class FileService {
@@ -48,6 +49,22 @@ export class FileService {
       throw error;
     }
   }
+  
+  // Test Tauri logging
+  static async testTauriLogging() {
+    logger.info('Testing Tauri logging from FileService');
+    
+    // Check if we're in Tauri environment
+    if ((window as any).__TAURI__) {
+      try {
+        logger.info('Calling Tauri test_logging command from FileService');
+        await invoke('test_logging');
+        logger.info('Tauri test_logging command completed from FileService');
+      } catch (error) {
+        logger.error('Failed to call Tauri test_logging command from FileService', error);
+      }
+    }
+  }
 }
 
 // Example usage in a hook
@@ -62,7 +79,12 @@ export const useFileOperations = () => {
     return FileService.deleteFile(fileId);
   };
   
-  return { uploadFile, deleteFile };
+  const testTauriLogging = async () => {
+    logger.info('useFileOperations: testTauriLogging called');
+    return FileService.testTauriLogging();
+  };
+  
+  return { uploadFile, deleteFile, testTauriLogging };
 };
 
 // Example of direct usage
@@ -82,5 +104,16 @@ export const exampleDirectUsage = async () => {
     logger.info('Async operation completed');
   } catch (error) {
     logger.error('Async operation failed', error);
+  }
+  
+  // Test Tauri logging
+  if ((window as any).__TAURI__) {
+    try {
+      logger.info('Calling Tauri test_logging command from exampleDirectUsage');
+      await invoke('test_logging');
+      logger.info('Tauri test_logging command completed from exampleDirectUsage');
+    } catch (error) {
+      logger.error('Failed to call Tauri test_logging command from exampleDirectUsage', error);
+    }
   }
 };
