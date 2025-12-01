@@ -119,6 +119,16 @@ export const FileExplorer = () => {
     };
   }, []);
 
+  // Detect when we're on the /profile route
+  useEffect(() => {
+    if (location.pathname === '/profile') {
+      setShowProfile(true);
+    } else if (showProfile) {
+      // Only hide profile if we're not manually showing it
+      setShowProfile(false);
+    }
+  }, [location.pathname, showProfile]);
+
   // Define virtual folders
   const virtualFolders: FileItem[] = [
     { name: "Images", type: "folder", icon: "📁", fileType: "photo" },

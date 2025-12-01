@@ -63,10 +63,11 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
 
   const handleMenuClick = (item: string, path?: string) => {
     if (item === "Profile") {
-      // Instead of navigating to /profile, we'll use a custom event to signal
-      // that the profile should be shown in the file explorer area
+      // Dispatch event to show profile in file explorer area
       const event = new CustomEvent('showProfile');
       window.dispatchEvent(event);
+      // Also navigate to the profile route
+      navigate("/profile");
     } else if (path) {
       navigate(path);
     }

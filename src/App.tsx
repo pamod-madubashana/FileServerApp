@@ -27,7 +27,7 @@ const AppRoutes = () => {
       <RouteDebugger />
       <Routes>
         <Route path="/login" element={<Login />} />
-        {/* Removed profile route - profile will be shown in file explorer area */}
+        <Route path="/profile" element={<Index />} />
         <Route path="/" element={<Index />} />
         {/* Handle dynamic paths for file explorer */}
         <Route path="/:path/*" element={<Index />} />
