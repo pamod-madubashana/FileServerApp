@@ -26,7 +26,7 @@
     ],
     "security": {
       "assetProtocol": {
-        "scope": ["http://localhost:8000/**"]    
+        "scope": ["**"]        
       }
     },
     "withGlobalTauri": true
@@ -37,6 +37,11 @@
     "icon": ["icons/icon.ico"]
   },
   "plugins": {
-   "http": null
+    "http": {
+      "scope": [
+        "http://localhost:8000/*",
+        "http://127.0.0.1:8000/*"
+      ]
+    }
   }
 }
