@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileItem } from "@/components/types";
 import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
+import logger from "@/lib/logger";
 
 // Define the request interface
 interface CopyMoveRequest {
@@ -20,21 +21,34 @@ export const useFileOperations = () => {
   const queryClient = useQueryClient();
 
   const copyItem = (item: FileItem, sourcePath: string) => {
+    logger.info("Copying item", { item, sourcePath });
     setClipboard({ item, operation: "copy", sourcePath });
   };
 
   const cutItem = (item: FileItem, sourcePath: string) => {
+    logger.info("Cutting item", { item, sourcePath });
     setClipboard({ item, operation: "cut", sourcePath });
   };
 
   const clearClipboard = () => {
+    logger.info("Clearing clipboard");
     setClipboard(null);
   };
 
   const hasClipboard = () => clipboard !== null;
 
   const pasteItem = async (targetPath: string) => {
-    if (!clipboard) return;
+    if (!clipboard) {
+      logger.warn("No item in clipboard to paste");
+      return;
+    }
+
+    logger.info("Pasting item", { 
+      operation: clipboard.operation, 
+      item: clipboard.item.name, 
+      sourcePath: clipboard.sourcePath, 
+      targetPath 
+    });
 
     try {
       const baseUrl = getApiBaseUrl();
@@ -46,6 +60,7 @@ export const useFileOperations = () => {
       };
 
       if (clipboard.operation === "copy") {
+        logger.info("Performing copy operation", { request });
         const response = await fetchWithTimeout(`${apiUrl}/files/copy`, {
           method: "POST",
           headers: {
@@ -56,13 +71,17 @@ export const useFileOperations = () => {
         }, 3000); // 3 second timeout
 
         if (!response.ok) {
-          throw new Error("Failed to copy file");
+          const errorText = await response.text();
+          logger.error("Failed to copy file", { status: response.status, error: errorText });
+          throw new Error(`Failed to copy file: ${errorText}`);
         }
         
+        logger.info("File copied successfully");
         // For copy operations, we only need to refresh the target path
         queryClient.invalidateQueries({ queryKey: ['files', targetPath] });
       } else {
         // Move operation
+        logger.info("Performing move operation", { request });
         const response = await fetchWithTimeout(`${apiUrl}/files/move`, {
           method: "POST",
           headers: {
@@ -73,9 +92,12 @@ export const useFileOperations = () => {
         }, 3000); // 3 second timeout
 
         if (!response.ok) {
-          throw new Error("Failed to move file");
+          const errorText = await response.text();
+          logger.error("Failed to move file", { status: response.status, error: errorText });
+          throw new Error(`Failed to move file: ${errorText}`);
         }
         
+        logger.info("File moved successfully");
         // For move operations, refresh both source and target paths
         queryClient.invalidateQueries({ queryKey: ['files', clipboard.sourcePath] });
         queryClient.invalidateQueries({ queryKey: ['files', targetPath] });
@@ -88,7 +110,7 @@ export const useFileOperations = () => {
       clearClipboard();
       return true;
     } catch (error) {
-      console.error("Error during paste operation:", error);
+      logger.error("Error during paste operation", error);
       throw error;
     }
   };
