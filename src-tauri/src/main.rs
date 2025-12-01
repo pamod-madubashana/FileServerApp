@@ -28,8 +28,11 @@ fn main() {
     .plugin(tauri_plugin_log::Builder::new().build())
     .invoke_handler(tauri::generate_handler![])
     .setup(|_app| {
-      let window = _app.get_window("main").unwrap();
-      window.open_devtools();
+      // Use the correct method for getting webview window in Tauri v2
+      #[cfg(debug_assertions)]
+      if let Some(window) = _app.get_webview_window("main") {
+        window.open_devtools();
+      }
       log::info!("Application setup completed successfully");
       Ok(())
     })
