@@ -1,8 +1,6 @@
 // Always show console window for debugging - removed conditional compilation
 #![windows_subsystem = "console"]
 
-use tauri::Manager;
-
 // Logging commands that can be called from the frontend
 #[tauri::command]
 fn log_debug(message: &str) {
@@ -73,7 +71,7 @@ fn main() {
       
       // Use the correct method for getting webview window in Tauri v2
       #[cfg(debug_assertions)]
-      if let Some(window) = _app.get_webview_window("main") {
+      if let Some(window) = _app.webview_window("main") {
         window.open_devtools();
       }
       
