@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import logger from "@/lib/logger";
+import { api } from "@/lib/api";
 
 interface NavigationSidebarProps {
   className?: string;
@@ -75,6 +76,9 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       window.dispatchEvent(event);
       // Also navigate to the settings route
       navigate("/settings");
+    } else if (item === "Logout") {
+      // Handle logout
+      handleLogout();
     } else if (path) {
       navigate(path);
     }
@@ -82,6 +86,17 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     // Close sidebar on mobile after navigation
     if (isMobile) {
       setIsOpen(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+      // Redirect to login page after successful logout
+      navigate("/login");
+    } catch (error) {
+      // Still redirect to login page even if logout API call fails
+      navigate("/login");
     }
   };
 
@@ -216,6 +231,16 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
                 <Info className="h-4 w-4" />
                 <span>Usage</span>
               </button>
+              {/* Logout button - positioned near the bottom but not at the very end */}
+              <div className="pt-4 mt-4 border-t border-sidebar-border">
+                <button
+                  onClick={() => handleMenuClick("Logout")}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
             </nav>
           </motion.div>
         )}
