@@ -129,11 +129,11 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
 
         // Add event listeners
         plyrInstance.current.on("ended", () => {
-          console.log("Media ended");
+          // Media ended event
         });
 
         plyrInstance.current.on("error", (error: any) => {
-          console.error("Plyr error:", error);
+          // Error occurred
         });
       }
     });

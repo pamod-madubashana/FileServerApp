@@ -112,7 +112,6 @@ export const ContextMenu = ({
         onDownload?.();
         break;
       default:
-        console.log(`${action} on ${itemName}`);
         onClose();
     }
   };

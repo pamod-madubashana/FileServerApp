@@ -66,7 +66,6 @@ export const FileGrid = ({
   const handleContextMenu = (e: React.MouseEvent, item: FileItem, index: number) => {
     e.preventDefault();
     e.stopPropagation(); // Prevent event from bubbling to parent container
-    console.log('Context menu triggered for:', item.name);
     setContextMenu({
       x: e.clientX,
       y: e.clientY,

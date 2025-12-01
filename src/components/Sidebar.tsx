@@ -36,7 +36,7 @@ export const Sidebar = ({ currentPath, onNavigate, onDrop, files, selectedFilter
         onDrop(item, folderPath);
       }
     } catch (error) {
-      console.error("Failed to parse dropped item:", error);
+      // Failed to parse dropped item
     }
 
     setDragOverFolder(null);

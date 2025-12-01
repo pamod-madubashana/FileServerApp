@@ -292,14 +292,11 @@ export const FileExplorer = () => {
         }
       }
       
-      console.log("DEBUG: Pasting to", { targetPath });
-      
       await pasteItem(targetPath);
       toast.success("Operation completed successfully");
       refetch(); // Refresh the file list
     } catch (error: any) {
       toast.error(error.message || "Failed to complete operation");
-      console.error(error);
     }
   };
 
@@ -352,8 +349,6 @@ export const FileExplorer = () => {
         targetPath = virtualFolderMap[targetFolderName] || `/${targetFolderName}`;
       }
       
-      console.log("DEBUG: Moving from", { sourcePath, targetPath });
-      
       const baseUrl = getApiBaseUrl();
       // For the default case, we need to append /api to the base URL
       const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
@@ -379,7 +374,6 @@ export const FileExplorer = () => {
       refetch(); // Refresh the file list
     } catch (error: any) {
       toast.error(error.message || "Failed to move file");
-      console.error(error);
     }
   };
 
@@ -423,7 +417,6 @@ export const FileExplorer = () => {
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Failed to create folder");
-      console.error(error);
     }
   };
 
@@ -491,7 +484,6 @@ export const FileExplorer = () => {
       document.body.removeChild(link);
     } catch (error) {
       toast.error("Failed to download file");
-      console.error(error);
     }
   };
 
@@ -539,7 +531,6 @@ export const FileExplorer = () => {
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Failed to rename file");
-      console.error(error);
     }
   };
 
@@ -586,7 +577,6 @@ export const FileExplorer = () => {
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete file");
-      console.error(error);
     }
   };
 

@@ -27,7 +27,6 @@ export const LogoutButton = () => {
       // Redirect to login page after successful logout
       navigate("/login");
     } catch (error) {
-      console.error("Logout failed:", error);
       // Still redirect to login page even if logout API call fails
       navigate("/login");
     } finally {
