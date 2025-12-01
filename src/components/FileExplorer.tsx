@@ -28,11 +28,15 @@ export const FileExplorer = () => {
   // Initialize currentPath from URL or localStorage or default to ["Home"]
   const [currentPath, setCurrentPath] = useState<string[]>(() => {
     // First check if we have a path in the URL
-    if (path) {
+    if (location.pathname && location.pathname !== "/") {
       // Split the path and filter out empty segments
-      const pathSegments = path.split('/').filter(segment => segment.length > 0);
+      const pathSegments = location.pathname.split('/').filter(segment => segment.length > 0);
       if (pathSegments.length > 0) {
-        return ["Home", ...pathSegments];
+        // If the first segment is not "Home", add it
+        if (pathSegments[0] !== "Home") {
+          return ["Home", ...pathSegments];
+        }
+        return pathSegments;
       }
     }
     
