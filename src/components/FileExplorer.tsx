@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import logger from "@/lib/logger";
 
 export const FileExplorer = () => {
   const location = useLocation();
@@ -42,7 +43,7 @@ export const FileExplorer = () => {
           return parsedPath;
         }
       } catch (e) {
-        console.error('Failed to parse saved path', e);
+        logger.error('Failed to parse saved path', e);
       }
     }
     return ["Home"];
@@ -97,6 +98,11 @@ export const FileExplorer = () => {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Log when the component mounts
+  useEffect(() => {
+    logger.info("FileExplorer component mounted", { currentPath, location: window.location.pathname });
   }, []);
 
   // Define virtual folders
