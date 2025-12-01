@@ -1,6 +1,10 @@
 // Always show console window for debugging - removed conditional compilation
 #![windows_subsystem = "console"]
 
+
+use tauri::Manager;
+use tauri_plugin_log::{LogTarget, LoggerBuilder};
+
 fn main() {
   // Set default log level if not already set
   if std::env::var("RUST_LOG").is_err() {
@@ -14,7 +18,14 @@ fn main() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_http::init())
     // Initialize Tauri log plugin with default configuration
-    .plugin(tauri_plugin_log::Builder::new().build())
+    // .plugin(tauri_plugin_log::Builder::new().build())
+    .plugin(
+          LoggerBuilder::new()
+              .level(log::LevelFilter::Debug)
+              .log_target(LogTarget::Webview)  // enables console.log()
+              .log_target(LogTarget::Stdout)
+              .build()
+      )
     .invoke_handler(tauri::generate_handler![])
     .setup(|_app| {
       // Log startup messages after logger is initialized
