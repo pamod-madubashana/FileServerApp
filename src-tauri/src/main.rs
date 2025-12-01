@@ -3,7 +3,7 @@
 
 
 use tauri::Manager;
-use tauri_plugin_log::{LogTarget, LoggerBuilder};
+use tauri_plugin_log::{Builder, Target, TargetKind};
 
 fn main() {
   // Set default log level if not already set
@@ -20,12 +20,13 @@ fn main() {
     // Initialize Tauri log plugin with default configuration
     // .plugin(tauri_plugin_log::Builder::new().build())
     .plugin(
-          LoggerBuilder::new()
-              .level(log::LevelFilter::Debug)
-              .log_target(LogTarget::Webview)  // enables console.log()
-              .log_target(LogTarget::Stdout)
-              .build()
-      )
+            Builder::new()
+                .targets([
+                    Target::new(TargetKind::Stdout),
+                    Target::new(TargetKind::Webview),
+                ])
+                .build()
+        )
     .invoke_handler(tauri::generate_handler![])
     .setup(|_app| {
       // Log startup messages after logger is initialized
