@@ -1,1 +1,5 @@
+---
+trigger: always_on
+alwaysApply: true
+---
 don't try to build react app and tauri app locally , github will do it for me
