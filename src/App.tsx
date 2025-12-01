@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import { resetApiBaseUrl } from "./lib/api";
 import logger from "@/lib/logger";
 import LoggerTest from "@/components/LoggerTest";
+import TauriLoggerTest from "@/components/TauriLoggerTest";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => {
         <AdaptiveRouter>
           <div className="flex flex-col min-h-screen bg-background text-foreground">
             <LoggerTest />
+            <TauriLoggerTest />
             <AppRoutes />
             <Toaster />
             <Sonner />
