@@ -109,7 +109,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   // Handle clicks outside the sidebar to close it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (isOpen && !isMobile) {
+      if (isOpen) {
         // Get the sidebar element
         const sidebar = document.querySelector('[data-navigation-sidebar]');
         if (sidebar && sidebar.contains(event.target as Node)) {
@@ -127,8 +127,10 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
           return;
         }
         
-        // Close sidebar when clicking outside
-        setIsOpen(false);
+        // Close sidebar when clicking outside (but not on mobile)
+        if (!isMobile) {
+          setIsOpen(false);
+        }
       }
     };
 
