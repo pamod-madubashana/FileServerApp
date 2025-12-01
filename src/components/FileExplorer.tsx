@@ -476,12 +476,12 @@ export const FileExplorer = () => {
   };
 
   // Add the missing functions
-  const handleDelete = (item: FileItem) => {
-    setDeleteDialog({ item, index: 0 }); // Index is not used in this context
+  const handleDelete = (item: FileItem, index: number) => {
+    setDeleteDialog({ item, index });
   };
 
-  const handleRename = (item: FileItem) => {
-    setRenamingItem({ item, index: 0 }); // Index is not used in this context
+  const handleRename = (item: FileItem, index: number) => {
+    setRenamingItem({ item, index });
   };
 
   const handleMove = async (item: FileItem, targetFolder: FileItem) => {
