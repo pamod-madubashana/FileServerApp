@@ -1,8 +1,6 @@
 // Always show console window for debugging - removed conditional compilation
 #![windows_subsystem = "console"]
 
-
-use tauri::Manager;
 use tauri_plugin_log::{Builder, Target, TargetKind};
 
 fn main() {
