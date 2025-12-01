@@ -11,9 +11,6 @@ logger.info('Starting Telegram File Server frontend application')
 const isTauri = !!(window as any).__TAURI__
 logger.info('Running in Tauri environment', isTauri)
 
-// Test logging
-testLogging()
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
