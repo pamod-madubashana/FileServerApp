@@ -23,11 +23,16 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     isOpenRef.current = isOpen;
   }, [isOpen]);
 
-  // Close sidebar when resizing from mobile to desktop
+  // Close sidebar when resizing from mobile to desktop, but keep it open on profile/settings pages
   useEffect(() => {
     const handleResize = () => {
-      if (!isMobile && isOpenRef.current) {
+      // Keep sidebar open on profile or settings pages, regardless of device size
+      if (!isMobile && isOpenRef.current && location.pathname !== '/profile' && location.pathname !== '/settings') {
         setIsOpen(false);
+      }
+      // Automatically open sidebar when on profile or settings pages
+      else if (location.pathname === '/profile' || location.pathname === '/settings') {
+        setIsOpen(true);
       }
     };
 
@@ -42,7 +47,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("toggleNavigationSidebar", handleToggleEvent);
     };
-  }, [isMobile]);
+  }, [isMobile, location.pathname]);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -64,17 +69,31 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       console.log(`${item} clicked`);
     }
     
+    // Close sidebar on mobile after navigation
     if (isMobile) {
       setIsOpen(false);
     }
   };
 
-  // For mobile/desktop behavior
+  // For mobile/desktop behavior - keep sidebar open on profile/settings pages
   useEffect(() => {
-    if (!isMobile) {
+    // Only close sidebar when switching to desktop if not on profile or settings pages
+    if (!isMobile && location.pathname !== '/profile' && location.pathname !== '/settings') {
       setIsOpen(false);
     }
-  }, [isMobile]);
+    // Automatically open sidebar when navigating to profile or settings pages
+    else if (location.pathname === '/profile' || location.pathname === '/settings') {
+      setIsOpen(true);
+    }
+  }, [isMobile, location.pathname]);
+
+  // Notify when sidebar closes
+  useEffect(() => {
+    if (!isOpen && (location.pathname === '/profile' || location.pathname === '/settings')) {
+      // When sidebar closes while on profile or settings page, redirect to home
+      navigate("/");
+    }
+  }, [isOpen, location.pathname, navigate]);
 
   // Handle clicks outside the sidebar to close it
   useEffect(() => {
