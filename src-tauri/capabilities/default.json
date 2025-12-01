@@ -6,9 +6,18 @@
   "permissions": [
     "core:default",
     "shell:default",
+    "http:allow-fetch",
+    "http:allow-fetch-send",
+    "http:allow-fetch-read-body",
+    "http:allow-fetch-cancel",
     {
       "identifier": "http:default",
-      "allow": ["http://*/*", "https://*/*"]
+      "allow": [
+        { "url": "http://localhost:*/*" },
+        { "url": "http://127.0.0.1:*/*" },
+        { "url": "http://*.*.*.*:*/*" },
+        { "url": "https://*/*" }
+      ]
     }
   ]
 }
