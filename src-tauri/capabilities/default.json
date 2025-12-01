@@ -5,6 +5,13 @@
   "permissions": [
     "core:default",
     "http:allow-fetch",
-    "http:default"
+    "http:default",
+    "shell:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "**" }
+      ]
+    }
   ]
 }
