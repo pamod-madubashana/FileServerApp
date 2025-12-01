@@ -28,6 +28,16 @@ export interface FilesResponse {
     files: ApiFile[];
 }
 
+export interface UserProfile {
+  username: string;
+  email?: string;
+  telegram_user_id?: number;
+  telegram_username?: string;
+  telegram_first_name?: string;
+  telegram_last_name?: string;
+  telegram_profile_picture?: string;
+}
+
 const SERVER_URL_KEY = "serverUrl";
 
 // Function to get the API base URL
@@ -298,4 +308,21 @@ export const api = {
 
         return response.json();
     },
+
+    async fetchUserProfile(): Promise<UserProfile> {
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const response = await fetchWithTimeout(`${apiUrl}/user/profile`, {
+            method: 'GET',
+            credentials: 'include',
+        }, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch user profile: ${response.statusText}`);
+        }
+
+        return response.json();
+    },
+
 };
