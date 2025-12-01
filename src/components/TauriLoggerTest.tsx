@@ -16,6 +16,9 @@ const TauriLoggerTest = () => {
       await tauriLogger.info("Component mounted successfully");
       await tauriLogger.warn("This is a warning with more details");
       await tauriLogger.error("This is an error with more details");
+      
+      // Test the built-in test function
+      await tauriLogger.test();
     };
     
     testLogging();
