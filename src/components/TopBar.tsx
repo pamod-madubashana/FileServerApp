@@ -1,8 +1,9 @@
-import { ChevronLeft, ChevronRight, ChevronDown, Search, Grid3x3, List, MoreHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Search, Grid3x3, List, MoreHorizontal, User } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { SettingsWidget } from "./SettingsWidget";
 import { LogoutButton } from "./LogoutButton";
+import { useNavigate } from "react-router-dom";
 
 interface TopBarProps {
   currentPath: string[];
@@ -25,6 +26,8 @@ export const TopBar = ({
   onBreadcrumbClick,
   onPaste,
 }: TopBarProps) => {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-background border-b border-border">
       <div className="flex items-center gap-2 px-4 py-2">
@@ -104,6 +107,14 @@ export const TopBar = ({
         </div>
 
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => navigate("/profile")}
+          >
+            <User className="h-4 w-4" />
+          </Button>
           <SettingsWidget />
           <LogoutButton />
           <Button

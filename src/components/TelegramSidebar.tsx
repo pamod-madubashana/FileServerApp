@@ -3,6 +3,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Settings, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface TelegramSidebarProps {
   className?: string;
@@ -12,6 +13,7 @@ export const TelegramSidebar = ({ className }: TelegramSidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const isOpenRef = useRef(isOpen);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   // Update ref when state changes
   useEffect(() => {
@@ -49,10 +51,13 @@ export const TelegramSidebar = ({ className }: TelegramSidebarProps) => {
     toggleSidebar();
   };
 
-  // Remove the exposed toggle function since we're using events
-
   const handleMenuClick = (item: string) => {
-    console.log(`${item} clicked`);
+    if (item === "Profile") {
+      navigate("/profile");
+    } else {
+      console.log(`${item} clicked`);
+    }
+    
     if (isMobile) {
       setIsOpen(false);
     }
