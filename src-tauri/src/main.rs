@@ -1,8 +1,7 @@
+// Always show console window for debugging - removed conditional compilation
 #![windows_subsystem = "console"]
-use tauri_plugin_http::{HttpBuilder, Permission};
 
-
-
+// Logging commands that can be called from the frontend
 #[tauri::command]
 fn log_debug(message: &str) {
     log::debug!("{}", message);
@@ -24,6 +23,7 @@ fn log_error(message: &str) {
 }
 
 fn main() {
+  // Set default log level if not already set
   if std::env::var("RUST_LOG").is_err() {
     std::env::set_var("RUST_LOG", "debug");
   }
@@ -34,16 +34,7 @@ fn main() {
   tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
-    // .plugin(tauri_plugin_http::init())
-    .plugin(
-        HttpBuilder::new()
-            .permissions(vec![
-                Permission::new("http:default")
-                    .allow(vec!["*"]) // allow all URLs, or use specific pattern
-                    .deny(vec![]),
-            ])
-            .build()
-      )
+    .plugin(tauri_plugin_http::init())
     .invoke_handler(tauri::generate_handler![
       log_debug,
       log_info,
