@@ -170,7 +170,7 @@ export const FileExplorer = () => {
     ? `/${currentPath.join('/')}`  // This will create paths like /Home/Images
     : currentPath.length === 1 && currentPath[0] === "Home"
       ? "/"
-      : `/${currentPath.slice(1).join('/')}`;
+      : `/${currentPath.join('/')}`;  // For user folders, use the full path like /Home/Images/test
 
   const { files, isLoading, isError, error, refetch } = useFiles(currentApiPath);
   const { clipboard, copyItem, cutItem, clearClipboard, hasClipboard, pasteItem, moveItem } = useFileOperations();
@@ -197,20 +197,60 @@ export const FileExplorer = () => {
 
     // Filter by folder/type
     if (currentFolder === "Images" || selectedFilter === "photo") {
-      // Show photos AND folders in the Images path
-      filteredFiles = files.filter((f) => f.fileType === "photo" || f.type === "folder");
+      // For virtual folders, show only files with the exact path
+      if (currentApiPath.startsWith("/Home/")) {
+        filteredFiles = files.filter((f) => 
+          (f.fileType === "photo" && f.file_path === currentApiPath) || 
+          (f.type === "folder" && f.file_path === currentApiPath)
+        );
+      } else {
+        // Fallback to original logic for safety
+        filteredFiles = files.filter((f) => f.fileType === "photo" || f.type === "folder");
+      }
     } else if (currentFolder === "Documents" || selectedFilter === "document") {
-      // Show documents AND folders in the Documents path
-      filteredFiles = files.filter((f) => f.fileType === "document" || f.type === "folder");
+      // For virtual folders, show only files with the exact path
+      if (currentApiPath.startsWith("/Home/")) {
+        filteredFiles = files.filter((f) => 
+          (f.fileType === "document" && f.file_path === currentApiPath) || 
+          (f.type === "folder" && f.file_path === currentApiPath)
+        );
+      } else {
+        // Fallback to original logic for safety
+        filteredFiles = files.filter((f) => f.fileType === "document" || f.type === "folder");
+      }
     } else if (currentFolder === "Videos" || selectedFilter === "video") {
-      // Show videos AND folders in the Videos path
-      filteredFiles = files.filter((f) => f.fileType === "video" || f.type === "folder");
+      // For virtual folders, show only files with the exact path
+      if (currentApiPath.startsWith("/Home/")) {
+        filteredFiles = files.filter((f) => 
+          (f.fileType === "video" && f.file_path === currentApiPath) || 
+          (f.type === "folder" && f.file_path === currentApiPath)
+        );
+      } else {
+        // Fallback to original logic for safety
+        filteredFiles = files.filter((f) => f.fileType === "video" || f.type === "folder");
+      }
     } else if (currentFolder === "Audio" || selectedFilter === "audio") {
-      // Show audio AND folders in the Audio path
-      filteredFiles = files.filter((f) => f.fileType === "audio" || f.type === "folder");
+      // For virtual folders, show only files with the exact path
+      if (currentApiPath.startsWith("/Home/")) {
+        filteredFiles = files.filter((f) => 
+          (f.fileType === "audio" && f.file_path === currentApiPath) || 
+          (f.type === "folder" && f.file_path === currentApiPath)
+        );
+      } else {
+        // Fallback to original logic for safety
+        filteredFiles = files.filter((f) => f.fileType === "audio" || f.type === "folder");
+      }
     } else if (currentFolder === "Voice Messages" || selectedFilter === "voice") {
-      // Show voice messages AND folders in the Voice Messages path
-      filteredFiles = files.filter((f) => f.fileType === "voice" || f.type === "folder");
+      // For virtual folders, show only files with the exact path
+      if (currentApiPath.startsWith("/Home/")) {
+        filteredFiles = files.filter((f) => 
+          (f.fileType === "voice" && f.file_path === currentApiPath) || 
+          (f.type === "folder" && f.file_path === currentApiPath)
+        );
+      } else {
+        // Fallback to original logic for safety
+        filteredFiles = files.filter((f) => f.fileType === "voice" || f.type === "folder");
+      }
     } else if (currentFolder !== "Home") {
       // For user-created folders, we just show the files returned by the API
       // The API already filters by path, so we don't need to filter here
@@ -637,8 +677,7 @@ export const FileExplorer = () => {
 
       toast.success(`Deleted "${item.name}"`);
       setDeleteDialog(null);
-      // Refresh the file list for current path
-      refetch();
+      // Removed refetch() call as useFileOperations hook handles query invalidation
     } catch (error: any) {
       toast.error(error.message || "Failed to delete file");
     }

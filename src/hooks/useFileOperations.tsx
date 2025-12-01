@@ -132,8 +132,13 @@ export const useFileOperations = () => {
         queryClient.invalidateQueries({ queryKey: ['files', sourcePath] });
         queryClient.invalidateQueries({ queryKey: ['files', targetPath] });
         
-        // Force a refetch of the source path data to immediately update the UI
-        queryClient.refetchQueries({ queryKey: ['files', sourcePath] });
+        // Also invalidate the root path in case we're moving to/from root
+        if (sourcePath !== "/") {
+          queryClient.invalidateQueries({ queryKey: ['files', "/"] });
+        }
+        if (targetPath !== "/") {
+          queryClient.invalidateQueries({ queryKey: ['files', "/"] });
+        }
       }
 
       // Clear clipboard after successful operation
@@ -199,8 +204,13 @@ export const useFileOperations = () => {
       queryClient.invalidateQueries({ queryKey: ['files', sourcePath] });
       queryClient.invalidateQueries({ queryKey: ['files', targetPath] });
       
-      // Force a refetch of the source path data to immediately update the UI
-      queryClient.refetchQueries({ queryKey: ['files', sourcePath] });
+      // Also invalidate the root path in case we're moving to/from root
+      if (sourcePath !== "/") {
+        queryClient.invalidateQueries({ queryKey: ['files', "/"] });
+      }
+      if (targetPath !== "/") {
+        queryClient.invalidateQueries({ queryKey: ['files', "/"] });
+      }
       
       return true;
     } catch (error) {
