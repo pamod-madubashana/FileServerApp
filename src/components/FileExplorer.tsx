@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ProfileOverlay } from "./ProfileOverlay"; // Import ProfileOverlay
 import logger from "@/lib/logger";
 import { TelegramSidebar } from "./TelegramSidebar";
 
@@ -59,6 +60,7 @@ export const FileExplorer = () => {
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [newBackendUrl, setNewBackendUrl] = useState("");
+  const [isProfileOpen, setIsProfileOpen] = useState(false); // State for profile overlay
   const queryClient = useQueryClient();
 
   // Save currentPath to localStorage whenever it changes
@@ -198,441 +200,221 @@ export const FileExplorer = () => {
     }
   };
 
+  const handleBack = () => {
+    if (currentPath.length > 1) {
+      const newPath = [...currentPath];
+      newPath.pop();
+      setCurrentPath(newPath);
+    }
+  };
+
   const handleBreadcrumbClick = (index: number) => {
-    if (index === 0) {
-      // If clicking on Home, explicitly set to Home
-      setCurrentPath(["Home"]);
-    } else {
-      setCurrentPath(currentPath.slice(0, index + 1));
-    }
+    setCurrentPath(currentPath.slice(0, index + 1));
   };
 
-  const handleCopy = (item: FileItem) => {
-    // Construct the source path correctly
-    let sourcePath = "/";
-    if (currentPath.length > 1) {
-      // For virtual folders, we need to construct the path differently
-      if (isVirtualFolder) {
-        sourcePath = `/${currentPath.join('/')}`;
-      } else {
-        sourcePath = `/${currentPath.slice(1).join('/')}`;
-      }
-    }
-    copyItem(item, sourcePath);
-    toast.success(`Copied "${item.name}"`);
-  };
+  const handlePaste = useCallback(async () => {
+    if (!hasClipboard) return;
 
-  const handleCut = (item: FileItem) => {
-    // Construct the source path correctly
-    let sourcePath = "/";
-    if (currentPath.length > 1) {
-      // For virtual folders, we need to construct the path differently
-      if (isVirtualFolder) {
-        sourcePath = `/${currentPath.join('/')}`;
-      } else {
-        sourcePath = `/${currentPath.slice(1).join('/')}`;
-      }
-    }
-    cutItem(item, sourcePath);
-    toast.success(`Cut "${item.name}"`);
-  };
-
-  const handlePaste = async () => {
     try {
-      // Construct the target path
-      let targetPath = "/";
-      if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          targetPath = `/${currentPath.join('/')}`;
-        } else {
-          targetPath = `/${currentPath.slice(1).join('/')}`;
-        }
-      }
-      
-      console.log("DEBUG: Pasting to", { targetPath });
-      
-      await pasteItem(targetPath);
-      toast.success("Operation completed successfully");
-      refetch(); // Refresh the file list
-    } catch (error: any) {
-      toast.error(error.message || "Failed to complete operation");
-      console.error(error);
+      await pasteItem(currentApiPath);
+      toast.success("Pasted successfully");
+      clearClipboard();
+      refetch();
+    } catch (error) {
+      logger.error("Failed to paste item", error);
+      toast.error("Failed to paste item");
     }
+  }, [hasClipboard, pasteItem, currentApiPath, clearClipboard, refetch]);
+
+  const handleDrop = (item: any, targetFolder: string) => {
+    // Handle file drop logic here
+    logger.info("File dropped", { item, targetFolder });
   };
 
-  const handleFilterChange = (filter: string) => {
-    // Map filter to folder name
-    const folderMap: Record<string, string> = {
-      all: "Home",
-      photo: "Images",
-      document: "Documents",
-      video: "Videos",
-      audio: "Audio",
-      voice: "Voice Messages"
-    };
-    
-    const folderName = folderMap[filter] || "Home";
-    // For virtual folders, we need to include the full path
-    if (folderName !== "Home") {
-      setCurrentPath(["Home", folderName]);
-    } else {
-      setCurrentPath([folderName]);
-    }
-    setSelectedFilter(filter);
-  };
-
-  const handleSidebarDrop = async (item: FileItem, targetFolderName: string) => {
+  const handleUrlChange = async () => {
     try {
-      // Construct the source path correctly
-      let sourcePath = "/";
-      if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          sourcePath = `/${currentPath.join('/')}`;
-        } else {
-          sourcePath = `/${currentPath.slice(1).join('/')}`;
-        }
-      }
-      
-      // Construct the target path
-      let targetPath = "/";
-      if (targetFolderName !== "Home") {
-        // Map virtual folder names to their API paths
-        const virtualFolderMap: Record<string, string> = {
-          "Images": "/Home/Images",
-          "Documents": "/Home/Documents",
-          "Videos": "/Home/Videos",
-          "Audio": "/Home/Audio",
-          "Voice Messages": "/Home/Voice Messages"
-        };
-        
-        targetPath = virtualFolderMap[targetFolderName] || `/${targetFolderName}`;
-      }
-      
-      console.log("DEBUG: Moving from", { sourcePath, targetPath });
-      
-      const baseUrl = getApiBaseUrl();
-      // For the default case, we need to append /api to the base URL
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
-      
-      const response = await fetchWithTimeout(`${apiUrl}/files/move`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Add this to include cookies for authentication
-        body: JSON.stringify({
-          file_id: item.id,  // Use file_id instead of file_path
-          target_path: targetPath,
-        }),
-      }, 3000); // 3 second timeout
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to move file");
-      }
-
-      toast.success(`Moved "${item.name}" to ${targetFolderName}`);
-      refetch(); // Refresh the file list
-    } catch (error: any) {
-      toast.error(error.message || "Failed to move file");
-      console.error(error);
+      await updateApiBaseUrl(newBackendUrl);
+      setErrorDialogOpen(false);
+      setErrorMessage("");
+      setNewBackendUrl("");
+      // Refresh the file list with the new URL
+      refetch();
+    } catch (error) {
+      logger.error("Failed to update backend URL", error);
+      setErrorMessage("Failed to update backend URL. Please check the URL and try again.");
     }
   };
 
   const handleNewFolder = async (folderName: string) => {
     try {
-      // Construct the correct path for the backend
-      let backendPath = "/";
-      if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          backendPath = `/${currentPath.join('/')}`;
-        } else {
-          backendPath = `/${currentPath.slice(1).join('/')}`;
-        }
-      }
-      
       const baseUrl = getApiBaseUrl();
-      // For the default case, we need to append /api to the base URL
       const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
       
-      const response = await fetchWithTimeout(`${apiUrl}/folders/create`, {
-        method: "POST",
+      const response = await fetchWithTimeout(`${apiUrl}/files/create-folder`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        credentials: "include", // Add this to include cookies for authentication
+        credentials: 'include',
         body: JSON.stringify({
-          folderName,
-          currentPath: backendPath,
+          folderName: folderName,
+          currentPath: currentApiPath
         }),
-      }, 3000); // 3 second timeout
+      }, 5000);
 
-      if (!response.ok) {
+      if (response.ok) {
+        toast.success("Folder created successfully");
+        refetch();
+        setNewFolderDialogOpen(false);
+      } else {
         const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to create folder");
+        toast.error(errorData.detail || "Failed to create folder");
       }
-
-      toast.success(`Folder "${folderName}" created successfully`);
-      setNewFolderDialogOpen(false);
-      // Refresh the file list for current path
-      refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create folder");
-      console.error(error);
-    }
-  };
-
-  // Show error state with recovery options
-  useEffect(() => {
-    if (isError) {
-      const currentUrl = getApiBaseUrl();
-      setErrorMessage(`Failed to connect to backend server at ${currentUrl}. Please check the URL and try again.`);
-      setNewBackendUrl(currentUrl); // Pre-fill with current URL
-      setErrorDialogOpen(true);
-    }
-  }, [isError]);
-
-  const handleUrlChange = () => {
-    // Validate and update the backend URL
-    try {
-      // Allow "/" as a special case for same-origin requests
-      if (newBackendUrl === "/") {
-        updateApiBaseUrl("/");
-        window.location.reload();
-        return;
-      }
-      
-      // For full URLs, validate the format
-      new URL(newBackendUrl);
-      updateApiBaseUrl(newBackendUrl);
-      window.location.reload();
-    } catch {
-      toast.error("Please enter a valid URL (e.g., http://localhost:8000)");
-    }
-  };
-
-  // Add the missing functions
-  const handleDelete = (item: FileItem) => {
-    setDeleteDialog({ item, index: 0 }); // Index is not used in this context
-  };
-
-  const handleRename = (item: FileItem) => {
-    setRenamingItem({ item, index: 0 }); // Index is not used in this context
-  };
-
-  const handleMove = (item: FileItem) => {
-    // This would typically open a move dialog, but for now we'll just show a toast
-    toast.info(`Move functionality for "${item.name}" would be implemented here`);
-  };
-
-  const handleDownload = (item: FileItem) => {
-    try {
-      const baseUrl = getApiBaseUrl();
-      // Construct the download URL - for the new path structure, we just need the file name
-      // The backend will handle extracting the file name from paths like /Home/Images/filename.jpg
-      const fileName = item.name;
-      const downloadUrl = baseUrl 
-        ? `${baseUrl}/dl/${fileName}` 
-        : `/dl/${fileName}`;
-      
-      // Create a temporary link and trigger download
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = item.name;
-      // Add credentials for download requests
-      link.setAttribute('crossorigin', 'use-credentials');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
     } catch (error) {
-      toast.error("Failed to download file");
-      console.error(error);
+      logger.error("Failed to create folder", error);
+      toast.error("Failed to create folder");
     }
   };
-
-  const confirmRename = async (newName: string) => {
-    if (!renamingItem) return;
-
-    try {
-      const item = renamingItem.item;
-      
-      // Construct the correct path for the backend
-      let backendPath = "/";
-      if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          backendPath = `/${currentPath.join('/')}`;
-        } else {
-          backendPath = `/${currentPath.slice(1).join('/')}`;
-        }
-      }
-      
-      const baseUrl = getApiBaseUrl();
-      // For the default case, we need to append /api to the base URL
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
-      
-      const response = await fetchWithTimeout(`${apiUrl}/files/rename`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Add this to include cookies for authentication
-        body: JSON.stringify({
-          file_id: item.id,  // Use file_id instead of file_path
-          new_name: newName,
-        }),
-      }, 3000); // 3 second timeout
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to rename file");
-      }
-
-      toast.success(`Renamed "${item.name}" to "${newName}"`);
-      setRenamingItem(null);
-      // Refresh the file list for current path
-      refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to rename file");
-      console.error(error);
-    }
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteDialog) return;
-
-    try {
-      const item = deleteDialog.item;
-      
-      // Construct the correct path for the backend
-      let backendPath = "/";
-      if (currentPath.length > 1) {
-        // For virtual folders, we need to construct the path differently
-        if (isVirtualFolder) {
-          backendPath = `/${currentPath.join('/')}`;
-        } else {
-          backendPath = `/${currentPath.slice(1).join('/')}`;
-        }
-      }
-      
-      const baseUrl = getApiBaseUrl();
-      // For the default case, we need to append /api to the base URL
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
-      
-      const response = await fetchWithTimeout(`${apiUrl}/files/delete`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Add this to include cookies for authentication
-        body: JSON.stringify({
-          file_id: item.id,  // Use file_id instead of file_path
-        }),
-      }, 3000); // 3 second timeout
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to delete file");
-      }
-
-      toast.success(`Deleted "${item.name}"`);
-      setDeleteDialog(null);
-      // Refresh the file list for current path
-      refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete file");
-      console.error(error);
-    }
-  };
-
-  const cancelDelete = () => {
-    setDeleteDialog(null);
-  };
-
-  // Determine the selected filter based on the current path
-  useEffect(() => {
-    // Map folder name to filter
-    const folderMap: Record<string, string> = {
-      "Home": "all",
-      "Images": "photo",
-      "Documents": "document",
-      "Videos": "video",
-      "Audio": "audio",
-      "Voice Messages": "voice"
-    };
-    
-    // If we're in a virtual folder, select the corresponding filter
-    const currentFolderName = currentPath[currentPath.length - 1];
-    const filter = folderMap[currentFolderName] || "all";
-    
-    // Only update if it's different to prevent infinite loops
-    if (selectedFilter !== filter) {
-      setSelectedFilter(filter);
-    }
-  }, [currentPath, selectedFilter]);
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      <TelegramSidebar />
-      <Sidebar
-        currentPath={currentPath}
-        onNavigate={handleFilterChange}
-        onDrop={handleSidebarDrop}
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <Sidebar 
+        currentPath={currentPath} 
+        onNavigate={handleNavigate}
+        onDrop={handleDrop}
         files={files}
         selectedFilter={selectedFilter}
       />
-
-      <div className="flex-1 flex flex-col">
-        <TopBar
+      
+      {/* Main Content */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Top Bar */}
+        <TopBar 
           currentPath={currentPath}
           searchQuery={searchQuery}
           viewMode={viewMode}
           onSearchChange={setSearchQuery}
           onViewModeChange={setViewMode}
-          onBack={() => window.history.back()}
+          onBack={handleBack}
           onBreadcrumbClick={handleBreadcrumbClick}
           onPaste={hasClipboard ? handlePaste : undefined}
         />
-
-        <FileGrid
-          items={filteredItems}
-          viewMode={viewMode}
-          onNavigate={handleNavigate}
-          itemCount={filteredItems.length}
-          onCopy={handleCopy}
-          onCut={handleCut}
-          onPaste={hasClipboard ? handlePaste : undefined}
-          onDelete={handleDelete}
-          onRename={handleRename}
-          onMove={handleMove}
-          onDownload={handleDownload}
-          renamingItem={renamingItem}
-          onRenameConfirm={confirmRename}
-          onRenameCancel={() => setRenamingItem(null)}
-          currentFolder={currentFolder}
-          onNewFolder={() => setNewFolderDialogOpen(true)}
-          isLoading={isLoading}
-        />
+        
+        {/* File Grid */}
+        <div className="flex-1 overflow-auto">
+          <FileGrid 
+            items={filteredItems}
+            isLoading={isLoading}
+            isError={isError}
+            error={error}
+            viewMode={viewMode}
+            onNavigate={handleNavigate}
+            onItemSelect={(item, index) => {
+              if (item.type === "folder") {
+                handleNavigate(item.name);
+              }
+            }}
+            onItemDelete={(item, index) => setDeleteDialog({ item, index })}
+            onItemRename={(item, index) => setRenamingItem({ item, index })}
+            onRefresh={refetch}
+          />
+        </div>
       </div>
-
-      <DeleteConfirmDialog
-        open={!!deleteDialog}
-        itemName={deleteDialog?.item.name || ""}
-        itemType={deleteDialog?.item.type || "file"}
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
+      
+      {/* Telegram Sidebar */}
+      <TelegramSidebar onProfileClick={() => setIsProfileOpen(true)} />
+      
+      {/* Profile Overlay */}
+      <ProfileOverlay 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
       />
 
-      <NewFolderDialog
+      {/* Dialogs */}
+      <DeleteDialog 
+        open={!!deleteDialog}
+        onOpenChange={(open) => !open && setDeleteDialog(null)}
+        item={deleteDialog?.item}
+        onDelete={async () => {
+          if (!deleteDialog) return;
+          
+          try {
+            const baseUrl = getApiBaseUrl();
+            const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+            
+            const response = await fetchWithTimeout(`${apiUrl}/files/delete`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                file_id: deleteDialog.item.id
+              }),
+            }, 5000);
+
+            if (response.ok) {
+              toast.success("Deleted successfully");
+              refetch();
+            } else {
+              const errorData = await response.json();
+              toast.error(errorData.detail || "Failed to delete item");
+            }
+          } catch (error) {
+            logger.error("Failed to delete item", error);
+            toast.error("Failed to delete item");
+          } finally {
+            setDeleteDialog(null);
+          }
+        }}
+      />
+      
+      <NewFolderDialog 
         open={newFolderDialogOpen}
-        currentPath={currentApiPath}  // Pass the full path, not just the folder name
-        onClose={() => setNewFolderDialogOpen(false)}
+        onOpenChange={setNewFolderDialogOpen}
         onConfirm={handleNewFolder}
       />
+      
+      <RenameInput 
+        item={renamingItem?.item}
+        open={!!renamingItem}
+        onOpenChange={(open) => !open && setRenamingItem(null)}
+        onRename={async (newName) => {
+          if (!renamingItem) return;
+          
+          try {
+            const baseUrl = getApiBaseUrl();
+            const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+            
+            const response = await fetchWithTimeout(`${apiUrl}/files/rename`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                file_id: renamingItem.item.id,
+                new_name: newName
+              }),
+            }, 5000);
 
+            if (response.ok) {
+              toast.success("Renamed successfully");
+              refetch();
+            } else {
+              const errorData = await response.json();
+              toast.error(errorData.detail || "Failed to rename item");
+            }
+          } catch (error) {
+            logger.error("Failed to rename item", error);
+            toast.error("Failed to rename item");
+          } finally {
+            setRenamingItem(null);
+          }
+        }}
+      />
+      
       {/* Custom Error Dialog with URL change option */}
       <Dialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
         <DialogContent className="sm:max-w-md">
