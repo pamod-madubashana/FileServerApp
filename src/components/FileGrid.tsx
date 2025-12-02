@@ -27,6 +27,7 @@ interface FileGridProps {
   currentFolder: string;
   onNewFolder?: () => void;
   isLoading?: boolean;
+  cutItem?: FileItem | null; // Add prop to track cut item
 }
 
 interface ContextMenuState {
@@ -56,6 +57,7 @@ export const FileGrid = ({
   currentFolder,
   onNewFolder,
   isLoading,
+  cutItem, // Destructure the new prop
 }: FileGridProps) => {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [draggedItem, setDraggedItem] = useState<FileItem | null>(null);
@@ -252,6 +254,7 @@ export const FileGrid = ({
             {items.map((item, index) => {
               const isRenaming = renamingItem?.index === index;
               const isDragging = draggedItem?.name === item.name;
+              const isCut = cutItem?.name === item.name && cutItem?.id === item.id; // Check if this item is cut
 
               return (
                 <div
@@ -262,8 +265,9 @@ export const FileGrid = ({
                   onDragOver={item.type === "folder" ? handleDragOver : undefined}
                   onDrop={item.type === "folder" ? (e) => handleDrop(e, item) : undefined}
                   onContextMenu={(e) => !isRenaming && handleContextMenu(e, item, index)}
-                  className={`flex flex-col items-center p-3 rounded-lg transition-all ${isDragging ? "opacity-50 scale-95" : ""
-                    } ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
+                  className={`flex flex-col items-center p-3 rounded-lg transition-all ${isDragging ? "opacity-50 scale-95" : ""}
+                    ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
+                    ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
                       ? "ring-2 ring-primary ring-offset-2"
                       : ""
                     }`}
@@ -294,6 +298,7 @@ export const FileGrid = ({
             {items.map((item, index) => {
               const isRenaming = renamingItem?.index === index;
               const isDragging = draggedItem?.name === item.name;
+              const isCut = cutItem?.name === item.name && cutItem?.id === item.id; // Check if this item is cut
 
               return (
                 <div
@@ -304,7 +309,9 @@ export const FileGrid = ({
                   onDragOver={item.type === "folder" ? handleDragOver : undefined}
                   onDrop={item.type === "folder" ? (e) => handleDrop(e, item) : undefined}
                   onContextMenu={(e) => !isRenaming && handleContextMenu(e, item, index)}
-                  className={`transition-all ${isDragging ? "opacity-50" : ""} ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
+                  className={`transition-all ${isDragging ? "opacity-50" : ""} 
+                    ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
+                    ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
                     ? "ring-2 ring-primary"
                     : ""
                     }`}

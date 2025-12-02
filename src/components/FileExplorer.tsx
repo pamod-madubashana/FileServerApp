@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useParams } from "react-router-dom";
 import { FileItem } from "@/components/types";
+import { ContextMenu } from "./ContextMenu";
 import { useFiles } from "@/hooks/useFiles";
 import { useFileOperations } from "@/hooks/useFileOperations";
 import { toast } from "sonner";
@@ -20,7 +21,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import logger from "@/lib/logger";
-
 export const FileExplorer = () => {
   const location = useLocation();
   const { path } = useParams();
@@ -66,7 +66,7 @@ export const FileExplorer = () => {
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [newBackendUrl, setNewBackendUrl] = useState("");
-  const queryClient = useQueryClient();
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; itemType: "file" | "folder" | "empty"; itemName: string; item?: FileItem; index?: number } | null>(null);  const queryClient = useQueryClient();
 
   // Save currentPath to localStorage whenever it changes
   useEffect(() => {
@@ -177,7 +177,7 @@ export const FileExplorer = () => {
       : `/${currentPath.join('/')}`;  // For user folders, use the full path like /Home/Images/test
 
   const { files, isLoading, isError, error, refetch } = useFiles(currentApiPath);
-  const { clipboard, copyItem, cutItem, clearClipboard, hasClipboard, pasteItem, moveItem } = useFileOperations();
+  const { clipboard, copyItem, cutItem, clearClipboard, hasClipboard, isClipboardPasted, pasteItem, moveItem } = useFileOperations();
 
   // Filter files based on current path and search query
   const getFilteredItems = (): FileItem[] => {
@@ -752,7 +752,7 @@ export const FileExplorer = () => {
               onBack={() => window.history.back()}
               onRefresh={refetch}
               onBreadcrumbClick={handleBreadcrumbClick}
-              onPaste={hasClipboard ? handlePaste : undefined}
+              onPaste={hasClipboard && !isClipboardPasted() ? handlePaste : undefined}
             />
 
             <FileGrid
@@ -762,7 +762,7 @@ export const FileExplorer = () => {
               itemCount={filteredItems.length}
               onCopy={handleCopy}
               onCut={handleCut}
-              onPaste={hasClipboard ? handlePaste : undefined}
+              onPaste={hasClipboard && !isClipboardPasted() ? handlePaste : undefined}
               onDelete={handleDelete}
               onRename={handleRename}
               onMove={handleMove}
@@ -773,6 +773,7 @@ export const FileExplorer = () => {
               currentFolder={currentFolder}
               onNewFolder={() => setNewFolderDialogOpen(true)}
               isLoading={isLoading}
+              cutItem={clipboard?.operation === "cut" && !isClipboardPasted() ? clipboard.item : null} // Pass cut item to FileGrid only if not pasted
             />
           </div>
         </>
@@ -846,6 +847,23 @@ export const FileExplorer = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          itemType={contextMenu.itemType}
+          itemName={contextMenu.itemName}
+          onCopy={() => contextMenu.item && handleCopy(contextMenu.item)}
+          onCut={() => contextMenu.item && handleCut(contextMenu.item)}
+          onPaste={hasClipboard && !isClipboardPasted() ? handlePaste : undefined}
+          onDelete={() => contextMenu.item && handleDelete(contextMenu.item, contextMenu.index || 0)}
+          onRename={() => contextMenu.item && handleRename(contextMenu.item, contextMenu.index || 0)}
+          onNewFolder={handleNewFolder ? () => handleNewFolder("New Folder") : undefined}
+          onClose={() => setContextMenu(null)}
+          isClipboardPasted={isClipboardPasted()} // Pass the clipboard pasted status
+        />
+      )}
     </div>
   );
 };

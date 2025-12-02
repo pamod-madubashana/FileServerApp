@@ -29,6 +29,7 @@ interface ContextMenuProps {
   onRename: () => void;
   onNewFolder?: () => void;
   onDownload?: () => void | Promise<void>;
+  isClipboardPasted?: boolean; // Add prop to track if clipboard item has been pasted
 }
 
 interface MenuItem {
@@ -54,6 +55,7 @@ export const ContextMenu = ({
   onRename,
   onNewFolder,
   onDownload,
+  isClipboardPasted, // Destructure the new prop
 }: ContextMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -139,6 +141,7 @@ export const ContextMenu = ({
             label: "Paste",
             action: "paste",
             shortcut: "Ctrl+V",
+            disabled: isClipboardPasted, // Disable if clipboard item has been pasted
           } as MenuItem,
         ]
         : []),
@@ -191,6 +194,7 @@ export const ContextMenu = ({
             label: "Paste",
             action: "paste",
             shortcut: "Ctrl+V",
+            disabled: isClipboardPasted, // Disable if clipboard item has been pasted
           } as MenuItem,
         ]
         : []),

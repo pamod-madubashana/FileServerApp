@@ -19,6 +19,7 @@ interface ClipboardItem {
   item: FileItem;
   operation: "copy" | "cut";
   sourcePath: string;
+  pasted?: boolean; // Track if the item has been pasted
 }
 
 export const useFileOperations = () => {
@@ -27,12 +28,12 @@ export const useFileOperations = () => {
 
   const copyItem = (item: FileItem, sourcePath: string) => {
     logger.info("Copying item", { item, sourcePath });
-    setClipboard({ item, operation: "copy", sourcePath });
+    setClipboard({ item, operation: "copy", sourcePath, pasted: false });
   };
 
   const cutItem = (item: FileItem, sourcePath: string) => {
     logger.info("Cutting item", { item, sourcePath });
-    setClipboard({ item, operation: "cut", sourcePath });
+    setClipboard({ item, operation: "cut", sourcePath, pasted: false });
   };
 
   const clearClipboard = () => {
@@ -40,7 +41,15 @@ export const useFileOperations = () => {
     setClipboard(null);
   };
 
+  const markAsPasted = () => {
+    if (clipboard) {
+      setClipboard({ ...clipboard, pasted: true });
+    }
+  };
+
   const hasClipboard = () => clipboard !== null;
+  
+  const isClipboardPasted = () => clipboard?.pasted === true;
 
   const pasteItem = async (targetPath: string) => {
     if (!clipboard) {
@@ -141,8 +150,8 @@ export const useFileOperations = () => {
         }
       }
 
-      // Clear clipboard after successful operation
-      clearClipboard();
+      // Mark as pasted after successful operation
+      markAsPasted();
       return true;
     } catch (error) {
       logger.error("Error during paste operation", error);
@@ -225,6 +234,7 @@ export const useFileOperations = () => {
     cutItem,
     clearClipboard,
     hasClipboard,
+    isClipboardPasted, // Export the new function
     pasteItem,
     moveItem,
   };
