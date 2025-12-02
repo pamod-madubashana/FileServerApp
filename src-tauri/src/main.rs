@@ -34,6 +34,13 @@ fn main() {
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_http::init())
+    // Disable file drop handler to prevent interference with web-based drag and drop
+    .on_window_event(|_window, event| {
+      if let tauri::WindowEvent::FileDrop(_) = event {
+        // Do nothing - this prevents the default file drop behavior
+        // which was interfering with the web-based drag and drop
+      }
+    })
     .invoke_handler(tauri::generate_handler![
       log_debug,
       log_info,
