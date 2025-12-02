@@ -57,8 +57,20 @@ export const Sidebar = ({ currentPath, onNavigate, onDrop, files, selectedFilter
   }
 
   return (
-    <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col relative select-none">
-      <div className="py-4 px-4 border-b border-sidebar-border flex items-center">
+    <div 
+      className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col relative select-none"
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
+      <div 
+        className="py-4 px-4 border-b border-sidebar-border flex items-center"
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
         <div 
           className="rounded-full bg-primary p-1.5 cursor-pointer" 
           onClick={() => {
@@ -67,6 +79,10 @@ export const Sidebar = ({ currentPath, onNavigate, onDrop, files, selectedFilter
             window.dispatchEvent(event);
           }}
           data-sidebar-trigger="true"
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-primary-foreground">
             <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
@@ -81,10 +97,16 @@ export const Sidebar = ({ currentPath, onNavigate, onDrop, files, selectedFilter
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-2">
+      <nav 
+        className="flex-1 overflow-y-auto py-2"
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
         {filters.map((filter) => {
           const Icon = filter.icon;
-          const isActive = selectedFilter === filter.filter;
+          const isSelected = selectedFilter === filter.filter;
           const isDragOver = dragOverFolder === filter.filter;
 
           return (
@@ -94,10 +116,15 @@ export const Sidebar = ({ currentPath, onNavigate, onDrop, files, selectedFilter
               onDragOver={(e) => handleDragOver(e, filter.filter)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, filter.filter)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all ${isActive
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                } ${isDragOver ? "ring-2 ring-primary ring-inset" : ""}`}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all ${
+                isSelected
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+              } ${isDragOver ? "ring-2 ring-primary ring-inset" : ""}`}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
             >
               <Icon className="w-4 h-4" />
               <span>{filter.name}</span>

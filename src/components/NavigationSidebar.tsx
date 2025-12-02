@@ -174,6 +174,10 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
                 }
                 setIsOpen(false);
               }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
             />
           )}
         </AnimatePresence>
@@ -194,9 +198,19 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             data-navigation-sidebar="true"
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-sidebar-border py-3 px-4">
+            <div 
+              className="flex items-center justify-between border-b border-sidebar-border py-3 px-4"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
               <div className="flex items-center gap-3">
                 <div className="rounded-full bg-primary p-1.5">
                   <User className="h-5 w-5 text-primary-foreground" />
@@ -209,10 +223,20 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
             </div>
 
             {/* Menu Items */}
-            <nav className="py-2">
+            <nav 
+              className="py-2"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
               <button
                 onClick={() => handleMenuClick("Profile", "/profile")}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               >
                 <User className="h-4 w-4" />
                 <span>Profile</span>
@@ -220,6 +244,10 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
               <button
                 onClick={() => handleMenuClick("Settings", "/settings")}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               >
                 <Settings className="h-4 w-4" />
                 <span>Settings</span>
@@ -227,6 +255,10 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
               <button
                 onClick={() => handleMenuClick("Usage")}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               >
                 <Info className="h-4 w-4" />
                 <span>Usage</span>
@@ -236,6 +268,10 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
                 <button
                   onClick={() => handleMenuClick("Logout")}
                   className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>

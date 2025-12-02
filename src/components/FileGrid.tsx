@@ -142,6 +142,8 @@ export const FileGrid = ({
   const handleContextMenu = (e: React.MouseEvent, item: FileItem, index: number) => {
     e.preventDefault();
     e.stopPropagation(); // Prevent event from bubbling to parent container
+    // Additional prevention of default context menu
+    e.nativeEvent.preventDefault();
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
@@ -238,6 +240,9 @@ export const FileGrid = ({
         className="flex-1 overflow-y-auto p-4"
         onContextMenu={(e) => {
           e.preventDefault();
+          e.stopPropagation();
+          // Additional prevention of default context menu
+          e.nativeEvent.preventDefault();
           // Show context menu for empty area
           setContextMenu({
             x: e.clientX,
@@ -264,7 +269,13 @@ export const FileGrid = ({
                   onDragEnd={handleDragEnd}
                   onDragOver={item.type === "folder" ? handleDragOver : undefined}
                   onDrop={item.type === "folder" ? (e) => handleDrop(e, item) : undefined}
-                  onContextMenu={(e) => !isRenaming && handleContextMenu(e, item, index)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Additional prevention of default context menu
+                    e.nativeEvent.preventDefault();
+                    !isRenaming && handleContextMenu(e, item, index);
+                  }}
                   className={`flex flex-col items-center p-3 rounded-lg transition-all ${isDragging ? "opacity-50 scale-95" : ""}
                     ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
                     ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
