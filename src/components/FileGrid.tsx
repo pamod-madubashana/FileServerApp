@@ -6,6 +6,7 @@ import { RenameInput } from "./RenameInput";
 import { ImageViewer } from "./ImageViewer";
 import { MediaPlayer } from "./MediaPlayer";
 import { Thumbnail } from "./Thumbnail";
+import { getApiBaseUrl } from "@/lib/api";
 
 interface FileGridProps {
   items: FileItem[];
@@ -81,11 +82,17 @@ export const FileGrid = ({
       onNavigate(item.name);
     } else if (item.fileType === "photo" && item.file_unique_id) {
       // Open image in viewer with file name instead of unique ID
-      const imageUrl = `/dl/${encodeURIComponent(item.name)}`;
+      const baseUrl = getApiBaseUrl();
+      const imageUrl = baseUrl 
+        ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
+        : `/dl/${encodeURIComponent(item.name)}`;
       setImageViewer({ url: imageUrl, fileName: item.name });
     } else if ((item.fileType === "video" || item.fileType === "audio" || item.fileType === "voice") && item.file_unique_id) {
       // Open media in player
-      const mediaUrl = `/dl/${encodeURIComponent(item.name)}`;
+      const baseUrl = getApiBaseUrl();
+      const mediaUrl = baseUrl 
+        ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
+        : `/dl/${encodeURIComponent(item.name)}`;
       setMediaPlayer({ 
         url: mediaUrl, 
         fileName: item.name, 

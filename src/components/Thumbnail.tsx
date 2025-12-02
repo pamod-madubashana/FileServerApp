@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FileItem } from "./types";
 import { FileText, Image as ImageIcon, FileVideo, FileAudio, FileArchive } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/api";
 
 interface ThumbnailProps {
   item: FileItem;
@@ -38,6 +39,12 @@ export const Thumbnail = ({ item }: ThumbnailProps) => {
     );
   }
 
+  // Construct the full thumbnail URL using the API base URL
+  const baseUrl = getApiBaseUrl();
+  const thumbnailUrl = baseUrl 
+    ? `${baseUrl}/api/file/${item.thumbnail}/thumbnail` 
+    : `/api/file/${item.thumbnail}/thumbnail`;
+
   return (
     <div className="relative w-20 h-20 flex items-center justify-center">
       {thumbnailLoading && (
@@ -46,7 +53,7 @@ export const Thumbnail = ({ item }: ThumbnailProps) => {
         </div>
       )}
       <img
-        src={`/api/file/${item.thumbnail}/thumbnail`}
+        src={thumbnailUrl}
         alt={item.name}
         className={`max-w-full max-h-full object-contain rounded ${thumbnailLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
         onLoad={() => {
