@@ -28,6 +28,8 @@ interface FileGridProps {
   onNewFolder?: () => void;
   isLoading?: boolean;
   cutItem?: FileItem | null; // Add prop to track cut item
+  hasClipboard?: () => boolean; // Add prop to track if there's clipboard content
+  isClipboardPasted?: boolean; // Add prop to track if clipboard item has been pasted
 }
 
 interface ContextMenuState {
@@ -58,6 +60,8 @@ export const FileGrid = ({
   onNewFolder,
   isLoading,
   cutItem, // Destructure the new prop
+  hasClipboard, // Destructure the new prop
+  isClipboardPasted, // Destructure the new prop
 }: FileGridProps) => {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [draggedItem, setDraggedItem] = useState<FileItem | null>(null);
@@ -367,6 +371,8 @@ export const FileGrid = ({
           onRename={() => contextMenu.item && onRename(contextMenu.item, contextMenu.index)}
           onNewFolder={onNewFolder}
           onClose={() => setContextMenu(null)}
+          hasClipboard={hasClipboard}
+          isClipboardPasted={isClipboardPasted}
         />
       )}
 

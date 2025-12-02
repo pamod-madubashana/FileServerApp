@@ -774,6 +774,8 @@ export const FileExplorer = () => {
               onNewFolder={() => setNewFolderDialogOpen(true)}
               isLoading={isLoading}
               cutItem={clipboard?.operation === "cut" && !isClipboardPasted() ? clipboard.item : null} // Pass cut item to FileGrid only if not pasted
+              hasClipboard={hasClipboard} // Pass the clipboard status function
+              isClipboardPasted={isClipboardPasted()} // Pass the clipboard pasted status
             />
           </div>
         </>
@@ -862,6 +864,7 @@ export const FileExplorer = () => {
           onNewFolder={handleNewFolder ? () => handleNewFolder("New Folder") : undefined}
           onClose={() => setContextMenu(null)}
           isClipboardPasted={isClipboardPasted()} // Pass the clipboard pasted status
+          hasClipboard={hasClipboard} // Pass the clipboard status function
         />
       )}
     </div>

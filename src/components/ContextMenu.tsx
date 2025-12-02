@@ -30,6 +30,7 @@ interface ContextMenuProps {
   onNewFolder?: () => void;
   onDownload?: () => void | Promise<void>;
   isClipboardPasted?: boolean; // Add prop to track if clipboard item has been pasted
+  hasClipboard?: () => boolean; // Add prop to track if there's clipboard content
 }
 
 interface MenuItem {
@@ -56,6 +57,7 @@ export const ContextMenu = ({
   onNewFolder,
   onDownload,
   isClipboardPasted, // Destructure the new prop
+  hasClipboard, // Destructure the new prop
 }: ContextMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -134,17 +136,12 @@ export const ContextMenu = ({
         action: "new_folder",
       },
       { divider: true, label: "", action: "" },
-      ...(onPaste
-        ? [
-          {
-            icon: Clipboard,
-            label: "Paste",
-            action: "paste",
-            shortcut: "Ctrl+V",
-            disabled: isClipboardPasted, // Disable if clipboard item has been pasted
-          } as MenuItem,
-        ]
-        : []),
+      {
+        icon: Clipboard,
+        label: "Paste",
+        action: "paste",
+        shortcut: "Ctrl+V",
+      },
       { divider: true, label: "", action: "" },
       {
         icon: Download,
@@ -187,17 +184,12 @@ export const ContextMenu = ({
         action: "cut",
         shortcut: "Ctrl+X",
       },
-      ...(onPaste
-        ? [
-          {
-            icon: Clipboard,
-            label: "Paste",
-            action: "paste",
-            shortcut: "Ctrl+V",
-            disabled: isClipboardPasted, // Disable if clipboard item has been pasted
-          } as MenuItem,
-        ]
-        : []),
+      {
+        icon: Clipboard,
+        label: "Paste",
+        action: "paste",
+        shortcut: "Ctrl+V",
+      },
       { divider: true, label: "", action: "" },
       {
         icon: Pencil,
@@ -266,7 +258,7 @@ export const ContextMenu = ({
             }
 
             const Icon = item.icon;
-            const isDisabled = item.disabled || (item.action === "paste" && !onPaste);
+            const isDisabled = item.disabled || (item.action === "paste" && (!hasClipboard || !hasClipboard() || isClipboardPasted));
 
             return (
               <button
