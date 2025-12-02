@@ -41,9 +41,27 @@ export const Thumbnail = ({ item }: ThumbnailProps) => {
 
   // Construct the full thumbnail URL using the API base URL
   const baseUrl = getApiBaseUrl();
-  const thumbnailUrl = baseUrl 
+  let thumbnailUrl = baseUrl 
     ? `${baseUrl}/api/file/${item.thumbnail}/thumbnail` 
     : `/api/file/${item.thumbnail}/thumbnail`;
+
+  // For Tauri environment, add auth token as query parameter
+  const isTauri = !!(window as any).__TAURI__;
+  if (isTauri) {
+    try {
+      const tauriAuth = localStorage.getItem('tauri_auth_token');
+      if (tauriAuth) {
+        const authData = JSON.parse(tauriAuth);
+        if (authData.auth_token) {
+          // Add auth token as query parameter
+          const separator = thumbnailUrl.includes('?') ? '&' : '?';
+          thumbnailUrl = `${thumbnailUrl}${separator}auth_token=${authData.auth_token}`;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to add auth token to thumbnail URL", e);
+    }
+  }
 
   return (
     <div className="relative w-20 h-20 flex items-center justify-center">
