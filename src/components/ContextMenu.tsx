@@ -92,24 +92,31 @@ export const ContextMenu = ({
         break;
       case "rename":
         onRename();
+        onClose();
         break;
       case "copy":
         onCopy();
+        onClose();
         break;
       case "cut":
         onCut();
+        onClose();
         break;
       case "paste":
         onPaste?.();
+        onClose();
         break;
       case "delete":
         onDelete();
+        onClose();
         break;
       case "new_folder":
         onNewFolder?.();
+        onClose();
         break;
       case "download":
         await onDownload?.();
+        onClose();
         break;
       default:
         onClose();
@@ -260,7 +267,12 @@ export const ContextMenu = ({
             return (
               <button
                 key={index}
-                onClick={async () => !isDisabled && await handleAction(item.action)}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!isDisabled) {
+                    await handleAction(item.action);
+                  }
+                }}
                 disabled={isDisabled}
                 className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-sm transition-all group ${isDisabled
                   ? "text-muted-foreground/40 cursor-not-allowed"
