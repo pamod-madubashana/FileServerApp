@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileItem } from "./types";
 import { Folder, FileText, Image as ImageIcon, FileArchive } from "lucide-react";
 import { ContextMenu } from "./ContextMenu";
@@ -7,6 +7,7 @@ import { ImageViewer } from "./ImageViewer";
 import { MediaPlayer } from "./MediaPlayer";
 import { Thumbnail } from "./Thumbnail";
 import { getApiBaseUrl } from "@/lib/api";
+import type { Event } from '@tauri-apps/api/event';
 
 interface FileGridProps {
   items: FileItem[];
@@ -25,6 +26,7 @@ interface FileGridProps {
   onRenameCancel: () => void;
   currentFolder: string;
   onNewFolder?: () => void;
+  isLoading?: boolean;
 }
 
 interface ContextMenuState {
@@ -54,7 +56,7 @@ export const FileGrid = ({
   currentFolder,
   onNewFolder,
   isLoading,
-}: FileGridProps & { isLoading?: boolean }) => {
+}: FileGridProps) => {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [draggedItem, setDraggedItem] = useState<FileItem | null>(null);
   const [imageViewer, setImageViewer] = useState<{ url: string; fileName: string } | null>(null);
@@ -63,6 +65,59 @@ export const FileGrid = ({
     fileName: string;
     fileType: "video" | "audio" | "voice";
   } | null>(null);
+
+  // Check if we're running in Tauri
+  const isTauri = !!(window as any).__TAURI__;
+
+  // Add Tauri event listeners for drag and drop
+  useEffect(() => {
+    if (!isTauri) return;
+
+    let unlistenDragEnter: (() => void) | null = null;
+    let unlistenDragOver: (() => void) | null = null;
+    let unlistenDragDrop: (() => void) | null = null;
+    let unlistenDragLeave: (() => void) | null = null;
+
+    const initTauriDragListeners = async () => {
+      try {
+        // Dynamically import the event module only in Tauri environment
+        const eventModule = await import('@tauri-apps/api/event');
+        
+        // Listen for Tauri drag enter events
+        unlistenDragEnter = await eventModule.listen('tauri://drag-enter', (event: Event<any>) => {
+          // We don't need to prevent default here since we're just listening
+          // The webview will still handle the events normally
+        });
+
+        // Listen for Tauri drag over events
+        unlistenDragOver = await eventModule.listen('tauri://drag-over', (event: Event<any>) => {
+          // We don't need to prevent default here since we're just listening
+        });
+
+        // Listen for Tauri drag drop events
+        unlistenDragDrop = await eventModule.listen('tauri://drag-drop', (event: Event<any>) => {
+          // We don't need to prevent default here since we're just listening
+        });
+
+        // Listen for Tauri drag leave events
+        unlistenDragLeave = await eventModule.listen('tauri://drag-leave', (event: Event<any>) => {
+          // We don't need to prevent default here since we're just listening
+        });
+      } catch (error) {
+        console.error('Failed to initialize Tauri drag listeners:', error);
+      }
+    };
+
+    initTauriDragListeners();
+
+    // Cleanup function to remove event listeners
+    return () => {
+      if (unlistenDragEnter) unlistenDragEnter();
+      if (unlistenDragOver) unlistenDragOver();
+      if (unlistenDragDrop) unlistenDragDrop();
+      if (unlistenDragLeave) unlistenDragLeave();
+    };
+  }, [isTauri]);
 
   const handleContextMenu = (e: React.MouseEvent, item: FileItem, index: number) => {
     e.preventDefault();
@@ -243,19 +298,9 @@ export const FileGrid = ({
                         />
                       </div>
                     ) : (
-                      <>
-                        <span className="text-sm text-left flex-1 text-foreground group-hover:text-accent-foreground">
-                          {item.name}
-                        </span>
-                        {item.size && (
-                          <span className="text-xs text-muted-foreground mr-2">
-                            {formatBytes(item.size)}
-                          </span>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          {item.type === "folder" ? "Folder" : item.fileType?.toUpperCase() || item.extension?.toUpperCase()}
-                        </span>
-                      </>
+                      <span className="text-sm text-foreground group-hover:text-accent-foreground">
+                        {item.name}
+                      </span>
                     )}
                   </button>
                 </div>
@@ -265,10 +310,24 @@ export const FileGrid = ({
         )}
       </div>
 
-      <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
-        {itemCount} {itemCount === 1 ? "item" : "items"}
-      </div>
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          itemType={contextMenu.itemType}
+          itemName={contextMenu.itemName}
+          onCopy={() => contextMenu.item && onCopy(contextMenu.item)}
+          onCut={() => contextMenu.item && onCut(contextMenu.item)}
+          onPaste={onPaste}
+          onDelete={() => contextMenu.item && onDelete(contextMenu.item, contextMenu.index)}
+          onRename={() => contextMenu.item && onRename(contextMenu.item, contextMenu.index)}
+          onNewFolder={onNewFolder}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
 
+      {/* Image Viewer */}
       {imageViewer && (
         <ImageViewer
           imageUrl={imageViewer.url}
@@ -276,7 +335,8 @@ export const FileGrid = ({
           onClose={() => setImageViewer(null)}
         />
       )}
-      
+
+      {/* Media Player */}
       {mediaPlayer && (
         <MediaPlayer
           mediaUrl={mediaPlayer.url}
@@ -285,69 +345,6 @@ export const FileGrid = ({
           onClose={() => setMediaPlayer(null)}
         />
       )}
-
-      {contextMenu && (
-          <ContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            itemType={contextMenu.itemType}
-            itemName={contextMenu.itemName}
-            onClose={() => setContextMenu(null)}
-            onCopy={() => {
-              onCopy(contextMenu.item);
-              setContextMenu(null);
-            }}
-            onCut={() => {
-              onCut(contextMenu.item);
-              setContextMenu(null);
-            }}
-            onPaste={
-              onPaste
-                ? () => {
-                  onPaste();
-                  setContextMenu(null);
-                }
-                : undefined
-            }
-            onDelete={() => {
-              onDelete(contextMenu.item, contextMenu.index);
-              setContextMenu(null);
-            }}
-            onRename={() => {
-              onRename(contextMenu.item, contextMenu.index);
-              setContextMenu(null);
-            }}
-            onNewFolder={onNewFolder ? () => {
-              onNewFolder();
-              setContextMenu(null);
-            } : undefined}
-            onDownload={onDownload ? async () => {
-              await onDownload(contextMenu.item);
-              setContextMenu(null);
-            } : undefined}
-          />
-        )}
-
     </div>
   );
 };
-
-// Utility function to format file size (input is in MB)
-function formatBytes(sizeInMB: number): string {
-  if (sizeInMB === 0) return '0 MB';
-
-  // If less than 1 MB, show in KB
-  if (sizeInMB < 1) {
-    const kb = sizeInMB * 1024;
-    return Math.round(kb * 100) / 100 + ' KB';
-  }
-
-  // If less than 1024 MB (1 GB), show in MB
-  if (sizeInMB < 1024) {
-    return Math.round(sizeInMB * 100) / 100 + ' MB';
-  }
-
-  // Otherwise show in GB
-  const gb = sizeInMB / 1024;
-  return Math.round(gb * 100) / 100 + ' GB';
-}
