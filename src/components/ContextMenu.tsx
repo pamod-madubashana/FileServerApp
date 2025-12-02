@@ -28,7 +28,7 @@ interface ContextMenuProps {
   onDelete: () => void;
   onRename: () => void;
   onNewFolder?: () => void;
-  onDownload?: () => void;
+  onDownload?: () => void | Promise<void>;
 }
 
 interface MenuItem {
@@ -85,7 +85,7 @@ export const ContextMenu = ({
     };
   }, [onClose]);
 
-  const handleAction = (action: string) => {
+  const handleAction = async (action: string) => {
     switch (action) {
       case "open":
         onClose();
@@ -109,7 +109,7 @@ export const ContextMenu = ({
         onNewFolder?.();
         break;
       case "download":
-        onDownload?.();
+        await onDownload?.();
         break;
       default:
         onClose();
@@ -260,7 +260,7 @@ export const ContextMenu = ({
             return (
               <button
                 key={index}
-                onClick={() => !isDisabled && handleAction(item.action)}
+                onClick={async () => !isDisabled && await handleAction(item.action)}
                 disabled={isDisabled}
                 className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-sm transition-all group ${isDisabled
                   ? "text-muted-foreground/40 cursor-not-allowed"
