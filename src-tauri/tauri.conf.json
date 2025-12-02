@@ -21,7 +21,8 @@
         "fullscreen": false,
         "visible": true,
         "decorations": true,
-        "devtools": true
+        "devtools": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {
