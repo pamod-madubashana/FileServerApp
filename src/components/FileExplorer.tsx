@@ -102,6 +102,18 @@ export const FileExplorer = () => {
           setCurrentPath(pathSegments);
         }
       }
+      
+      // Also check if we should show profile or settings based on the new location
+      if (window.location.pathname === '/profile') {
+        setShowProfile(true);
+        setShowSettings(false);
+      } else if (window.location.pathname === '/settings') {
+        setShowSettings(true);
+        setShowProfile(false);
+      } else {
+        setShowProfile(false);
+        setShowSettings(false);
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -112,6 +124,20 @@ export const FileExplorer = () => {
   useEffect(() => {
     logger.info("FileExplorer component mounted", { currentPath, location: window.location.pathname });
   }, []);
+
+  // Check current route and show appropriate content on mount
+  useEffect(() => {
+    if (location.pathname === '/profile') {
+      setShowProfile(true);
+      setShowSettings(false);
+    } else if (location.pathname === '/settings') {
+      setShowSettings(true);
+      setShowProfile(false);
+    } else {
+      setShowProfile(false);
+      setShowSettings(false);
+    }
+  }, [location.pathname]);
 
   // Listen for showProfile event
   useEffect(() => {

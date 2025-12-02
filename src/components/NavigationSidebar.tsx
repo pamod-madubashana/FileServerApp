@@ -51,6 +51,14 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     };
   }, []);
 
+  // Automatically open sidebar when on profile or settings pages
+  useEffect(() => {
+    if (location.pathname === '/profile' || location.pathname === '/settings') {
+      setIsOpen(true);
+      manuallyOpenedRef.current = true; // Mark as manually opened to prevent auto-closing
+    }
+  }, [location.pathname]);
+
   const toggleSidebar = () => {
     manuallyOpenedRef.current = true;
     setIsOpen(!isOpen);
