@@ -19,7 +19,7 @@ interface FileGridProps {
   onDelete: (item: FileItem, index: number) => void;
   onRename: (item: FileItem, index: number) => void;
   onMove: (item: FileItem, targetFolder: FileItem) => void; // This is correct now
-  onDownload: (item: FileItem) => void;
+  onDownload: (item: FileItem) => Promise<void>;
   renamingItem: { item: FileItem; index: number } | null;
   onRenameConfirm: (newName: string) => void;
   onRenameCancel: () => void;
@@ -287,46 +287,47 @@ export const FileGrid = ({
       )}
 
       {contextMenu && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          itemType={contextMenu.itemType}
-          itemName={contextMenu.itemName}
-          onClose={() => setContextMenu(null)}
-          onCopy={() => {
-            onCopy(contextMenu.item);
-            setContextMenu(null);
-          }}
-          onCut={() => {
-            onCut(contextMenu.item);
-            setContextMenu(null);
-          }}
-          onPaste={
-            onPaste
-              ? () => {
-                onPaste();
-                setContextMenu(null);
-              }
-              : undefined
-          }
-          onDelete={() => {
-            onDelete(contextMenu.item, contextMenu.index);
-            setContextMenu(null);
-          }}
-          onRename={() => {
-            onRename(contextMenu.item, contextMenu.index);
-            setContextMenu(null);
-          }}
-          onNewFolder={onNewFolder ? () => {
-            onNewFolder();
-            setContextMenu(null);
-          } : undefined}
-          onDownload={() => {
-            onDownload(contextMenu.item);
-            setContextMenu(null);
-          }}
-        />
-      )}
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            itemType={contextMenu.itemType}
+            itemName={contextMenu.itemName}
+            onClose={() => setContextMenu(null)}
+            onCopy={() => {
+              onCopy(contextMenu.item);
+              setContextMenu(null);
+            }}
+            onCut={() => {
+              onCut(contextMenu.item);
+              setContextMenu(null);
+            }}
+            onPaste={
+              onPaste
+                ? () => {
+                  onPaste();
+                  setContextMenu(null);
+                }
+                : undefined
+            }
+            onDelete={() => {
+              onDelete(contextMenu.item, contextMenu.index);
+              setContextMenu(null);
+            }}
+            onRename={() => {
+              onRename(contextMenu.item, contextMenu.index);
+              setContextMenu(null);
+            }}
+            onNewFolder={onNewFolder ? () => {
+              onNewFolder();
+              setContextMenu(null);
+            } : undefined}
+            onDownload={onDownload ? async () => {
+              await onDownload(contextMenu.item);
+              setContextMenu(null);
+            } : undefined}
+          />
+        )}
+
     </div>
   );
 };
