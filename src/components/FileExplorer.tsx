@@ -21,6 +21,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import logger from "@/lib/logger";
+import { downloadManager } from "@/lib/downloadManager";
+
 export const FileExplorer = () => {
   const location = useLocation();
   const { path } = useParams();
@@ -579,10 +581,12 @@ export const FileExplorer = () => {
         ? `${baseUrl}/dl/${fileName}` 
         : `/dl/${fileName}`;
       
-      // Import our reusable download function
-      const { downloadFile } = await import('@/lib/utils');
+      // Add to download manager for tracking
+      const downloadId = downloadManager.addDownload(downloadUrl, item.name);
       
       // Use our unified download function that works in both environments
+      // Import our reusable download function
+      const { downloadFile } = await import('@/lib/utils');
       await downloadFile(downloadUrl, item.name);
     } catch (error) {
       logger.error("Failed to download file:", error);

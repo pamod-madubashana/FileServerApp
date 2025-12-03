@@ -67,23 +67,36 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     throw new Error('Tauri modules not loaded');
   }
 
-  // Ask user where to save the file
-  const filePath = await save({
-    filters: [{
-      name: filename,
-      extensions: [getFileExtension(filename)]
-    }]
-  });
-
-  if (!filePath) {
-    // User cancelled the save dialog
-    return;
+  // Get download folder from settings
+  const downloadFolder = localStorage.getItem('downloadFolder') || '';
+  
+  // Construct file path
+  let filePath: string;
+  if (downloadFolder) {
+    // Use configured download folder
+    // Ensure the path uses the correct separator for the platform
+    const separator = window.__TAURI__ ? '\\' : '/';
+    filePath = downloadFolder.endsWith(separator) ? `${downloadFolder}${filename}` : `${downloadFolder}${separator}${filename}`;
+  } else {
+    // Ask user where to save the file (fallback behavior)
+    filePath = await save({
+      filters: [{
+        name: filename,
+        extensions: [getFileExtension(filename)]
+      }]
+    });
+    
+    if (!filePath) {
+      // User cancelled the save dialog
+      return;
+    }
   }
 
   // Set up progress listener if callback provided
+  let unlisten: (() => void) | null = null;
   if (onProgress) {
     // Listen for download progress events
-    const unlisten = await (window as any).__TAURI__.event.listen('download_progress', (event: any) => {
+    unlisten = await (window as any).__TAURI__.event.listen('download_progress', (event: any) => {
       onProgress(event.payload);
     });
   }
@@ -99,6 +112,11 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
   } catch (error) {
     console.error('Download failed:', error);
     throw new Error(`Download failed: ${error}`);
+  } finally {
+    // Clean up the event listener
+    if (unlisten) {
+      unlisten();
+    }
   }
 }
 

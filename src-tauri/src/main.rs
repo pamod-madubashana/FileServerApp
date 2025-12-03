@@ -4,6 +4,7 @@
 use tauri::Emitter;
 use tokio::io::AsyncWriteExt;
 use futures::StreamExt;
+use dirs;
 
 // Logging commands that can be called from the frontend
 #[tauri::command]
@@ -46,22 +47,44 @@ async fn download_file(url: &str, save_path: &str, app_handle: tauri::AppHandle)
     let total_size = response.content_length().unwrap_or(0);
     log::info!("Total file size: {} bytes", total_size);
     
+    // Handle relative paths by resolving them against the user's download directory
+    let resolved_path = if std::path::Path::new(&save_path).is_absolute() {
+        save_path.to_string()
+    } else {
+        // For relative paths, resolve against the user's download directory
+        let download_dir = dirs::download_dir().ok_or("Could not determine download directory")?;
+        let full_path = download_dir.join(save_path);
+        // Create parent directories if they don't exist
+        if let Some(parent) = full_path.parent() {
+            tokio::fs::create_dir_all(parent).await.map_err(|e| format!("Failed to create directories: {}", e))?;
+        }
+        full_path.to_string_lossy().to_string()
+    };
+    
+    log::info!("Resolved download path: {}", resolved_path);
+    
     // Create file to save to
-    let mut file = tokio::fs::File::create(&save_path).await.map_err(|e| format!("Failed to create file: {}", e))?;
+    let mut file = tokio::fs::File::create(&resolved_path).await.map_err(|e| format!("Failed to create file: {}", e))?;
     
     // Stream the response and write to file
     let mut stream = response.bytes_stream();
     let mut downloaded: u64 = 0;
+    let mut last_progress: u64 = 0;
     
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| format!("Failed to read chunk: {}", e))?;
         file.write_all(&chunk).await.map_err(|e| format!("Failed to write to file: {}", e))?;
         downloaded += chunk.len() as u64;
         
-        // Emit progress event
+        // Emit progress event more frequently for better UX
         if total_size > 0 {
             let progress = (downloaded as f64 / total_size as f64 * 100.0) as u64;
-            app_handle.emit("download_progress", progress).map_err(|e| format!("Failed to emit progress: {}", e))?;
+            
+            // Only emit progress updates at 1% intervals to reduce event overhead
+            if progress >= last_progress + 1 || progress == 100 {
+                app_handle.emit("download_progress", progress).map_err(|e| format!("Failed to emit progress: {}", e))?;
+                last_progress = progress;
+            }
         }
     }
     

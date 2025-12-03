@@ -16,9 +16,11 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
   const navigate = useNavigate();
   const [serverUrl, setServerUrl] = useState("");
   const [tempServerUrl, setTempServerUrl] = useState("");
+  const [downloadFolder, setDownloadFolder] = useState("");
+  const [tempDownloadFolder, setTempDownloadFolder] = useState("");
   const [error, setError] = useState("");
 
-  // Load server URL from localStorage on component mount
+  // Load server URL and download folder from localStorage on component mount
   useEffect(() => {
     const currentUrl = getApiBaseUrl();
     // If the current URL is the default "/api", construct the full URL assuming backend is on port 8000
@@ -31,6 +33,11 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
     }
     setServerUrl(displayUrl);
     setTempServerUrl(displayUrl);
+    
+    // Load download folder setting
+    const savedDownloadFolder = localStorage.getItem("downloadFolder") || "";
+    setDownloadFolder(savedDownloadFolder);
+    setTempDownloadFolder(savedDownloadFolder);
   }, []);
 
   const validateUrl = (url: string): boolean => {
@@ -88,9 +95,17 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
       
       setServerUrl(tempServerUrl);
       
+      // Save download folder setting
+      if (tempDownloadFolder) {
+        localStorage.setItem("downloadFolder", tempDownloadFolder);
+      } else {
+        localStorage.removeItem("downloadFolder");
+      }
+      setDownloadFolder(tempDownloadFolder);
+      
       // Show a success message with toast
       toast.success("Settings saved successfully!", {
-        description: `Server URL: ${tempServerUrl}`,
+        description: `Server URL: ${tempServerUrl}` + (tempDownloadFolder ? `, Download Folder: ${tempDownloadFolder}` : ''),
         duration: 3000,
       });
     } catch (error) {
@@ -111,10 +126,11 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
     })();
     
     setTempServerUrl(defaultUrl);
+    setTempDownloadFolder("");
     setError("");
     
     // Show confirmation
-    toast.info("Server URL reset to default", {
+    toast.info("Settings reset to default", {
       description: `Default URL: ${defaultUrl}`,
       duration: 3000,
     });
@@ -148,7 +164,7 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 py-6">
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="server-url" className="text-gray-700 dark:text-gray-300">Backend Server URL</Label>
                 <Input
@@ -169,10 +185,27 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
                     return url.origin;
                   })()}
                 </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="download-folder" className="text-gray-700 dark:text-gray-300">Download Folder</Label>
+                <Input
+                  id="download-folder"
+                  value={tempDownloadFolder}
+                  onChange={(e) => {
+                    setTempDownloadFolder(e.target.value);
+                  }}
+                  placeholder="Enter download folder path (e.g., Downloads/Telegram Files)"
+                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                />
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Tip: Press Ctrl+Alt+R anywhere to reset to default settings
+                  Files will be automatically downloaded to this folder. Leave empty to use the default download location.
                 </p>
               </div>
+              
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Tip: Press Ctrl+Alt+R anywhere to reset to default settings
+              </p>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
