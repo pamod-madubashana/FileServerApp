@@ -7,8 +7,6 @@
     "core:default",
     "shell:default",
     "dialog:default",
-    "fs:allow-write-file",
-    "fs:allow-read-file",
     "http:allow-fetch",
     "http:allow-fetch-send",
     "http:allow-fetch-read-body",
