@@ -204,6 +204,7 @@ export class DownloadManager {
           // Convert date strings back to Date objects
           if (download.startTime) download.startTime = new Date(download.startTime);
           if (download.endTime) download.endTime = new Date(download.endTime);
+          // filePath is preserved as-is (string)
           
           this.downloads.set(download.id, download);
           

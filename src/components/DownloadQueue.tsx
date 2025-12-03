@@ -123,29 +123,27 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                   <div key={download.id} className="p-3 hover:bg-muted/50 transition-colors">
                     <div 
                       className="flex justify-between items-start mb-1 cursor-pointer"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         // Open file when clicking on completed downloads
                         if (download.status === 'completed') {
                           // Check if we're in Tauri environment
                           if (typeof window !== 'undefined' && window.__TAURI__) {
-                            // For Tauri, use the file path
+                            // For Tauri, use the file path to open with system default app
                             if (download.filePath) {
                               openPath(download.filePath).catch(err => {
                                 console.error('Failed to open file:', err);
                               });
                             }
-                          } else {
-                            // For browser, recreate the download link
-                            if (download.filePath) {  // This will be the blob URL
-                              const link = document.createElement('a');
-                              link.href = download.filePath;
-                              link.download = download.filename;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                            }
                           }
+                          // For browser, do nothing as we cannot directly open files
+                          // The user can access downloaded files through their browser's download manager
                         }
+                      }}
+                      onContextMenu={(e) => {
+                        // Prevent default right-click context menu
+                        e.preventDefault();
+                        e.stopPropagation();
                       }}
                     >
                       <div className="font-medium text-sm truncate">{download.filename}</div>
