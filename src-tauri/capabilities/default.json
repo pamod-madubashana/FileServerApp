@@ -6,6 +6,10 @@
   "permissions": [
     "core:default",
     "shell:default",
+    "dialog:default",
+    "fs:default",
+    "fs:write-all",
+    "fs:read-all",
     "http:allow-fetch",
     "http:allow-fetch-send",
     "http:allow-fetch-read-body",

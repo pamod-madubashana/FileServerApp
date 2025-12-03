@@ -1,0 +1,103 @@
+{
+  "project": "Telegram File Server",
+  "feature": "Cross-Platform File Download",
+  "deliverables": [
+    {
+      "type": "utility_function",
+      "name": "downloadFile",
+      "file": "src/lib/utils.ts",
+      "description": "Reusable TypeScript function that works in both Tauri 2 and browser environments",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string",
+          "description": "The URL path to the file (e.g., '/dl/Photo_AgADogxrGwUVGVU.jpg')"
+        },
+        {
+          "name": "filename",
+          "type": "string",
+          "description": "The name to save the file as"
+        }
+      ],
+      "features": [
+        "Works in both Tauri 2 desktop app and modern browsers",
+        "Asks user where to save files in Tauri using @tauri-apps/plugin-dialog",
+        "Triggers standard save/download dialog in browser",
+        "Writes files to disk in Tauri using @tauri-apps/plugin-fs",
+        "Uses Blob + URL.createObjectURL in browser",
+        "Handles large files efficiently with proper ArrayBuffer handling",
+        "Works for any file type (video, archive, images, etc.)",
+        "Includes proper error handling",
+        "Fully reusable in any TypeScript project",
+        "Includes comments explaining key steps",
+        "Provides clear separation of browser vs Tauri logic"
+      ]
+    },
+    {
+      "type": "component",
+      "name": "DownloadButton",
+      "file": "src/components/DownloadButton.tsx",
+      "description": "A reusable button component that triggers file downloads",
+      "usage_example": "<DownloadButton path=\"/dl/sample-image.jpg\" filename=\"sample-image.jpg\">Download Image</DownloadButton>"
+    },
+    {
+      "type": "component",
+      "name": "DownloadContextItem",
+      "file": "src/components/DownloadContextItem.tsx",
+      "description": "A context menu item component for downloading files",
+      "usage_example": "<DownloadContextItem path=\"/dl/document.pdf\" filename=\"document.pdf\" />"
+    },
+    {
+      "type": "demo_page",
+      "name": "DownloadDemo",
+      "file": "src/pages/DownloadDemo.tsx",
+      "description": "A full demo page showcasing the download functionality with examples"
+    },
+    {
+      "type": "example_component",
+      "name": "DownloadExample",
+      "file": "src/components/DownloadExample.tsx",
+      "description": "A simple example component demonstrating how to use the downloadFile function"
+    },
+    {
+      "type": "configuration",
+      "name": "Tauri Capabilities",
+      "file": "src-tauri/capabilities/default.json",
+      "description": "Updated Tauri capabilities with required permissions for file download functionality",
+      "permissions_added": [
+        "dialog:default",
+        "fs:default",
+        "fs:write-all",
+        "fs:read-all"
+      ]
+    },
+    {
+      "type": "documentation",
+      "name": "Download README",
+      "file": "src/lib/DOWNLOAD_README.md",
+      "description": "Comprehensive documentation for the download utility with usage examples"
+    },
+    {
+      "type": "documentation",
+      "name": "Download Instructions",
+      "file": "DOWNLOAD_INSTRUCTIONS.txt",
+      "description": "Simple text instructions for implementing the download functionality"
+    },
+    {
+      "type": "documentation",
+      "name": "Implementation Summary",
+      "file": "DOWNLOAD_SUMMARY.md",
+      "description": "Detailed summary of all files created and modified"
+    }
+  ],
+  "dependencies": [
+    "@tauri-apps/plugin-dialog@^2.4.0",
+    "@tauri-apps/plugin-fs@^2.4.4",
+    "@tauri-apps/plugin-http@^2.5.4"
+  ],
+  "integration_example": {
+    "component": "FileExplorer.tsx",
+    "function_updated": "handleDownload",
+    "change": "Replaced complex Tauri/browser specific implementation with reusable downloadFile function"
+  }
+}

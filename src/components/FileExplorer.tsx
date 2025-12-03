@@ -579,66 +579,11 @@ export const FileExplorer = () => {
         ? `${baseUrl}/dl/${fileName}` 
         : `/dl/${fileName}`;
       
-      // Check if we're running in Tauri
-      const isTauri = !!(window as any).__TAURI__;
+      // Import our reusable download function
+      const { downloadFile } = await import('@/lib/utils');
       
-      if (isTauri) {
-        // In Tauri environment, use the HTTP plugin to download the file
-        // First, dynamically import the HTTP plugin
-        const http = await import('@tauri-apps/plugin-http');
-        
-        // Get auth token for Tauri environment
-        let headers: Record<string, string> = {};
-        const tauri_auth = localStorage.getItem('tauri_auth_token');
-        if (tauri_auth) {
-          try {
-            const authData = JSON.parse(tauri_auth);
-            if (authData.auth_token) {
-              headers['X-Auth-Token'] = authData.auth_token;
-            }
-          } catch (e) {
-            logger.error('Failed to parse Tauri auth token:', e);
-          }
-        }
-        
-        // Make the request using Tauri's HTTP plugin
-        const response = await http.fetch(downloadUrl, {
-          method: 'GET',
-          headers: headers,
-        });
-        
-        if (response.ok) {
-          // Get the blob data
-          const blob = await response.blob();
-          
-          // Create a temporary URL for the blob
-          const blobUrl = URL.createObjectURL(blob);
-          
-          // Create a temporary link and trigger download
-          const link = document.createElement('a');
-          link.href = blobUrl;
-          link.download = item.name;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          // Clean up the blob URL
-          URL.revokeObjectURL(blobUrl);
-        } else {
-          throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
-        }
-      } else {
-        // In browser environment, use the standard approach
-        // Create a temporary link and trigger download
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = item.name;
-        // Add credentials for download requests
-        link.setAttribute('crossorigin', 'use-credentials');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      // Use our unified download function that works in both environments
+      await downloadFile(downloadUrl, item.name);
     } catch (error) {
       logger.error("Failed to download file:", error);
       toast.error("Failed to download file");

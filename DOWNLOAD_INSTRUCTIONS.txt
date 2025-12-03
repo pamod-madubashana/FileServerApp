@@ -1,0 +1,66 @@
+File Download Implementation Guide
+
+This guide explains how to use the cross-platform file download functionality that works in both browser and Tauri environments.
+
+Installation
+Ensure you have the required Tauri plugins installed:
+npm install @tauri-apps/plugin-dialog @tauri-apps/plugin-fs @tauri-apps/plugin-http
+
+Tauri Configuration
+Add the following permissions to your src-tauri/capabilities/default.json file:
+{
+  "permissions": [
+    "dialog:default",
+    "fs:default",
+    "fs:write-all",
+    "fs:read-all",
+    "http:allow-fetch",
+    "http:allow-fetch-send",
+    "http:allow-fetch-read-body",
+    "http:allow-fetch-cancel"
+  ]
+}
+
+Usage
+Basic Usage
+Import and use the downloadFile function:
+import { downloadFile } from './lib/utils';
+await downloadFile('/dl/Photo_AgADogxrGwUVGVU.jpg', 'my-photo.jpg');
+
+Parameters
+- path: The URL path to the file (can be relative or absolute)
+- filename: The name to save the file as
+
+Return Value
+The function returns a Promise that resolves when the download is complete or rejects with an error.
+
+How It Works
+Browser Environment
+1. Fetches the file using the browser's fetch API
+2. Converts the response to a Blob
+3. Creates an object URL for the Blob
+4. Triggers a download using a temporary anchor element
+
+Tauri Environment
+1. Uses @tauri-apps/plugin-dialog to show a save dialog
+2. Fetches the file using @tauri-apps/plugin-http
+3. Writes the file to disk using @tauri-apps/plugin-fs
+
+Components
+DownloadButton - A ready-to-use button component for triggering downloads
+DownloadContextItem - A context menu item for downloading files
+
+Error Handling
+The function includes comprehensive error handling for network errors, HTTP errors, file system errors, and user cancellation.
+
+Large File Support
+The implementation handles large files efficiently using arrayBuffer() for binary data transfer.
+
+Supported File Types
+Works with any file type: images, videos, documents, archives, etc.
+
+Customization
+You can customize the behavior by modifying the downloadFile function in src/lib/utils.ts.
+
+Troubleshooting
+Ensure Tauri plugins are properly installed and capabilities are configured correctly.
