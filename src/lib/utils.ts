@@ -30,7 +30,7 @@ if (isTauri) {
  * @param retries - Number of retry attempts (default: 3)
  * @returns Promise that resolves when the download is complete
  */
-export async function downloadFile(path: string, filename: string, onProgress?: (progress: number) => void, retries: number = 3): Promise<void> {
+export async function downloadFile(path: string, filename: string, onProgress?: (progress: number) => void, retries: number = 3): Promise<string | void> {
   try {
     // Construct full URL
     const url = path.startsWith('http') ? path : `${window.location.origin}${path}`;
@@ -61,7 +61,7 @@ export async function downloadFile(path: string, filename: string, onProgress?: 
 /**
  * Downloads a file using Tauri APIs
  */
-async function downloadFileTauri(url: string, filename: string, onProgress?: (progress: number) => void): Promise<void> {
+async function downloadFileTauri(url: string, filename: string, onProgress?: (progress: number) => void): Promise<string> {
   // Ensure Tauri modules are loaded
   if (!save || !invoke) {
     throw new Error('Tauri modules not loaded');
@@ -88,7 +88,7 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     
     if (!filePath) {
       // User cancelled the save dialog
-      return;
+      throw new Error('Download cancelled by user');
     }
   }
 
@@ -109,6 +109,9 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     if (onProgress) {
       onProgress(100);
     }
+    
+    // Return the file path so it can be stored
+    return filePath;
   } catch (error) {
     console.error('Download failed:', error);
     throw new Error(`Download failed: ${error}`);
@@ -123,7 +126,7 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
 /**
  * Downloads a file using browser APIs
  */
-async function downloadFileBrowser(url: string, filename: string, onProgress?: (progress: number) => void): Promise<void> {
+async function downloadFileBrowser(url: string, filename: string, onProgress?: (progress: number) => void): Promise<string> {
   // Fetch the file with progress tracking
   const response = await fetch(url);
   if (!response.ok) {
@@ -185,7 +188,9 @@ async function downloadFileBrowser(url: string, filename: string, onProgress?: (
   
   // Clean up
   document.body.removeChild(link);
-  URL.revokeObjectURL(downloadUrl);
+  
+  // Return the blob URL so it can be stored and opened later
+  return downloadUrl;
 }
 
 /**

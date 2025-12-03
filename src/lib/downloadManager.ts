@@ -12,6 +12,7 @@ export interface DownloadItem {
   error?: string;
   startTime?: Date;
   endTime?: Date;
+  filePath?: string; // Add file path for opening downloaded files
 }
 
 export class DownloadManager {
@@ -116,7 +117,7 @@ export class DownloadManager {
       logger.info('[DownloadManager] Starting download', { id, url: download.url });
       
       // Download with progress tracking
-      await downloadFile(download.url, download.filename, (progress) => {
+      const filePath = await downloadFile(download.url, download.filename, (progress) => {
         // Update progress
         download.progress = progress;
         this.notifyListeners();
@@ -126,6 +127,11 @@ export class DownloadManager {
       download.status = 'completed';
       download.progress = 100;
       download.endTime = new Date();
+      
+      // Store file path/blob URL for opening later
+      if (filePath && typeof filePath === 'string') {
+        download.filePath = filePath;
+      }
       
       logger.info('[DownloadManager] Download completed', { id });
     } catch (error) {

@@ -5,6 +5,9 @@ import { Progress } from "@/components/ui/progress";
 import { Download as DownloadIcon, X as XIcon, RotateCcw as RotateCcwIcon } from "lucide-react";
 import { downloadManager, DownloadItem } from "@/lib/downloadManager";
 
+// Import Tauri opener plugin for opening files
+import { openPath } from '@tauri-apps/plugin-opener';
+
 interface DownloadQueueProps {
   className?: string;
   isOpen?: boolean; // Make isOpen controllable from outside
@@ -118,7 +121,33 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
               <div className="divide-y">
                 {[...activeDownloads, ...queuedDownloads, ...completedDownloads, ...failedDownloads].map((download) => (
                   <div key={download.id} className="p-3 hover:bg-muted/50 transition-colors">
-                    <div className="flex justify-between items-start mb-1">
+                    <div 
+                      className="flex justify-between items-start mb-1 cursor-pointer"
+                      onClick={() => {
+                        // Open file when clicking on completed downloads
+                        if (download.status === 'completed') {
+                          // Check if we're in Tauri environment
+                          if (typeof window !== 'undefined' && window.__TAURI__) {
+                            // For Tauri, use the file path
+                            if (download.filePath) {
+                              openPath(download.filePath).catch(err => {
+                                console.error('Failed to open file:', err);
+                              });
+                            }
+                          } else {
+                            // For browser, recreate the download link
+                            if (download.filePath) {  // This will be the blob URL
+                              const link = document.createElement('a');
+                              link.href = download.filePath;
+                              link.download = download.filename;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }
+                          }
+                        }
+                      }}
+                    >
                       <div className="font-medium text-sm truncate">{download.filename}</div>
                       <div className="flex gap-1">
                         {download.status === 'failed' && (
@@ -126,7 +155,10 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                             variant="ghost" 
                             size="sm" 
                             className="h-6 w-6 p-0"
-                            onClick={() => retryDownload(download)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              retryDownload(download);
+                            }}
                           >
                             <RotateCcwIcon className="h-3 w-3" />
                           </Button>
@@ -136,7 +168,10 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                             variant="ghost" 
                             size="sm" 
                             className="h-6 w-6 p-0"
-                            onClick={() => cancelDownload(download.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              cancelDownload(download.id);
+                            }}
                           >
                             <XIcon className="h-3 w-3" />
                           </Button>

@@ -31,14 +31,8 @@ const DownloadButton: React.FC<DownloadButtonProps> = ({
     setError(null);
     
     try {
-      // Add to download manager for better tracking
-      const downloadId = downloadManager.addDownload(path, filename);
-      
-      // Perform the download with progress tracking
-      await downloadFile(path, filename, (progress) => {
-        // Could update UI with progress if needed
-        console.log(`Download progress: ${progress}%`);
-      });
+      // Add to download manager for better tracking - this will automatically start the download
+      downloadManager.addDownload(path, filename);
     } catch (err) {
       console.error('Download failed:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
