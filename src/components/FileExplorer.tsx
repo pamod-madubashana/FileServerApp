@@ -762,12 +762,12 @@ export const FileExplorer = () => {
         selectedFilter={selectedFilter}
       />
 
-      {showProfile ? (
-        <ProfileContent onBack={() => setShowProfile(false)} />
-      ) : showSettings ? (
-        <SettingsContent onBack={() => setShowSettings(false)} />
-      ) : (
-        <>
+      <div className="flex-1 flex flex-col">
+        {showProfile ? (
+          <ProfileContent onBack={() => setShowProfile(false)} />
+        ) : showSettings ? (
+          <SettingsContent onBack={() => setShowSettings(false)} />
+        ) : (
           <div className="flex-1 flex flex-col">
             <TopBar
               currentPath={currentPath}
@@ -799,13 +799,13 @@ export const FileExplorer = () => {
               currentFolder={currentFolder}
               onNewFolder={() => setNewFolderDialogOpen(true)}
               isLoading={isLoading}
-              cutItem={clipboard?.operation === "cut" && !isClipboardPasted() ? clipboard.item : null} // Pass cut item to FileGrid only if not pasted
-              hasClipboard={hasClipboard} // Pass the clipboard status function
-              isClipboardPasted={isClipboardPasted()} // Pass the clipboard pasted status
+              cutItem={clipboard?.operation === "cut" && !isClipboardPasted() ? clipboard.item : null}
+              hasClipboard={hasClipboard}
+              isClipboardPasted={isClipboardPasted()}
             />
           </div>
-        </>
-      )}
+        )}
+      </div>
 
       <DeleteConfirmDialog
         open={!!deleteDialog}
