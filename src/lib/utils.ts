@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { invoke } from "@tauri-apps/api/core";
 
 // Extend window interface to include __TAURI__
 declare global {
@@ -10,14 +11,12 @@ declare global {
 
 // Tauri imports (only available in Tauri environment)
 let save: ((options: any) => Promise<string | null>) | null = null;
-let writeFile: ((path: string, data: Uint8Array) => Promise<void>) | null = null;
 let httpFetch: ((url: string, options?: any) => Promise<any>) | null = null;
 
 // Dynamically import Tauri modules only in Tauri environment
 const isTauri = typeof window !== 'undefined' && window.__TAURI__;
 if (isTauri) {
   import('@tauri-apps/plugin-dialog').then(module => save = module.save);
-  import('@tauri-apps/plugin-fs').then(module => writeFile = module.writeFile);
   import('@tauri-apps/plugin-http').then(module => httpFetch = module.fetch);
 }
 
@@ -64,7 +63,7 @@ export async function downloadFile(path: string, filename: string, onProgress?: 
  */
 async function downloadFileTauri(url: string, filename: string, onProgress?: (progress: number) => void): Promise<void> {
   // Ensure Tauri modules are loaded
-  if (!save || !writeFile || !httpFetch) {
+  if (!save || !invoke) {
     throw new Error('Tauri modules not loaded');
   }
 
@@ -81,41 +80,25 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     return;
   }
 
-  // Fetch the file with progress tracking
-  if (httpFetch) {
-    // TODO: Implement progress tracking for Tauri HTTP fetch
-    const response = await httpFetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+  // Set up progress listener if callback provided
+  if (onProgress) {
+    // Listen for download progress events
+    const unlisten = await (window as any).__TAURI__.event.listen('download_progress', (event: any) => {
+      onProgress(event.payload);
+    });
+  }
 
-    // Get the file data as ArrayBuffer
-    const buffer = await response.arrayBuffer();
+  try {
+    // Use our custom Tauri command to download the file
+    await invoke('download_file', { url, savePath: filePath });
     
-    // Report progress if callback provided
+    // Report completion
     if (onProgress) {
       onProgress(100);
     }
-    
-    // Write file to disk
-    await writeFile(filePath, new Uint8Array(buffer));
-  } else {
-    // Fallback to standard fetch
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    // Get the file data as ArrayBuffer
-    const buffer = await response.arrayBuffer();
-    
-    // Report progress if callback provided
-    if (onProgress) {
-      onProgress(100);
-    }
-    
-    // Write file to disk
-    await writeFile(filePath, new Uint8Array(buffer));
+  } catch (error) {
+    console.error('Download failed:', error);
+    throw new Error(`Download failed: ${error}`);
   }
 }
 
