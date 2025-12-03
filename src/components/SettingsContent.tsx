@@ -8,6 +8,9 @@ import { getApiBaseUrl, resetApiBaseUrl } from "@/lib/api";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
+// Add the Tauri dialog import
+import { open } from '@tauri-apps/plugin-dialog';
+
 interface SettingsContentProps {
   onBack: () => void;
 }
@@ -63,6 +66,30 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
     }
   };
 
+  // Function to select download folder (Tauri only)
+  const selectDownloadFolder = async () => {
+    try {
+      // Check if we're in a Tauri environment
+      if (typeof window !== 'undefined' && window.__TAURI__) {
+        const selected = await open({
+          directory: true,
+          multiple: false,
+          title: "Select Download Folder"
+        });
+        
+        if (selected) {
+          setTempDownloadFolder(selected as string);
+        }
+      } else {
+        // For browser environment, show a message
+        toast.info("Folder selection is only available in the desktop app");
+      }
+    } catch (error) {
+      console.error("Error selecting folder:", error);
+      toast.error("Failed to select folder");
+    }
+  };
+
   const handleSave = () => {
     console.log("handleSave function called");
     
@@ -95,17 +122,9 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
       
       setServerUrl(tempServerUrl);
       
-      // Save download folder setting
-      if (tempDownloadFolder) {
-        localStorage.setItem("downloadFolder", tempDownloadFolder);
-      } else {
-        localStorage.removeItem("downloadFolder");
-      }
-      setDownloadFolder(tempDownloadFolder);
-      
       // Show a success message with toast
-      toast.success("Settings saved successfully!", {
-        description: `Server URL: ${tempServerUrl}` + (tempDownloadFolder ? `, Download Folder: ${tempDownloadFolder}` : ''),
+      toast.success("Server settings saved successfully!", {
+        description: `Server URL: ${tempServerUrl}`,
         duration: 3000,
       });
     } catch (error) {
@@ -134,6 +153,31 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
       description: `Default URL: ${defaultUrl}`,
       duration: 3000,
     });
+  };
+
+  // Function to save only the download folder settings
+  const handleSaveDownloadFolder = () => {
+    try {
+      // Save download folder setting
+      if (tempDownloadFolder) {
+        localStorage.setItem("downloadFolder", tempDownloadFolder);
+      } else {
+        localStorage.removeItem("downloadFolder");
+      }
+      setDownloadFolder(tempDownloadFolder);
+      
+      // Show a success message with toast
+      toast.success("Download folder saved successfully!", {
+        description: tempDownloadFolder ? `Download Folder: ${tempDownloadFolder}` : 'Using default download location',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Error saving download folder:", error);
+      toast.error("Error saving download folder", {
+        description: error instanceof Error ? error.message : String(error),
+        duration: 5000,
+      });
+    }
   };
 
   return (
@@ -187,22 +231,6 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
                 </p>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="download-folder" className="text-gray-700 dark:text-gray-300">Download Folder</Label>
-                <Input
-                  id="download-folder"
-                  value={tempDownloadFolder}
-                  onChange={(e) => {
-                    setTempDownloadFolder(e.target.value);
-                  }}
-                  placeholder="Enter download folder path (e.g., Downloads/Telegram Files)"
-                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Files will be automatically downloaded to this folder. Leave empty to use the default download location.
-                </p>
-              </div>
-              
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Tip: Press Ctrl+Alt+R anywhere to reset to default settings
               </p>
@@ -213,6 +241,56 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
               Reset to Default
             </Button>
             <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
+              Save Changes
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        {/* Download Folder Settings - Separated from Server Configuration */}
+        <Card className="mb-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
+          <CardHeader>
+            <CardTitle className="text-2xl text-gray-900 dark:text-white">Download Settings</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">
+              Configure where downloaded files are saved
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 py-6">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="download-folder" className="text-gray-700 dark:text-gray-300">Download Folder</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="download-folder"
+                    value={tempDownloadFolder}
+                    onChange={(e) => {
+                      setTempDownloadFolder(e.target.value);
+                    }}
+                    placeholder="Click 'Browse' to select download folder"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex-1"
+                    readOnly
+                  />
+                  <Button 
+                    onClick={selectDownloadFolder}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Browse
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Files will be automatically downloaded to this folder. Leave empty to use the default download location.
+                </p>
+                
+                {/* Show a note for browser users */}
+                {typeof window !== 'undefined' && !window.__TAURI__ && (
+                  <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                    Note: Folder selection is only available in the desktop app. In browsers, files will be saved to your default download location.
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button onClick={handleSaveDownloadFolder} className="bg-blue-600 hover:bg-blue-700 text-white">
               Save Changes
             </Button>
           </CardFooter>
