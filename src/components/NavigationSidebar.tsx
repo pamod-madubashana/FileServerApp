@@ -75,6 +75,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     { name: "Files", path: "/files", icon: FolderOpen },
     { name: "Profile", path: "/profile", icon: User },
     { name: "Settings", path: "/settings", icon: Settings },
+    { name: "Test Download", path: "/test-download", icon: Info },
   ];
 
   const handleMenuClick = (item: string, path?: string) => {

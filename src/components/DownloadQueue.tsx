@@ -54,10 +54,6 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className }) => {
   const totalDownloads = downloads.length;
   const hasActiveDownloads = activeDownloads.length > 0 || queuedDownloads.length > 0;
 
-  if (totalDownloads === 0) {
-    return null;
-  }
-
   return (
     <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
       {/* Collapsed view - show download count */}

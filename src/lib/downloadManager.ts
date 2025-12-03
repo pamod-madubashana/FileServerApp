@@ -115,9 +115,12 @@ export class DownloadManager {
     try {
       logger.info('[DownloadManager] Starting download', { id, url: download.url });
       
-      // TODO: Implement actual download with progress tracking
-      // For now, we'll use the existing downloadFile function
-      await downloadFile(download.url, download.filename);
+      // Download with progress tracking
+      await downloadFile(download.url, download.filename, (progress) => {
+        // Update progress
+        download.progress = progress;
+        this.notifyListeners();
+      });
       
       // Update status
       download.status = 'completed';
