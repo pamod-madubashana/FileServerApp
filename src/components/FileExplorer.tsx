@@ -767,20 +767,11 @@ export const FileExplorer = () => {
       {showDownloadQueue && (
         <div className="fixed bottom-4 right-4 z-50">
           <Card className="w-80 shadow-xl">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg">Downloads</CardTitle>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setShowDownloadQueue(false)}
-                >
-                  <XIcon className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0 max-h-96 overflow-y-auto">
-              <DownloadQueue />
+            <CardContent className="p-0">
+              <DownloadQueue 
+                isOpen={true}
+                onToggle={() => setShowDownloadQueue(false)}
+              />
             </CardContent>
           </Card>
         </div>

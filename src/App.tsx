@@ -10,7 +10,7 @@ import Index from "./pages/Index";
 import TestDownload from "./pages/TestDownload";
 import { NavigationSidebar } from "@/components/NavigationSidebar";
 import { AuthWrapper } from "@/components/AuthWrapper";
-import DownloadQueue from "@/components/DownloadQueue";
+// Remove the import for DownloadQueue since we're moving it to the FileExplorer
 import logger from "@/lib/logger";
 
 const queryClient = new QueryClient();
@@ -78,7 +78,7 @@ const App = () => {
           <div className="flex-1 flex flex-col overflow-hidden">
             <AppRoutes />
             <Toaster />
-            <DownloadQueue />
+            {/* Remove the floating DownloadQueue component */}
           </div>
         </div>
       </BrowserRouter>

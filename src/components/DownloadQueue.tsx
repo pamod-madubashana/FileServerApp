@@ -1,18 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Progress } from './ui/progress';
-import { DownloadIcon, XIcon, RotateCcwIcon } from 'lucide-react';
-import { downloadManager, DownloadItem } from '../lib/downloadManager';
-import { downloadFile } from '../lib/utils';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Download as DownloadIcon, X as XIcon, RotateCcw as RotateCcwIcon } from "lucide-react";
+import { downloadManager } from "@/lib/downloadManager";
+import { DownloadItem } from "@/components/types";
 
 interface DownloadQueueProps {
   className?: string;
+  isOpen?: boolean; // Make isOpen controllable from outside
+  onToggle?: () => void; // Callback for when the toggle is clicked
 }
 
-const DownloadQueue: React.FC<DownloadQueueProps> = ({ className }) => {
+const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: externalIsOpen, onToggle }) => {
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  
+  // Use external isOpen if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  
+  // Use external onToggle if provided, otherwise use internal toggle
+  const handleToggle = () => {
+    if (onToggle) {
+      onToggle();
+    } else {
+      setInternalIsOpen(!internalIsOpen);
+    }
+  };
 
   useEffect(() => {
     // Subscribe to download updates
@@ -24,10 +38,6 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className }) => {
       unsubscribe();
     };
   }, []);
-
-  const toggleOpen = () => {
-    setIsOpen(!isOpen);
-  };
 
   const cancelDownload = (id: string) => {
     downloadManager.cancelDownload(id);
@@ -59,7 +69,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className }) => {
       {/* Collapsed view - show download count */}
       {!isOpen && (
         <Button 
-          onClick={toggleOpen}
+          onClick={handleToggle}
           className="rounded-full w-12 h-12 p-0 shadow-lg"
           variant="default"
         >
@@ -90,7 +100,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className }) => {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={toggleOpen}
+                  onClick={handleToggle}
                 >
                   <XIcon className="h-4 w-4" />
                 </Button>

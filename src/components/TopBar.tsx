@@ -114,18 +114,20 @@ export const TopBar = ({
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Add download button */}
-          {onToggleDownloadQueue && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggleDownloadQueue}
-              className="h-8 w-8"
-              title="Download Queue"
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          )}
+          {/* Download button - always render but disable if no handler */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              console.log("Download button clicked");
+              onToggleDownloadQueue && onToggleDownloadQueue();
+            }}
+            className="h-8 w-8"
+            title="Download Queue"
+            disabled={!onToggleDownloadQueue}
+          >
+            <Download className="h-4 w-4" />
+          </Button>
           
           <Button
             variant={viewMode === "grid" ? "secondary" : "ghost"}
