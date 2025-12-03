@@ -6,6 +6,10 @@ use tokio::io::AsyncWriteExt;
 use futures::StreamExt;
 use dirs;
 
+// Remove the unused imports
+// use tauri::Manager;
+// use std::path::Path;
+
 // Logging commands that can be called from the frontend
 #[tauri::command]
 fn log_debug(message: &str) {
