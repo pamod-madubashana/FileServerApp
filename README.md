@@ -14,6 +14,14 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Key Features
+
+- Cross-platform file downloads (browser and Tauri)
+- Advanced download management with progress tracking
+- File browsing and organization
+- User authentication and profile management
+- Settings customization
+
 ## Getting Started
 
 ### Prerequisites

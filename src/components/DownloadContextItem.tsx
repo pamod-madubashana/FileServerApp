@@ -2,6 +2,7 @@ import React from 'react';
 import { DropdownMenuItem } from './ui/dropdown-menu';
 import { DownloadIcon } from 'lucide-react';
 import { downloadFile } from '../lib/utils';
+import { downloadManager } from '../lib/downloadManager';
 
 interface DownloadContextItemProps {
   path: string;
@@ -27,7 +28,14 @@ const DownloadContextItem: React.FC<DownloadContextItemProps> = ({
     setLoading(true);
     
     try {
-      await downloadFile(path, filename);
+      // Add to download manager for better tracking
+      const downloadId = downloadManager.addDownload(path, filename);
+      
+      // Perform the download with progress tracking
+      await downloadFile(path, filename, (progress) => {
+        // Could update UI with progress if needed
+        console.log(`Download progress: ${progress}%`);
+      });
       onClose?.();
     } catch (err) {
       console.error('Download failed:', err);

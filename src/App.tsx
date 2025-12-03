@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import { NavigationSidebar } from "@/components/NavigationSidebar";
 import { AuthWrapper } from "@/components/AuthWrapper";
+import DownloadQueue from "@/components/DownloadQueue";
 import logger from "@/lib/logger";
 
 const queryClient = new QueryClient();
@@ -75,6 +76,7 @@ const App = () => {
           <div className="flex-1 flex flex-col overflow-hidden">
             <AppRoutes />
             <Toaster />
+            <DownloadQueue />
           </div>
         </div>
       </BrowserRouter>

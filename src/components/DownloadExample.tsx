@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { DownloadIcon } from 'lucide-react';
 import { downloadFile } from '../lib/utils';
+import { downloadManager } from '../lib/downloadManager';
 
 /**
  * A simple example component demonstrating how to use the downloadFile function
@@ -10,6 +11,9 @@ import { downloadFile } from '../lib/utils';
 const DownloadExample: React.FC = () => {
   const handleDownloadImage = async () => {
     try {
+      // Add to download manager
+      downloadManager.addDownload('/dl/sample-image.jpg', 'sample-image.jpg');
+      
       // Example: Download an image file
       await downloadFile('/dl/sample-image.jpg', 'sample-image.jpg');
     } catch (error) {
@@ -20,6 +24,9 @@ const DownloadExample: React.FC = () => {
 
   const handleDownloadDocument = async () => {
     try {
+      // Add to download manager
+      downloadManager.addDownload('/dl/sample-document.pdf', 'sample-document.pdf');
+      
       // Example: Download a document file
       await downloadFile('/dl/sample-document.pdf', 'sample-document.pdf');
     } catch (error) {
@@ -30,6 +37,9 @@ const DownloadExample: React.FC = () => {
 
   const handleDownloadVideo = async () => {
     try {
+      // Add to download manager
+      downloadManager.addDownload('/dl/sample-video.mp4', 'sample-video.mp4');
+      
       // Example: Download a video file
       await downloadFile('/dl/sample-video.mp4', 'sample-video.mp4');
     } catch (error) {

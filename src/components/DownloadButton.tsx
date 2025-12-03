@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from './ui/button';
 import { DownloadIcon } from 'lucide-react';
 import { downloadFile } from '../lib/utils';
+import { downloadManager } from '../lib/downloadManager';
 
 interface DownloadButtonProps {
   path: string;
@@ -30,7 +31,14 @@ const DownloadButton: React.FC<DownloadButtonProps> = ({
     setError(null);
     
     try {
-      await downloadFile(path, filename);
+      // Add to download manager for better tracking
+      const downloadId = downloadManager.addDownload(path, filename);
+      
+      // Perform the download with progress tracking
+      await downloadFile(path, filename, (progress) => {
+        // Could update UI with progress if needed
+        console.log(`Download progress: ${progress}%`);
+      });
     } catch (err) {
       console.error('Download failed:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');

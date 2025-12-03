@@ -186,6 +186,18 @@ Access-Control-Allow-Headers: Content-Type, Authorization
 
 The utility uses ArrayBuffer for efficient handling of large files, but extremely large files may still cause memory issues. For very large files, consider implementing streaming downloads.
 
+## Enhanced Download System
+
+The application now includes an enhanced download system with additional features:
+
+1. **Download Queue Management**: The `DownloadManager` class handles multiple concurrent downloads
+2. **Progress Tracking**: Real-time progress updates for downloads
+3. **Automatic Retry**: Built-in retry logic with exponential backoff
+4. **Persistent History**: Download history is saved and restored between sessions
+5. **Cancellation Support**: Ability to cancel ongoing downloads
+
+For complete documentation of the enhanced download system, see `DOWNLOAD_SYSTEM.md`.
+
 ## Customization
 
 You can customize the function behavior by modifying `download-utils.ts`:
