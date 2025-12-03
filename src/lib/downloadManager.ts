@@ -131,6 +131,9 @@ export class DownloadManager {
       // Store file path/blob URL for opening later
       if (filePath && typeof filePath === 'string') {
         download.filePath = filePath;
+        console.log('Stored filePath for download:', { id, filePath, download });
+      } else {
+        console.log('No filePath to store for download:', { id, filePath });
       }
       
       logger.info('[DownloadManager] Download completed', { id });

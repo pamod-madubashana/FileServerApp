@@ -128,13 +128,21 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                         // Open file when clicking on completed downloads
                         if (download.status === 'completed') {
                           // Check if we're in Tauri environment
-                          if (typeof window !== 'undefined' && window.__TAURI__) {
+                          const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+                          console.log('Download item clicked:', { isTauri, filePath: download.filePath, download });
+                          
+                          if (isTauri) {
                             // For Tauri, use the file path to open with system default app
                             if (download.filePath) {
+                              console.log('Opening file in Tauri:', download.filePath);
                               openPath(download.filePath).catch(err => {
                                 console.error('Failed to open file:', err);
                               });
+                            } else {
+                              console.log('No filePath available for download:', download);
                             }
+                          } else {
+                            console.log('Not in Tauri environment, skipping file open');
                           }
                           // For browser, do nothing as we cannot directly open files
                           // The user can access downloaded files through their browser's download manager

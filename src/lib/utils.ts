@@ -36,11 +36,16 @@ export async function downloadFile(path: string, filename: string, onProgress?: 
     const url = path.startsWith('http') ? path : `${window.location.origin}${path}`;
     
     // Check if we're in a Tauri environment
-    if (typeof window !== 'undefined' && window.__TAURI__) {
+    const isTauriEnv = typeof window !== 'undefined' && window.__TAURI__;
+    console.log('Download environment check:', { isTauriEnv, userAgent: navigator.userAgent });
+    
+    if (isTauriEnv) {
       // Use Tauri APIs for downloading
+      console.log('Using Tauri download API');
       return await downloadFileTauri(url, filename, onProgress);
     } else {
       // Use browser APIs for downloading
+      console.log('Using browser download API');
       return await downloadFileBrowser(url, filename, onProgress);
     }
   } catch (error) {
@@ -69,6 +74,7 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
 
   // Get download folder from settings
   const downloadFolder = localStorage.getItem('downloadFolder') || '';
+  console.log('Download folder from settings:', downloadFolder);
   
   // Construct file path
   let filePath: string;
@@ -76,9 +82,12 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     // Use configured download folder
     // Ensure the path uses the correct separator for the platform
     const separator = window.__TAURI__ ? '\\' : '/';
+    console.log('Constructing path with separator:', { downloadFolder, separator, endsWithSeparator: downloadFolder.endsWith(separator) });
     filePath = downloadFolder.endsWith(separator) ? `${downloadFolder}${filename}` : `${downloadFolder}${separator}${filename}`;
+    console.log('Constructed filePath:', filePath);
   } else {
     // Ask user where to save the file (fallback behavior)
+    console.log('No download folder set, asking user where to save');
     filePath = await save({
       filters: [{
         name: filename,
@@ -90,6 +99,7 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
       // User cancelled the save dialog
       throw new Error('Download cancelled by user');
     }
+    console.log('User selected filePath:', filePath);
   }
 
   // Set up progress listener if callback provided
@@ -111,6 +121,7 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     }
     
     // Return the file path so it can be stored
+    console.log('Returning filePath from downloadFileTauri:', filePath);
     return filePath;
   } catch (error) {
     console.error('Download failed:', error);
