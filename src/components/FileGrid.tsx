@@ -372,6 +372,7 @@ export const FileGrid = ({
           onDelete={() => contextMenu.item && onDelete(contextMenu.item, contextMenu.index)}
           onRename={() => contextMenu.item && onRename(contextMenu.item, contextMenu.index)}
           onNewFolder={onNewFolder}
+          onDownload={() => contextMenu.item && onDownload(contextMenu.item)} // Add this line
           onClose={() => setContextMenu(null)}
           hasClipboard={hasClipboard}
           isClipboardPasted={isClipboardPasted}
