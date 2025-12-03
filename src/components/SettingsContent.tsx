@@ -11,6 +11,9 @@ import { toast } from "sonner";
 // Add the Tauri dialog import
 import { open } from '@tauri-apps/plugin-dialog';
 
+// Add Tauri path import for getting user profile directory
+import { homeDir } from '@tauri-apps/api/path';
+
 interface SettingsContentProps {
   onBack: () => void;
 }
@@ -41,7 +44,26 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
     const savedDownloadFolder = localStorage.getItem("downloadFolder") || "";
     setDownloadFolder(savedDownloadFolder);
     setTempDownloadFolder(savedDownloadFolder);
+    
+    // Set default download folder for Tauri app if not already set
+    if (typeof window !== 'undefined' && window.__TAURI__ && !savedDownloadFolder) {
+      setDefaultDownloadFolder();
+    }
   }, []);
+
+  // Function to set default download folder
+  const setDefaultDownloadFolder = async () => {
+    try {
+      if (typeof window !== 'undefined' && window.__TAURI__) {
+        const homeDirectory = await homeDir();
+        // Use correct path separator for Windows
+        const defaultDownloadFolder = `${homeDirectory}Downloads\\fileServer`;
+        setTempDownloadFolder(defaultDownloadFolder);
+      }
+    } catch (error) {
+      console.error("Error setting default download folder:", error);
+    }
+  };
 
   const validateUrl = (url: string): boolean => {
     console.log("Validating URL:", url);

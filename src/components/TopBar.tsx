@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ChevronDown, Search, Grid3x3, List, MoreHorizontal, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Search, Grid3x3, List, MoreHorizontal, RefreshCw, Download } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 
@@ -12,6 +12,7 @@ interface TopBarProps {
   onRefresh: () => void;
   onBreadcrumbClick: (index: number) => void;
   onPaste?: () => void;
+  onToggleDownloadQueue?: () => void; // Add this prop
 }
 
 export const TopBar = ({
@@ -24,6 +25,7 @@ export const TopBar = ({
   onRefresh,
   onBreadcrumbClick,
   onPaste,
+  onToggleDownloadQueue, // Add this prop
 }: TopBarProps) => {
   return (
     <div className="bg-background border-b border-border select-none">
@@ -112,6 +114,19 @@ export const TopBar = ({
         </div>
 
         <div className="flex items-center gap-1">
+          {/* Add download button */}
+          {onToggleDownloadQueue && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleDownloadQueue}
+              className="h-8 w-8"
+              title="Download Queue"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          )}
+          
           <Button
             variant={viewMode === "grid" ? "secondary" : "ghost"}
             size="icon"

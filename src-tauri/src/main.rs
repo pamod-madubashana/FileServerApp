@@ -5,10 +5,7 @@ use tauri::Emitter;
 use tokio::io::AsyncWriteExt;
 use futures::StreamExt;
 use dirs;
-
-// Remove the unused imports
-// use tauri::Manager;
-// use std::path::Path;
+use std::path::Path;
 
 // Logging commands that can be called from the frontend
 #[tauri::command]
@@ -52,7 +49,7 @@ async fn download_file(url: &str, save_path: &str, app_handle: tauri::AppHandle)
     log::info!("Total file size: {} bytes", total_size);
     
     // Handle relative paths by resolving them against the user's download directory
-    let resolved_path = if std::path::Path::new(&save_path).is_absolute() {
+    let resolved_path = if Path::new(&save_path).is_absolute() {
         save_path.to_string()
     } else {
         // For relative paths, resolve against the user's download directory
@@ -123,6 +120,19 @@ fn main() {
       // Log environment variables that might be relevant
       if let Ok(rust_log) = std::env::var("RUST_LOG") {
         log::info!("RUST_LOG environment variable: {}", rust_log);
+      }
+      
+      // Create default download directory if it doesn't exist
+      if let Some(home_dir) = dirs::home_dir() {
+        let default_download_dir = home_dir.join("Downloads").join("fileServer");
+        if !default_download_dir.exists() {
+          match std::fs::create_dir_all(&default_download_dir) {
+            Ok(_) => log::info!("Created default download directory: {:?}", default_download_dir),
+            Err(e) => log::error!("Failed to create default download directory: {}", e)
+          }
+        } else {
+          log::info!("Default download directory already exists: {:?}", default_download_dir);
+        }
       }
       
       log::info!("Application setup completed successfully");

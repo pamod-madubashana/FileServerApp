@@ -20,7 +20,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import logger from "@/lib/logger";
+import { X as XIcon } from "lucide-react";
+import DownloadQueue from "./DownloadQueue";
 import { downloadManager } from "@/lib/downloadManager";
 
 export const FileExplorer = () => {
@@ -59,6 +62,7 @@ export const FileExplorer = () => {
   
   const [showProfile, setShowProfile] = useState(false); // State to track if profile should be shown
   const [showSettings, setShowSettings] = useState(false); // State to track if settings should be shown
+  const [showDownloadQueue, setShowDownloadQueue] = useState(false); // State to track if download queue should be shown
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
@@ -730,6 +734,7 @@ export const FileExplorer = () => {
               onRefresh={refetch}
               onBreadcrumbClick={handleBreadcrumbClick}
               onPaste={hasClipboard && !isClipboardPasted() ? handlePaste : undefined}
+              onToggleDownloadQueue={() => setShowDownloadQueue(!showDownloadQueue)} // Add this prop
             />
 
             <FileGrid
@@ -757,6 +762,29 @@ export const FileExplorer = () => {
           </div>
         )}
       </div>
+
+      {/* Download Queue Widget - Show when showDownloadQueue is true */}
+      {showDownloadQueue && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <Card className="w-80 shadow-xl">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">Downloads</CardTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowDownloadQueue(false)}
+                >
+                  <XIcon className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0 max-h-96 overflow-y-auto">
+              <DownloadQueue />
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <DeleteConfirmDialog
         open={!!deleteDialog}
