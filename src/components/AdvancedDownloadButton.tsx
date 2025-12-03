@@ -30,20 +30,35 @@ const AdvancedDownloadButton: React.FC<AdvancedDownloadButtonProps> = ({
     setError(null);
     
     try {
-      // Add to download manager for tracking
+      // Add to download manager for tracking - this will automatically start the download
       const downloadId = downloadManager.addDownload(path, filename);
       
-      // Perform the download with progress tracking
-      await downloadFile(path, filename, (progress) => {
-        setProgress(progress);
+      // The download is now handled by the download manager's queue system
+      // We don't need to call downloadFile directly
+      
+      // Set up a listener to update the UI progress
+      const unsubscribe = downloadManager.subscribe((downloads) => {
+        const download = downloads.find(d => d.id === downloadId);
+        if (download) {
+          setProgress(download.progress);
+          
+          // Update status based on download state
+          if (download.status === 'completed') {
+            setStatus('completed');
+            setTimeout(() => {
+              setStatus('idle');
+            }, 2000);
+            unsubscribe();
+          } else if (download.status === 'failed') {
+            setError(download.error || 'Unknown error occurred');
+            setStatus('error');
+            setTimeout(() => {
+              setStatus('idle');
+            }, 3000);
+            unsubscribe();
+          }
+        }
       });
-      
-      setStatus('completed');
-      
-      // Reset to idle after 2 seconds
-      setTimeout(() => {
-        setStatus('idle');
-      }, 2000);
     } catch (err) {
       console.error('Download failed:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');

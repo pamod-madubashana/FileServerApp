@@ -28,14 +28,11 @@ const DownloadContextItem: React.FC<DownloadContextItemProps> = ({
     setLoading(true);
     
     try {
-      // Add to download manager for better tracking
+      // Add to download manager for better tracking - this will automatically start the download
       const downloadId = downloadManager.addDownload(path, filename);
       
-      // Perform the download with progress tracking
-      await downloadFile(path, filename, (progress) => {
-        // Could update UI with progress if needed
-        console.log(`Download progress: ${progress}%`);
-      });
+      // The download is now handled by the download manager's queue system
+      // We don't need to call downloadFile directly
       onClose?.();
     } catch (err) {
       console.error('Download failed:', err);

@@ -11,11 +11,8 @@ import { downloadManager } from '../lib/downloadManager';
 const DownloadExample: React.FC = () => {
   const handleDownloadImage = async () => {
     try {
-      // Add to download manager
+      // Add to download manager - this will automatically start the download
       downloadManager.addDownload('/dl/sample-image.jpg', 'sample-image.jpg');
-      
-      // Example: Download an image file
-      await downloadFile('/dl/sample-image.jpg', 'sample-image.jpg');
     } catch (error) {
       console.error('Download failed:', error);
       alert('Download failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -24,11 +21,8 @@ const DownloadExample: React.FC = () => {
 
   const handleDownloadDocument = async () => {
     try {
-      // Add to download manager
+      // Add to download manager - this will automatically start the download
       downloadManager.addDownload('/dl/sample-document.pdf', 'sample-document.pdf');
-      
-      // Example: Download a document file
-      await downloadFile('/dl/sample-document.pdf', 'sample-document.pdf');
     } catch (error) {
       console.error('Download failed:', error);
       alert('Download failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -37,11 +31,8 @@ const DownloadExample: React.FC = () => {
 
   const handleDownloadVideo = async () => {
     try {
-      // Add to download manager
+      // Add to download manager - this will automatically start the download
       downloadManager.addDownload('/dl/sample-video.mp4', 'sample-video.mp4');
-      
-      // Example: Download a video file
-      await downloadFile('/dl/sample-video.mp4', 'sample-video.mp4');
     } catch (error) {
       console.error('Download failed:', error);
       alert('Download failed: ' + (error instanceof Error ? error.message : 'Unknown error'));

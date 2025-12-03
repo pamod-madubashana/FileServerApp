@@ -146,6 +146,11 @@ export class DownloadManager {
     return Array.from(this.downloads.values());
   }
 
+  // Get a specific download by ID
+  getDownloadById(id: string): DownloadItem | undefined {
+    return this.downloads.get(id);
+  }
+
   // Get active downloads
   getActiveDownloads(): DownloadItem[] {
     return Array.from(this.activeDownloads).map(id => this.downloads.get(id)!).filter(Boolean);

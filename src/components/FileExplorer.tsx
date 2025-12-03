@@ -581,13 +581,11 @@ export const FileExplorer = () => {
         ? `${baseUrl}/dl/${fileName}` 
         : `/dl/${fileName}`;
       
-      // Add to download manager for tracking
+      // Add to download manager for tracking - this will automatically start the download
       const downloadId = downloadManager.addDownload(downloadUrl, item.name);
       
-      // Use our unified download function that works in both environments
-      // Import our reusable download function
-      const { downloadFile } = await import('@/lib/utils');
-      await downloadFile(downloadUrl, item.name);
+      // The download is now handled by the download manager's queue system
+      // We don't need to call downloadFile directly
     } catch (error) {
       logger.error("Failed to download file:", error);
       toast.error("Failed to download file");
