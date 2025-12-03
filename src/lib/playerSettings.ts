@@ -2,14 +2,20 @@
 
 const PLAYER_PREFERENCE_KEY = "playerPreference";
 
-export type PlayerPreference = "built-in";
+export type PlayerPreference = "built-in" | "external";
 
 // Get the player preference from localStorage
 export const getPlayerPreference = (): PlayerPreference => {
   try {
     const preference = localStorage.getItem(PLAYER_PREFERENCE_KEY);
     console.log("Getting player preference from localStorage:", preference);
-    // Always return built-in player since external player is no longer supported
+    
+    // Validate and return the preference
+    if (preference === "built-in" || preference === "external") {
+      return preference;
+    }
+    
+    // Default to built-in player
     return "built-in";
   } catch (error) {
     console.error("Error getting player preference:", error);

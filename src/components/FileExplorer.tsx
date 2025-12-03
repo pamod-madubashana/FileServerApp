@@ -172,7 +172,7 @@ export const FileExplorer = () => {
       setShowSettings(false);
       
       // Close navigation sidebar when returning to file view
-      const event = new CustomEvent('toggleNavigationSidebar');
+      const event = new CustomEvent('toggleNavigationSidebar', { detail: { action: 'close' } });
       window.dispatchEvent(event);
     };
 

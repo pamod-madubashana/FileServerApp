@@ -212,7 +212,11 @@ export default function Settings() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
             <Button 
               variant="outline" 
-              onClick={() => navigate("/")}
+              onClick={() => {
+                navigate("/");
+                // Dispatch event to show file explorer and close navigation sidebar
+                window.dispatchEvent(new CustomEvent('showFiles'));
+              }}
               className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               Back to Files
