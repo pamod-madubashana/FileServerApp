@@ -283,26 +283,9 @@ export const SettingsWidget = () => {
                   />
                   <span className="text-sm">Built-in Player (Plyr)</span>
                 </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="playerPreference"
-                    checked={playerPreference === "external"}
-                    onChange={() => {
-                      console.log("Changing to external player");
-                      setPlayerPreferenceState("external");
-                      setPlayerPreferenceChanged(true);
-                    }}
-                    className="form-radio"
-                  />
-                  <span className="text-sm">External Player</span>
-                </label>
               </div>
               <p className="text-xs text-muted-foreground">
                 Built-in Player: Uses the integrated Plyr media player within the application
-              </p>
-              <p className="text-xs text-muted-foreground">
-                External Player: Opens media files in your system's default media player
               </p>
             </div>
           </CardContent>

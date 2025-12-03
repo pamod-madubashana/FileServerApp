@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getApiBaseUrl, resetApiBaseUrl } from "@/lib/api";
 import { X } from "lucide-react";
-import { getPlayerPreference, setPlayerPreference, PlayerPreference } from "@/lib/playerSettings";
 import { toast } from "sonner";
 
 interface SettingsContentProps {
@@ -18,10 +17,8 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
   const [serverUrl, setServerUrl] = useState("");
   const [tempServerUrl, setTempServerUrl] = useState("");
   const [error, setError] = useState("");
-  const [playerPreference, setPlayerPreferenceState] = useState<PlayerPreference>("built-in");
-  const [playerPreferenceChanged, setPlayerPreferenceChanged] = useState(false);
 
-  // Load server URL and player preference from localStorage on component mount
+  // Load server URL from localStorage on component mount
   useEffect(() => {
     const currentUrl = getApiBaseUrl();
     // If the current URL is the default "/api", construct the full URL assuming backend is on port 8000
@@ -34,12 +31,6 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
     }
     setServerUrl(displayUrl);
     setTempServerUrl(displayUrl);
-    
-    // Load player preference
-    const loadedPreference = getPlayerPreference();
-    console.log("Loaded player preference:", loadedPreference);
-    setPlayerPreferenceState(loadedPreference);
-    setPlayerPreferenceChanged(false);
   }, []);
 
   const validateUrl = (url: string): boolean => {
@@ -67,7 +58,6 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
 
   const handleSave = () => {
     console.log("handleSave function called");
-    console.log("Current player preference state:", playerPreference);
     
     // Validate the URL before saving
     if (!validateUrl(tempServerUrl)) {
@@ -98,33 +88,14 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
       
       setServerUrl(tempServerUrl);
       
-      // Save player preference
-      console.log("About to save player preference:", playerPreference);
-      setPlayerPreference(playerPreference);
-      // Verify it was saved
-      const savedValue = localStorage.getItem("playerPreference");
-      console.log("Verified saved value in localStorage:", savedValue);
-      if (savedValue === playerPreference) {
-        console.log("Player preference saved successfully");
-        setPlayerPreferenceChanged(false);
-        
-        // Show a success message with toast
-        toast.success("Settings saved successfully!", {
-          description: `Player mode: ${playerPreference}\nServer URL: ${tempServerUrl}`,
-          duration: 3000,
-        });
-      } else {
-        console.error("Player preference was not saved correctly");
-        console.log("Expected:", playerPreference);
-        console.log("Actual:", savedValue);
-        toast.error("Error: Player preference was not saved correctly.", {
-          description: `Expected: ${playerPreference}, Actual: ${savedValue}`,
-          duration: 5000,
-        });
-      }
+      // Show a success message with toast
+      toast.success("Settings saved successfully!", {
+        description: `Server URL: ${tempServerUrl}`,
+        duration: 3000,
+      });
     } catch (error) {
-      console.error("Error saving settings:", error);
-      toast.error("Error saving settings", {
+      console.error("Error saving server URL:", error);
+      toast.error("Error saving server URL", {
         description: error instanceof Error ? error.message : String(error),
         duration: 5000,
       });
@@ -132,81 +103,22 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
   };
 
   const handleReset = () => {
-    // Reset to the default full URL (port 8000)
-    const url = new URL(window.location.origin);
-    url.port = "8000";
-    const defaultUrl = url.origin;
-    setTempServerUrl(defaultUrl);
-    setError(""); // Clear any error when resetting
+    // Reset to default server URL
+    const defaultUrl = (() => {
+      const url = new URL(window.location.origin);
+      url.port = "8000";
+      return url.origin;
+    })();
     
-    // Reset player preference to default
-    setPlayerPreferenceState("built-in");
-    setPlayerPreferenceChanged(true);
+    setTempServerUrl(defaultUrl);
+    setError("");
+    
+    // Show confirmation
+    toast.info("Server URL reset to default", {
+      description: `Default URL: ${defaultUrl}`,
+      duration: 3000,
+    });
   };
-
-  const handleSavePlayerPreference = () => {
-    console.log("handleSavePlayerPreference function called");
-    console.log("Current player preference state:", playerPreference);
-
-    // Save player preference
-    console.log("About to save player preference:", playerPreference);
-    try {
-      setPlayerPreference(playerPreference);
-      // Verify it was saved
-      const savedValue = localStorage.getItem("playerPreference");
-      console.log("Verified saved value in localStorage:", savedValue);
-      if (savedValue === playerPreference) {
-        console.log("Player preference saved successfully");
-        setPlayerPreferenceChanged(false);
-        
-        // Show a success message with toast
-        toast.success("Player preference saved successfully!", {
-          description: `Player mode: ${playerPreference}`,
-          duration: 3000,
-        });
-      } else {
-        console.error("Player preference was not saved correctly");
-        console.log("Expected:", playerPreference);
-        console.log("Actual:", savedValue);
-        toast.error("Error: Player preference was not saved correctly.", {
-          description: `Expected: ${playerPreference}, Actual: ${savedValue}`,
-          duration: 5000,
-        });
-      }
-    } catch (error) {
-      console.error("Error saving player preference:", error);
-      toast.error("Error saving player preference", {
-        description: error instanceof Error ? error.message : String(error),
-        duration: 5000,
-      });
-    }
-  };
-
-  // Auto-save player preference when it changes
-  useEffect(() => {
-    if (playerPreferenceChanged) {
-      const timer = setTimeout(() => {
-        handleSavePlayerPreference();
-      }, 500); // Auto-save after 500ms of no changes
-      
-      return () => clearTimeout(timer);
-    }
-  }, [playerPreference, playerPreferenceChanged]);
-
-  // Remove auto-save for URL configuration - keep manual save only
-  // useEffect(() => {
-  //   // Only auto-save if the URL has actually changed and is valid
-  //   if (tempServerUrl !== serverUrl && tempServerUrl !== "") {
-  //     // Validate the URL before auto-saving
-  //     if (validateUrl(tempServerUrl)) {
-  //       const timer = setTimeout(() => {
-  //         handleSave();
-  //       }, 1000); // Auto-save after 1 second of no changes
-  //       
-  //       return () => clearTimeout(timer);
-  //     }
-  //   }
-  // }, [tempServerUrl, serverUrl]);
 
   return (
     <div className="flex-1 overflow-auto bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:px-6">
@@ -221,8 +133,6 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
               window.history.pushState({ path: ["Home"] }, '', '/');
               // Dispatch event to show file explorer
               window.dispatchEvent(new CustomEvent('showFiles'));
-              // Note: We don't close the navigation sidebar here as it should remain open
-              // when viewing profile/settings pages
             }}
             className="rounded-full p-2 hover:bg-gray-200 dark:hover:bg-gray-700"
           >
@@ -274,60 +184,9 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
             </Button>
           </CardFooter>
         </Card>
-        
-        {/* Player Preference Settings */}
-        <Card className="mb-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
-          <CardHeader>
-            <CardTitle className="text-2xl text-gray-900 dark:text-white">Player Settings</CardTitle>
-            <CardDescription className="text-gray-600 dark:text-gray-400">
-              Choose your preferred media player for videos and audio files
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 py-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-gray-700 dark:text-gray-300">Video/Audio Player</Label>
-                <div className="flex flex-col space-y-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name="playerPreference"
-                      checked={playerPreference === "built-in"}
-                      onChange={() => {
-                        console.log("Changing to built-in player");
-                        setPlayerPreferenceState("built-in");
-                        setPlayerPreferenceChanged(true);
-                      }}
-                      className="form-radio"
-                    />
-                    <span className="text-gray-700 dark:text-gray-300">Built-in Player (Plyr)</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name="playerPreference"
-                      checked={playerPreference === "external"}
-                      onChange={() => {
-                        console.log("Changing to external player");
-                        setPlayerPreferenceState("external");
-                        setPlayerPreferenceChanged(true);
-                      }}
-                      className="form-radio"
-                    />
-                    <span className="text-gray-700 dark:text-gray-300">External Player</span>
-                  </label>
-                </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Built-in Player: Uses the integrated Plyr media player within the application
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  External Player: Opens media files in your system's default media player
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
 };
+
+export default SettingsContent;

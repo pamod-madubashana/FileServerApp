@@ -170,35 +170,17 @@ export const FileGrid = ({
         : `/dl/${encodeURIComponent(item.name)}`;
       setImageViewer({ url: imageUrl, fileName: item.name });
     } else if ((item.fileType === "video" || item.fileType === "audio" || item.fileType === "voice") && item.file_unique_id) {
-      // Check player preference
-      const preference = getPlayerPreference();
-      console.log("Current player preference:", preference);
-      
-      if (preference === "external") {
-        // Open in external player/system default
-        const baseUrl = getApiBaseUrl();
-        const mediaUrl = baseUrl 
-          ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
-          : `/dl/${encodeURIComponent(item.name)}`;
-        
-        console.log("Opening media in external player:", mediaUrl);
-        
-        // For external player, we'll open in a new tab which should trigger the system's default player
-        // or prompt the user to choose an application
-        window.open(mediaUrl, '_blank');
-      } else {
-        // Open media in built-in player
-        console.log("Opening media in built-in player");
-        const baseUrl = getApiBaseUrl();
-        const mediaUrl = baseUrl 
-          ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
-          : `/dl/${encodeURIComponent(item.name)}`;
-        setMediaPlayer({ 
-          url: mediaUrl, 
-          fileName: item.name, 
-          fileType: item.fileType as "video" | "audio" | "voice" 
-        });
-      }
+      // Always use built-in player (remove external player option)
+      console.log("Opening media in built-in player");
+      const baseUrl = getApiBaseUrl();
+      const mediaUrl = baseUrl 
+        ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
+        : `/dl/${encodeURIComponent(item.name)}`;
+      setMediaPlayer({ 
+        url: mediaUrl, 
+        fileName: item.name, 
+        fileType: item.fileType as "video" | "audio" | "voice" 
+      });
     }
   };
 

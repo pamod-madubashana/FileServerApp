@@ -170,6 +170,10 @@ export const FileExplorer = () => {
     const handleShowFiles = () => {
       setShowProfile(false);
       setShowSettings(false);
+      
+      // Close navigation sidebar when returning to file view
+      const event = new CustomEvent('toggleNavigationSidebar');
+      window.dispatchEvent(event);
     };
 
     window.addEventListener('showFiles', handleShowFiles);

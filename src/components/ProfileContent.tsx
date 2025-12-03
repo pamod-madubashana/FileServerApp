@@ -148,8 +148,6 @@ export const ProfileContent = ({ onBack }: ProfileContentProps) => {
               window.history.pushState({ path: ["Home"] }, '', '/');
               // Dispatch event to show file explorer
               window.dispatchEvent(new CustomEvent('showFiles'));
-              // Note: We don't close the navigation sidebar here as it should remain open
-              // when viewing profile/settings pages
             }}
             className="rounded-full p-2 hover:bg-gray-200 dark:hover:bg-gray-700"
           >
