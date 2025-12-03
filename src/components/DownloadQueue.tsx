@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Download as DownloadIcon, X as XIcon, RotateCcw as RotateCcwIcon } from "lucide-react";
-import { downloadManager } from "@/lib/downloadManager";
-import { DownloadItem } from "@/components/types";
+import { downloadManager, DownloadItem } from "@/lib/downloadManager";
 
 interface DownloadQueueProps {
   className?: string;
@@ -65,7 +64,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
   const hasActiveDownloads = activeDownloads.length > 0 || queuedDownloads.length > 0;
 
   return (
-    <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
+    <div className={`${className}`}>
       {/* Collapsed view - show download count */}
       {!isOpen && (
         <Button 

@@ -765,7 +765,7 @@ export const FileExplorer = () => {
 
       {/* Download Queue Widget - Show when showDownloadQueue is true */}
       {showDownloadQueue && (
-        <div className="fixed bottom-4 right-4 z-50">
+        <div className="fixed top-28 right-4 z-50 mt-2">
           <Card className="w-80 shadow-xl">
             <CardContent className="p-0">
               <DownloadQueue 
