@@ -39,9 +39,6 @@
     "icon": ["icons/icon.ico"]
   },
   "plugins": {
-    "http": null,
-    "fs": {
-      "scope": ["**"]
-    }
+    "http": null
   }
 }
