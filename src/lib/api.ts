@@ -66,6 +66,11 @@ export interface UpdateUserRequest {
   permissions: UserPermission;
 }
 
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 const getDefaultApiUrl = () => {
   const savedUrl = localStorage.getItem("serverUrl");
   if (savedUrl) {
@@ -447,5 +452,26 @@ export const api = {
         if (!response.ok) {
             throw new Error(`Failed to delete user: ${response.statusText}`);
         }
+    },
+
+    async changeUserPassword(userId: string, passwordData: ChangePasswordRequest): Promise<{ message: string }> {
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}/password`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(passwordData),
+        }, 5000);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Failed to change user password: ${response.status}`);
+        }
+
+        return response.json();
     },
 };

@@ -29,11 +29,18 @@ interface User {
 
 type UserType = "google" | "local";
 
+interface ChangePasswordData {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+}
+
 export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [changingPasswordUser, setChangingPasswordUser] = useState<User | null>(null);
   const [userType, setUserType] = useState<UserType>("local");
   const [newUser, setNewUser] = useState({
     username: "",
@@ -41,6 +48,11 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
     password: "",
     readPermission: true,
     writePermission: false,
+  });
+  const [changePasswordData, setChangePasswordData] = useState<ChangePasswordData>({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
   });
 
   useEffect(() => {
@@ -135,6 +147,51 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
     } catch (error) {
       logger.error("Failed to delete user:", error);
       toast.error("Failed to delete user");
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!changingPasswordUser) return;
+    
+    // Validate passwords
+    if (!changePasswordData.current_password) {
+      toast.error("Current password is required");
+      return;
+    }
+    
+    if (!changePasswordData.new_password) {
+      toast.error("New password is required");
+      return;
+    }
+    
+    if (changePasswordData.new_password !== changePasswordData.confirm_password) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    
+    if (changePasswordData.new_password.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return;
+    }
+    
+    try {
+      await api.changeUserPassword(changingPasswordUser.id, {
+        current_password: changePasswordData.current_password,
+        new_password: changePasswordData.new_password,
+      });
+      
+      toast.success("Password changed successfully");
+      setChangingPasswordUser(null);
+      setChangePasswordData({
+        current_password: "",
+        new_password: "",
+        confirm_password: "",
+      });
+    } catch (error: any) {
+      logger.error("Failed to change password:", error);
+      // Better error handling
+      const errorMessage = error.message || error.toString() || "Failed to change password";
+      toast.error(`Error: ${errorMessage}`);
     }
   };
 
@@ -251,6 +308,14 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
                               onClick={() => setEditingUser(user)}
                             >
                               Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setChangingPasswordUser(user)}
+                              disabled={user.userType === "google"}
+                            >
+                              Pass
                             </Button>
                             <Button
                               variant="destructive"
@@ -451,6 +516,73 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
             </Button>
             <Button onClick={() => editingUser && handleEditUser(editingUser)}>
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={!!changingPasswordUser} onOpenChange={(open) => !open && setChangingPasswordUser(null)}>
+        <DialogContent className="bg-white dark:bg-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 dark:text-white">Change Password</DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
+              Change password for user: {changingPasswordUser?.username}
+            </DialogDescription>
+          </DialogHeader>
+          {changingPasswordUser && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="current-password" className="text-right text-gray-700 dark:text-gray-300">
+                  Current Password
+                </Label>
+                <Input
+                  id="current-password"
+                  type="password"
+                  value={changePasswordData.current_password}
+                  onChange={(e) => setChangePasswordData({...changePasswordData, current_password: e.target.value})}
+                  className="col-span-3 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="new-password" className="text-right text-gray-700 dark:text-gray-300">
+                  New Password
+                </Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={changePasswordData.new_password}
+                  onChange={(e) => setChangePasswordData({...changePasswordData, new_password: e.target.value})}
+                  className="col-span-3 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="confirm-password" className="text-right text-gray-700 dark:text-gray-300">
+                  Confirm Password
+                </Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={changePasswordData.confirm_password}
+                  onChange={(e) => setChangePasswordData({...changePasswordData, confirm_password: e.target.value})}
+                  className="col-span-3 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setChangingPasswordUser(null);
+              setChangePasswordData({
+                current_password: "",
+                new_password: "",
+                confirm_password: "",
+              });
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleChangePassword}>
+              Change Password
             </Button>
           </DialogFooter>
         </DialogContent>
