@@ -20,6 +20,7 @@ This project is built with:
 - Advanced download management with progress tracking
 - File browsing and organization
 - User authentication and profile management
+- Multi-user file access control
 - Settings customization
 
 ## Getting Started
