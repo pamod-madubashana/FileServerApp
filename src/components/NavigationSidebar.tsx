@@ -16,6 +16,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   // Initialize sidebar as closed by default
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const isOpenRef = useRef(isOpen);
   const location = useLocation();
   const navigate = useNavigate();
@@ -30,6 +31,21 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       hasBeenOpenedRef.current = true;
     }
   }, [isOpen]);
+
+  // Check if user is owner
+  useEffect(() => {
+    const checkOwnerStatus = async () => {
+      try {
+        const response = await api.isUserOwner();
+        setIsOwner(response.is_owner);
+      } catch (error) {
+        logger.error("Failed to check owner status:", error);
+        setIsOwner(false);
+      }
+    };
+
+    checkOwnerStatus();
+  }, []);
 
   // Close sidebar when resizing from mobile to desktop
   useEffect(() => {
@@ -70,13 +86,17 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     setIsOpen(!isOpen);
   };
 
-  const navItems = [
-    { name: "Home", path: "/", icon: Home },
-    { name: "Files", path: "/files", icon: FolderOpen },
+  const baseNavItems = [
     { name: "Profile", path: "/profile", icon: User },
     { name: "Settings", path: "/settings", icon: Settings },
-    { name: "Test Download", path: "/test-download", icon: Info },
+    { name: "Usage", path: "/usage", icon: Info },
   ];
+
+  const ownerNavItems = [
+    { name: "User Management", path: "/user-management", icon: User },
+  ];
+
+  const navItems = isOwner ? [...baseNavItems, ...ownerNavItems] : baseNavItems;
 
   const handleMenuClick = (item: string, path?: string) => {
     if (item === "Profile") {
@@ -91,6 +111,12 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       window.dispatchEvent(event);
       // Also navigate to the settings route
       navigate("/settings");
+    } else if (item === "User Management") {
+      // Dispatch event to show user management in file explorer area
+      const event = new CustomEvent('showUserManagement');
+      window.dispatchEvent(event);
+      // Also navigate to the user management route
+      navigate("/user-management");
     } else if (item === "Logout") {
       // Handle logout
       handleLogout();
@@ -265,39 +291,22 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
                 e.stopPropagation();
               }}
             >
-              <button
-                onClick={() => handleMenuClick("Profile", "/profile")}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              >
-                <User className="h-4 w-4" />
-                <span>Profile</span>
-              </button>
-              <button
-                onClick={() => handleMenuClick("Settings", "/settings")}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              >
-                <Settings className="h-4 w-4" />
-                <span>Settings</span>
-              </button>
-              <button
-                onClick={() => handleMenuClick("Usage")}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              >
-                <Info className="h-4 w-4" />
-                <span>Usage</span>
-              </button>
+              {navItems.map((item, index) => (
+                item.name !== "Logout" && (
+                  <button
+                    key={item.name}
+                    onClick={() => handleMenuClick(item.name, item.path)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.name}</span>
+                  </button>
+                )
+              ))}
               {/* Logout button - positioned near the bottom but not at the very end */}
               <div className="pt-4 mt-4 border-t border-sidebar-border">
                 <button

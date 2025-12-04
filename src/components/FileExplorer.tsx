@@ -15,6 +15,7 @@ import { RenameInput } from "./RenameInput";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { ProfileContent } from "./ProfileContent";
 import { SettingsContent } from "./SettingsContent";
+import { UserManagementContent } from "./UserManagementContent";
 import { getApiBaseUrl, resetApiBaseUrl, updateApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -62,6 +63,7 @@ export const FileExplorer = () => {
   
   const [showProfile, setShowProfile] = useState(false); // State to track if profile should be shown
   const [showSettings, setShowSettings] = useState(false); // State to track if settings should be shown
+  const [showUserManagement, setShowUserManagement] = useState(false); // State to track if user management should be shown
   const [showDownloadQueue, setShowDownloadQueue] = useState(false); // State to track if download queue should be shown
   const [autoCloseTimer, setAutoCloseTimer] = useState<NodeJS.Timeout | null>(null); // Timer for auto-closing widget
   const downloadWidgetRef = useRef<HTMLDivElement>(null); // Ref for download widget
@@ -159,16 +161,23 @@ export const FileExplorer = () => {
         }
       }
       
-      // Also check if we should show profile or settings based on the new location
+      // Also check if we should show profile, settings, or user management based on the new location
       if (window.location.pathname === '/profile') {
         setShowProfile(true);
         setShowSettings(false);
+        setShowUserManagement(false);
       } else if (window.location.pathname === '/settings') {
         setShowSettings(true);
         setShowProfile(false);
+        setShowUserManagement(false);
+      } else if (window.location.pathname === '/user-management') {
+        setShowUserManagement(true);
+        setShowProfile(false);
+        setShowSettings(false);
       } else {
         setShowProfile(false);
         setShowSettings(false);
+        setShowUserManagement(false);
       }
     };
 
@@ -186,12 +195,19 @@ export const FileExplorer = () => {
     if (location.pathname === '/profile') {
       setShowProfile(true);
       setShowSettings(false);
+      setShowUserManagement(false);
     } else if (location.pathname === '/settings') {
       setShowSettings(true);
       setShowProfile(false);
+      setShowUserManagement(false);
+    } else if (location.pathname === '/user-management') {
+      setShowUserManagement(true);
+      setShowProfile(false);
+      setShowSettings(false);
     } else {
       setShowProfile(false);
       setShowSettings(false);
+      setShowUserManagement(false);
     }
   }, [location.pathname]);
 
@@ -200,6 +216,7 @@ export const FileExplorer = () => {
     const handleShowProfile = () => {
       setShowProfile(true);
       setShowSettings(false);
+      setShowUserManagement(false);
     };
 
     window.addEventListener('showProfile', handleShowProfile);
@@ -213,6 +230,7 @@ export const FileExplorer = () => {
     const handleShowSettings = () => {
       setShowSettings(true);
       setShowProfile(false);
+      setShowUserManagement(false);
     };
 
     window.addEventListener('showSettings', handleShowSettings);
@@ -221,11 +239,26 @@ export const FileExplorer = () => {
     };
   }, []);
 
-  // Listen for showFiles event (when closing profile/settings)
+  // Listen for showUserManagement event
+  useEffect(() => {
+    const handleShowUserManagement = () => {
+      setShowUserManagement(true);
+      setShowProfile(false);
+      setShowSettings(false);
+    };
+
+    window.addEventListener('showUserManagement', handleShowUserManagement);
+    return () => {
+      window.removeEventListener('showUserManagement', handleShowUserManagement);
+    };
+  }, []);
+
+  // Listen for showFiles event (when closing profile/settings/user management)
   useEffect(() => {
     const handleShowFiles = () => {
       setShowProfile(false);
       setShowSettings(false);
+      setShowUserManagement(false);
       
       // Close navigation sidebar when returning to file view
       const event = new CustomEvent('toggleNavigationSidebar', { detail: { action: 'close' } });
@@ -772,6 +805,8 @@ export const FileExplorer = () => {
           <ProfileContent onBack={() => setShowProfile(false)} />
         ) : showSettings ? (
           <SettingsContent onBack={() => setShowSettings(false)} />
+        ) : showUserManagement ? (
+          <UserManagementContent onBack={() => setShowUserManagement(false)} />
         ) : (
           <div className="flex-1 flex flex-col">
             <TopBar

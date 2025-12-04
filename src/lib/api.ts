@@ -28,6 +28,42 @@ export interface UserProfile {
   telegram_profile_picture?: string;
 }
 
+export interface IsOwnerResponse {
+  is_owner: boolean;
+  owner_telegram_id?: number;
+}
+
+export interface UserPermission {
+  read: boolean;
+  write: boolean;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  email?: string;
+  telegramUserId?: number;
+  telegramUsername?: string;
+  permissions: UserPermission;
+  createdAt: string;
+  lastActive?: string;
+}
+
+export interface UsersResponse {
+  users: User[];
+}
+
+export interface AddUserRequest {
+  username: string;
+  email?: string;
+  permissions: UserPermission;
+}
+
+export interface UpdateUserRequest {
+  email?: string;
+  permissions: UserPermission;
+}
+
 const getDefaultApiUrl = () => {
   const savedUrl = localStorage.getItem("serverUrl");
   if (savedUrl) {
@@ -323,5 +359,91 @@ export const api = {
         }
 
         return response.json();
+    },
+
+    async isUserOwner(): Promise<IsOwnerResponse> {
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const response = await fetchWithTimeout(`${apiUrl}/user/is-owner`, {
+            method: 'GET',
+            credentials: 'include',
+        }, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to check owner status: ${response.statusText}`);
+        }
+
+        return response.json();
+    },
+
+    async getUsers(): Promise<UsersResponse> {
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const response = await fetchWithTimeout(`${apiUrl}/users`, {
+            method: 'GET',
+            credentials: 'include',
+        }, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch users: ${response.statusText}`);
+        }
+
+        return response.json();
+    },
+
+    async addUser(userData: AddUserRequest): Promise<User> {
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const response = await fetchWithTimeout(`${apiUrl}/users`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+        }, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to add user: ${response.statusText}`);
+        }
+
+        return response.json();
+    },
+
+    async updateUser(userId: string, userData: UpdateUserRequest): Promise<User> {
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+        }, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to update user: ${response.statusText}`);
+        }
+
+        return response.json();
+    },
+
+    async deleteUser(userId: string): Promise<void> {
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}`, {
+            method: 'DELETE',
+            credentials: 'include',
+        }, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to delete user: ${response.statusText}`);
+        }
     },
 };
