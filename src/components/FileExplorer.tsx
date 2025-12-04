@@ -170,7 +170,7 @@ export const FileExplorer = () => {
         setShowSettings(true);
         setShowProfile(false);
         setShowUserManagement(false);
-      } else if (window.location.pathname === '/user-management') {
+      } else if (window.location.pathname === '/users') {
         setShowUserManagement(true);
         setShowProfile(false);
         setShowSettings(false);
@@ -200,7 +200,7 @@ export const FileExplorer = () => {
       setShowSettings(true);
       setShowProfile(false);
       setShowUserManagement(false);
-    } else if (location.pathname === '/user-management') {
+    } else if (location.pathname === '/users') {
       setShowUserManagement(true);
       setShowProfile(false);
       setShowSettings(false);
@@ -239,17 +239,17 @@ export const FileExplorer = () => {
     };
   }, []);
 
-  // Listen for showUserManagement event
+  // Listen for showUsers event
   useEffect(() => {
-    const handleShowUserManagement = () => {
+    const handleShowUsers = () => {
       setShowUserManagement(true);
       setShowProfile(false);
       setShowSettings(false);
     };
 
-    window.addEventListener('showUserManagement', handleShowUserManagement);
+    window.addEventListener('showUsers', handleShowUsers);
     return () => {
-      window.removeEventListener('showUserManagement', handleShowUserManagement);
+      window.removeEventListener('showUsers', handleShowUsers);
     };
   }, []);
 
@@ -806,7 +806,12 @@ export const FileExplorer = () => {
         ) : showSettings ? (
           <SettingsContent onBack={() => setShowSettings(false)} />
         ) : showUserManagement ? (
-          <UserManagementContent onBack={() => setShowUserManagement(false)} />
+          <UserManagementContent onBack={() => {
+            setShowUserManagement(false);
+            // Dispatch event to show files
+            const event = new CustomEvent('showFiles');
+            window.dispatchEvent(event);
+          }} />
         ) : (
           <div className="flex-1 flex flex-col">
             <TopBar

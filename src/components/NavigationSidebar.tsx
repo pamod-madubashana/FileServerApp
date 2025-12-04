@@ -68,14 +68,17 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     };
   }, []);
 
-  // Automatically open sidebar when on profile or settings pages
+  // List of pages that should keep the navigation sidebar open
+  const pagesWithSidebarOpen = ['/profile', '/settings', '/users'];
+  
+  // Automatically open sidebar when on specific pages
   useEffect(() => {
-    if (location.pathname === '/profile' || location.pathname === '/settings') {
+    if (pagesWithSidebarOpen.includes(location.pathname)) {
       setIsOpen(true);
       // Mark as auto-opened to distinguish from manual opening
       isAutoOpenedRef.current = true;
     } else {
-      // Reset auto-opened flag when not on profile/settings pages
+      // Reset auto-opened flag when not on specified pages
       isAutoOpenedRef.current = false;
     }
   }, [location.pathname]);
@@ -93,7 +96,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   ];
 
   const ownerNavItems = [
-    { name: "User Management", path: "/user-management", icon: User },
+    { name: "Users", path: "/users", icon: User },
   ];
 
   const navItems = isOwner ? [...baseNavItems, ...ownerNavItems] : baseNavItems;
@@ -111,12 +114,12 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       window.dispatchEvent(event);
       // Also navigate to the settings route
       navigate("/settings");
-    } else if (item === "User Management") {
-      // Dispatch event to show user management in file explorer area
-      const event = new CustomEvent('showUserManagement');
+    } else if (item === "Users") {
+      // Dispatch event to show users in file explorer area
+      const event = new CustomEvent('showUsers');
       window.dispatchEvent(event);
-      // Also navigate to the user management route
-      navigate("/user-management");
+      // Also navigate to the users route
+      navigate("/users");
     } else if (item === "Logout") {
       // Handle logout
       handleLogout();

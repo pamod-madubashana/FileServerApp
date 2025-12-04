@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import logger from "@/lib/logger";
 import { api } from "@/lib/api";
+import { X as XIcon } from "lucide-react";
 
 interface User {
   id: string;
@@ -156,14 +157,24 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-4 border-b">
         <div>
-          <h1 className="text-2xl font-bold">User Management</h1>
+          <h1 className="text-2xl font-bold">Users</h1>
           <p className="text-sm text-muted-foreground">
             Manage users and their permissions
           </p>
         </div>
-        <Button onClick={() => setShowAddUserDialog(true)}>
-          Add User
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setShowAddUserDialog(true)}>
+            Add User
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={onBack}
+            className="h-8 w-8"
+          >
+            <XIcon className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto p-4">
