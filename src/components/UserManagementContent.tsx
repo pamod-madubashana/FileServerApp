@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import logger from "@/lib/logger";
 import { api } from "@/lib/api";
@@ -22,16 +23,21 @@ interface User {
   };
   createdAt: string;
   lastActive?: string;
+  userType?: string;
 }
+
+type UserType = "google" | "local";
 
 export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userType, setUserType] = useState<UserType>("local");
   const [newUser, setNewUser] = useState({
     username: "",
     email: "",
+    password: "",
     readPermission: true,
     writePermission: false,
   });
@@ -55,23 +61,51 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
 
   const handleAddUser = async () => {
     try {
+      // Validate input based on user type
+      if (!newUser.email) {
+        toast.error("Email is required");
+        return;
+      }
+      
+      if (userType === "local") {
+        if (!newUser.username) {
+          toast.error("Username is required for local users");
+          return;
+        }
+        if (!newUser.password) {
+          toast.error("Password is required for local users");
+          return;
+        }
+      }
+      
       const userData = {
-        username: newUser.username,
+        username: userType === "local" ? newUser.username : undefined,
         email: newUser.email,
+        password: userType === "local" ? newUser.password : undefined,
         permissions: {
           read: newUser.readPermission,
           write: newUser.writePermission,
         },
       };
       
-      const addedUser = await api.addUser(userData);
+      // Filter out undefined fields
+      const filteredUserData: any = {};
+      Object.keys(userData).forEach(key => {
+        const value = (userData as any)[key];
+        if (value !== undefined) {
+          filteredUserData[key] = value;
+        }
+      });
+      
+      const addedUser = await api.addUser(filteredUserData);
       setUsers([...users, addedUser]);
       setShowAddUserDialog(false);
-      setNewUser({ username: "", email: "", readPermission: true, writePermission: false });
+      setNewUser({ username: "", email: "", password: "", readPermission: true, writePermission: false });
+      setUserType("local");
       toast.success("User added successfully");
-    } catch (error) {
+    } catch (error: any) {
       logger.error("Failed to add user:", error);
-      toast.error("Failed to add user");
+      toast.error(error.message || "Failed to add user");
     }
   };
 
@@ -151,6 +185,7 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
                   <TableRow>
                     <TableHead>Username</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Telegram</TableHead>
                     <TableHead>Read</TableHead>
                     <TableHead>Write</TableHead>
@@ -161,8 +196,13 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
                 <TableBody>
                   {users.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.username}</TableCell>
+                      <TableCell className="font-medium">{user.username || "-"}</TableCell>
                       <TableCell>{user.email || "-"}</TableCell>
+                      <TableCell>
+                        <span className="capitalize">
+                          {user.userType || "local"}
+                        </span>
+                      </TableCell>
                       <TableCell>
                         {user.telegramUsername ? (
                           <span>@{user.telegramUsername}</span>
@@ -213,7 +253,7 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
 
       {/* Add User Dialog */}
       <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add New User</DialogTitle>
             <DialogDescription>
@@ -222,16 +262,34 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="username" className="text-right">
-                Username
+              <Label htmlFor="user-type" className="text-right">
+                Login Type
               </Label>
-              <Input
-                id="username"
-                value={newUser.username}
-                onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                className="col-span-3"
-              />
+              <Select value={userType} onValueChange={(value: UserType) => setUserType(value)}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select user type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="local">Username/Password</SelectItem>
+                  <SelectItem value="google">Google Login</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            
+            {userType === "local" && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="username" className="text-right">
+                  Username
+                </Label>
+                <Input
+                  id="username"
+                  value={newUser.username}
+                  onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                  className="col-span-3"
+                />
+              </div>
+            )}
+            
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">
                 Email
@@ -244,6 +302,22 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
                 className="col-span-3"
               />
             </div>
+            
+            {userType === "local" && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="password" className="text-right">
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  className="col-span-3"
+                />
+              </div>
+            )}
+            
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="read-permission" className="text-right">
                 Read Permission
@@ -273,7 +347,10 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
             <Button variant="outline" onClick={() => setShowAddUserDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddUser} disabled={!newUser.username}>
+            <Button 
+              onClick={handleAddUser} 
+              disabled={userType === "local" ? !newUser.username || !newUser.password : !newUser.email}
+            >
               Add User
             </Button>
           </DialogFooter>
@@ -297,7 +374,7 @@ export const UserManagementContent = ({ onBack }: { onBack: () => void }) => {
                 </Label>
                 <Input
                   id="edit-username"
-                  value={editingUser.username}
+                  value={editingUser.username || ""}
                   onChange={(e) => setEditingUser({...editingUser, username: e.target.value})}
                   className="col-span-3"
                   disabled

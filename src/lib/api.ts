@@ -47,6 +47,7 @@ export interface User {
   permissions: UserPermission;
   createdAt: string;
   lastActive?: string;
+  userType?: string;  // "local" or "google"
 }
 
 export interface UsersResponse {
@@ -54,8 +55,9 @@ export interface UsersResponse {
 }
 
 export interface AddUserRequest {
-  username: string;
+  username?: string;
   email?: string;
+  password?: string;
   permissions: UserPermission;
 }
 
