@@ -26,6 +26,7 @@ import logger from "@/lib/logger";
 import { X as XIcon } from "lucide-react";
 import DownloadQueue from "./DownloadQueue";
 import { downloadManager } from "@/lib/downloadManager";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const FileExplorer = () => {
   const location = useLocation();
@@ -802,16 +803,43 @@ export const FileExplorer = () => {
 
       <div className="flex-1 flex flex-col">
         {showProfile ? (
-          <ProfileContent onBack={() => setShowProfile(false)} />
+          <motion.div
+            key="profile"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="flex-1 flex flex-col"
+          >
+            <ProfileContent onBack={() => setShowProfile(false)} />
+          </motion.div>
         ) : showSettings ? (
-          <SettingsContent onBack={() => setShowSettings(false)} />
+          <motion.div
+            key="settings"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="flex-1 flex flex-col"
+          >
+            <SettingsContent onBack={() => setShowSettings(false)} />
+          </motion.div>
         ) : showUserManagement ? (
-          <UserManagementContent onBack={() => {
-            setShowUserManagement(false);
-            // Dispatch event to show files
-            const event = new CustomEvent('showFiles');
-            window.dispatchEvent(event);
-          }} />
+          <motion.div
+            key="user-management"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="flex-1 flex flex-col"
+          >
+            <UserManagementContent onBack={() => {
+              setShowUserManagement(false);
+              // Dispatch event to show files
+              const event = new CustomEvent('showFiles');
+              window.dispatchEvent(event);
+            }} />
+          </motion.div>
         ) : (
           <div className="flex-1 flex flex-col">
             <TopBar
@@ -825,6 +853,11 @@ export const FileExplorer = () => {
               onBreadcrumbClick={handleBreadcrumbClick}
               onPaste={hasClipboard && !isClipboardPasted() ? handlePaste : undefined}
               onToggleDownloadQueue={() => setShowDownloadQueue(!showDownloadQueue)} // Add this prop
+              onToggleSidebar={() => {
+                // Dispatch event to toggle sidebar
+                const event = new CustomEvent('toggleNavigationSidebar');
+                window.dispatchEvent(event);
+              }}
             />
 
             <FileGrid

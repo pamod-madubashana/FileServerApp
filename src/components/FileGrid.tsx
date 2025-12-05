@@ -282,16 +282,16 @@ export const FileGrid = ({
                     e.nativeEvent.preventDefault();
                     !isRenaming && handleContextMenu(e, item, index);
                   }}
-                  className={`flex flex-col items-center p-3 rounded-lg transition-all ${isDragging ? "opacity-50 scale-95" : ""}
+                  className={`flex flex-col items-center p-3 rounded-xl transition-all duration-200 hover:scale-[1.03] hover:shadow-lg active:scale-[0.98] ${isDragging ? "opacity-50 scale-95" : ""}
                     ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
                     ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
-                      ? "ring-2 ring-primary ring-offset-2"
+                      ? "scale-105 transition-all duration-200"
                       : ""
                     }`}
                 >
                   <button
                     onClick={() => !isRenaming && handleItemClick(item)}
-                    className="flex flex-col items-center w-full hover:bg-accent rounded-lg p-2 transition-colors group"
+                    className="flex flex-col items-center w-full hover:bg-accent rounded-lg p-2 transition-all duration-200 group hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <div className="mb-2">{getFileIcon(item)}</div>
                     {isRenaming ? (
@@ -326,16 +326,16 @@ export const FileGrid = ({
                   onDragOver={item.type === "folder" ? handleDragOver : undefined}
                   onDrop={item.type === "folder" ? (e) => handleDrop(e, item) : undefined}
                   onContextMenu={(e) => !isRenaming && handleContextMenu(e, item, index)}
-                  className={`transition-all ${isDragging ? "opacity-50" : ""} 
+                  className={`transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.98] ${isDragging ? "opacity-50" : ""} 
                     ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
                     ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
-                    ? "ring-2 ring-primary"
+                    ? "scale-105 transition-all duration-200"
                     : ""
                     }`}
                 >
                   <button
                     onClick={() => !isRenaming && handleItemClick(item)}
-                    className="w-full flex items-center gap-3 p-2 rounded hover:bg-accent transition-colors group"
+                    className="w-full flex items-center gap-3 p-2 rounded hover:bg-accent transition-all duration-200 group hover:scale-[1.01] active:scale-[0.98]"
                   >
                     <div className="flex-shrink-0">{getFileIcon(item)}</div>
                     {isRenaming ? (

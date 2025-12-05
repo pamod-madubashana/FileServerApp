@@ -20,8 +20,8 @@ export const Thumbnail = ({ item }: ThumbnailProps) => {
   // If it's a folder, show folder icon
   if (item.type === "folder") {
     return (
-      <div className="w-20 h-20 flex items-center justify-center">
-        <div className="w-20 h-20 text-primary flex items-center justify-center">
+      <div className="w-20 h-20 flex items-center justify-center transition-all duration-200 hover:scale-105">
+        <div className="w-20 h-20 text-primary flex items-center justify-center transition-all duration-200 hover:scale-110">
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
           </svg>
@@ -33,7 +33,7 @@ export const Thumbnail = ({ item }: ThumbnailProps) => {
   // If no thumbnail or thumbnail already failed, show default icon
   if (!item.thumbnail || thumbnailError) {
     return (
-      <div className="w-20 h-20 flex items-center justify-center">
+      <div className="w-20 h-20 flex items-center justify-center transition-all duration-200 hover:scale-105">
         {getDefaultFileIcon(item)}
       </div>
     );
@@ -73,7 +73,7 @@ export const Thumbnail = ({ item }: ThumbnailProps) => {
       <img
         src={thumbnailUrl}
         alt={item.name}
-        className={`max-w-full max-h-full object-contain rounded ${thumbnailLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+        className={`max-w-full max-h-full object-contain rounded-lg transition-all duration-300 ${thumbnailLoading ? 'opacity-0' : 'opacity-100'} hover:scale-105 hover:shadow-lg`}
         onLoad={() => {
           setThumbnailLoading(false);
         }}

@@ -72,12 +72,12 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
       {!isOpen && (
         <Button 
           onClick={handleToggle}
-          className="rounded-full w-12 h-12 p-0 shadow-lg"
+          className="rounded-full w-12 h-12 p-0 shadow-lg backdrop-blur-md bg-primary/80 hover:bg-primary/90 transition-all duration-200 hover:scale-110"
           variant="default"
         >
           <DownloadIcon className="h-5 w-5" />
           {hasActiveDownloads && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center backdrop-blur-sm">
               {activeDownloads.length + queuedDownloads.length}
             </span>
           )}
@@ -86,7 +86,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
 
       {/* Expanded view */}
       {isOpen && (
-        <Card className="w-80 shadow-xl">
+        <Card className="w-80 shadow-xl backdrop-blur-md bg-background/80 border border-border/50">
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg">Downloads</CardTitle>
@@ -96,6 +96,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                   size="sm"
                   onClick={clearCompleted}
                   disabled={completedDownloads.length === 0}
+                  className="hover:bg-accent/50 transition-all duration-200"
                 >
                   Clear
                 </Button>
@@ -120,7 +121,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
             ) : (
               <div className="divide-y">
                 {[...activeDownloads, ...queuedDownloads, ...completedDownloads, ...failedDownloads].map((download) => (
-                  <div key={download.id} className="p-3 hover:bg-muted/50 transition-colors">
+                  <div key={download.id} className="p-3 hover:bg-muted/50 transition-all duration-200 hover:scale-[1.01] backdrop-blur-sm bg-background/30 rounded-lg border border-border/20 mb-1">
                     <div 
                       className="flex justify-between items-start mb-1 cursor-pointer"
                       onClick={(e) => {

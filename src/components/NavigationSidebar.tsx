@@ -252,15 +252,15 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
         {isOpen && (
           <motion.div
             className={cn(
-              "fixed left-0 top-0 z-50 h-full bg-sidebar shadow-lg select-none",
+              "fixed left-0 top-0 z-50 h-full bg-sidebar/80 backdrop-blur-md shadow-xl select-none border-r border-sidebar-border/50",
               isMobile 
                 ? "w-64" 
                 : "w-64"
             )}
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            initial={{ x: "-100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "-100%", opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.3 }}
             data-navigation-sidebar="true"
             onContextMenu={(e) => {
               e.preventDefault();
@@ -299,7 +299,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
                   <button
                     key={item.name}
                     onClick={() => handleMenuClick(item.name, item.path)}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent hover:scale-[1.02] rounded-lg"
                     onContextMenu={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -314,7 +314,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
               <div className="pt-4 mt-4 border-t border-sidebar-border">
                 <button
                   onClick={() => handleMenuClick("Logout")}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent hover:scale-[1.02] rounded-lg"
                   onContextMenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
