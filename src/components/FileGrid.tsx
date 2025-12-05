@@ -313,50 +313,70 @@ export const FileGrid = ({
             })}
           </div>
         ) : (
-          <div className="space-y-0.5">
-            {items.map((item, index) => {
-              const isRenaming = renamingItem?.index === index;
-              const isDragging = draggedItem?.name === item.name;
-              const isCut = cutItem?.name === item.name && cutItem?.id === item.id; // Check if this item is cut
+          <div className="flex flex-col">
+            {/* Table header */}
+            <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-muted-foreground border-b border-border bg-muted/50">
+              <div className="col-span-5">Name</div>
+              <div className="col-span-3">Modified Date</div>
+              <div className="col-span-2">Type</div>
+              <div className="col-span-2 text-right">Size</div>
+            </div>
+            <div className="space-y-1">
+              {items.map((item, index) => {
+                const isRenaming = renamingItem?.index === index;
+                const isDragging = draggedItem?.name === item.name;
+                const isCut = cutItem?.name === item.name && cutItem?.id === item.id; // Check if this item is cut
 
-              return (
-                <div
-                  key={index}
-                  draggable={!isRenaming}
-                  onDragStart={(e) => handleDragStart(e, item)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={item.type === "folder" ? handleDragOver : undefined}
-                  onDrop={item.type === "folder" ? (e) => handleDrop(e, item) : undefined}
-                  onContextMenu={(e) => !isRenaming && handleContextMenu(e, item, index)}
-                  className={`transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.98] ${isDragging ? "opacity-50" : ""} 
-                    ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
-                    ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
-                    ? "scale-105 transition-all duration-200"
-                    : ""
-                    }`}
-                >
-                  <button
-                    onClick={() => !isRenaming && handleItemClick(item)}
-                    className="w-full flex items-center gap-3 p-1.5 rounded transition-all duration-200 group hover:bg-accent/50 active:scale-[0.995]"
+                return (
+                  <div
+                    key={index}
+                    draggable={!isRenaming}
+                    onDragStart={(e) => handleDragStart(e, item)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={item.type === "folder" ? handleDragOver : undefined}
+                    onDrop={item.type === "folder" ? (e) => handleDrop(e, item) : undefined}
+                    onContextMenu={(e) => !isRenaming && handleContextMenu(e, item, index)}
+                    className={`transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.98] ${isDragging ? "opacity-50" : ""} 
+                      ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
+                      ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
+                      ? "scale-105 transition-all duration-200"
+                      : ""
+                      }`}
                   >
-                    <div className="flex-shrink-0 w-5 h-5">{getFileIcon(item)}</div>
-                    {isRenaming ? (
-                      <div className="flex-1">
-                        <RenameInput
-                          initialName={item.name}
-                          onSave={onRenameConfirm}
-                          onCancel={onRenameCancel}
-                        />
+                    <button
+                      onClick={() => !isRenaming && handleItemClick(item)}
+                      className="col-span-12 w-full grid grid-cols-12 gap-4 p-1.5 rounded transition-all duration-200 group hover:bg-accent/50 active:scale-[0.995]"
+                    >
+                      <div className="col-span-5 flex items-center gap-3">
+                        <div className="flex-shrink-0 w-5 h-5">{getFileIcon(item)}</div>
+                        {isRenaming ? (
+                          <div className="flex-1">
+                            <RenameInput
+                              initialName={item.name}
+                              onSave={onRenameConfirm}
+                              onCancel={onRenameCancel}
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-sm text-foreground group-hover:text-accent-foreground truncate">
+                            {item.name}
+                          </span>
+                        )}
                       </div>
-                    ) : (
-                      <span className="text-sm text-foreground group-hover:text-accent-foreground">
-                        {item.name}
-                      </span>
-                    )}
-                  </button>
-                </div>
-              );
-            })}
+                      <div className="col-span-3 flex items-center text-xs text-muted-foreground">
+                        {item.type === 'folder' ? '' : 'N/A'}
+                      </div>
+                      <div className="col-span-2 flex items-center text-xs text-muted-foreground capitalize">
+                        {item.type === 'folder' ? 'Folder' : (item.fileType || 'File')}
+                      </div>
+                      <div className="col-span-2 flex items-center justify-end text-xs text-muted-foreground">
+                        {item.type === 'folder' ? '' : (item.size ? `${(item.size / 1024).toFixed(1)} KB` : '')}
+                      </div>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
