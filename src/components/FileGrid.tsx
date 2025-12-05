@@ -347,7 +347,7 @@ export const FileGrid = ({
                     onDragOver={item.type === "folder" ? handleDragOver : undefined}
                     onDrop={item.type === "folder" ? (e) => handleDrop(e, item) : undefined}
                     onContextMenu={(e) => !isRenaming && handleContextMenu(e, item, index)}
-                    className={`transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.98] ${isDragging ? "opacity-50" : ""} 
+                    className={`transition-all duration-200 hover:shadow-md active:scale-[0.98] ${isDragging ? "opacity-50" : ""} 
                       ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
                       ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
                       ? "scale-105 transition-all duration-200"
