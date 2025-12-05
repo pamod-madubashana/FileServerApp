@@ -54,7 +54,7 @@ export const ImageViewer = ({ imageUrl, fileName, onClose }: ImageViewerProps) =
     >
       <button
         onClick={handleClose}
-        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-20"
         aria-label="Close viewer"
       >
         <X size={32} />
