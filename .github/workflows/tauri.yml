@@ -12,22 +12,32 @@ permissions:
 jobs:
   build-and-release:
     runs-on: windows-latest
-    if: contains(github.event.head_commit.message, 'v') # only run when commit message includes version
+    if: contains(github.event.head_commit.message, 'new release') # only run when commit message includes "new release"
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract version from commit message
+      - name: Read version from VERSION file
         id: get_version
         run: |
+          $version = Get-Content "${{ github.workspace }}/VERSION" -Raw
+          $version = $version.Trim()
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Extract release notes from commit message
+        id: get_release_notes
+        run: |
           $msg="${{ github.event.head_commit.message }}"
-          if ($msg -match 'v([0-9]+\.[0-9]+\.[0-9]+)') {
-            echo "version=$($matches[1])" >> $env:GITHUB_OUTPUT
-          } else {
-            echo "No version found. Exiting."
-            exit 1
-          }
+          # Extract everything after the first line (version line)
+          $lines = $msg -split "`n"
+          $releaseNotes = ($lines | Select-Object -Skip 1) -join "`n"
+          # Trim whitespace
+          $releaseNotes = $releaseNotes.Trim()
+          # Export as output
+          echo "release_notes<<EOF" >> $env:GITHUB_OUTPUT
+          echo "$releaseNotes" >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -63,6 +73,7 @@ jobs:
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
           name: Release v${{ steps.get_version.outputs.version }}
+          body: ${{ steps.get_release_notes.outputs.release_notes }}
           draft: false
           prerelease: false
           files: |
