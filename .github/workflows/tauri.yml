@@ -4,6 +4,11 @@ on:
   push:
     branches: [ main, master ]
 
+# Add permissions for the GITHUB_TOKEN
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build-and-release:
     runs-on: windows-latest
