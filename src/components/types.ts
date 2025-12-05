@@ -9,6 +9,7 @@ export interface FileItem {
   fileType?: 'document' | 'video' | 'photo' | 'voice' | 'audio' | 'folder';
   thumbnail?: string | null;
   file_path?: string;  // Path where file is located (folder name)
+  modified?: string;  // ISO format date string for when file was last modified
 }
 
 export interface ApiFile {
@@ -50,7 +51,7 @@ export const getFileIcon = (fileType: string, fileName?: string): string => {
 };
 
 // Convert API file to FileItem
-export const apiFileToFileItem = (apiFile: ApiFile): FileItem => {
+export const apiFileToFileItem = (apiFile: any): FileItem => {
   const fileName = apiFile.file_name || `${apiFile.file_type}_${apiFile.message_id}`;
   const extension = fileName.split('.').pop();
 
@@ -65,5 +66,6 @@ export const apiFileToFileItem = (apiFile: ApiFile): FileItem => {
     fileType: apiFile.file_type,
     thumbnail: apiFile.thumbnail,
     file_path: apiFile.file_path,
+    modified: apiFile.modified_date,
   };
 };

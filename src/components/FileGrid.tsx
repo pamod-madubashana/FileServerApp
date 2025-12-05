@@ -364,7 +364,7 @@ export const FileGrid = ({
                         )}
                       </div>
                       <div className="col-span-3 flex items-center text-xs text-muted-foreground">
-                        {item.type === 'folder' ? '' : 'N/A'}
+                        {item.modified ? new Date(item.modified).toLocaleDateString() : ''}
                       </div>
                       <div className="col-span-2 flex items-center text-xs text-muted-foreground capitalize">
                         {item.type === 'folder' ? 'Folder' : (item.fileType || 'File')}
