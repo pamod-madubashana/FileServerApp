@@ -222,11 +222,13 @@ export const FileGrid = ({
   const getFileIcon = (item: FileItem) => {
     // For folders, use the Folder icon directly
     if (item.type === "folder") {
-      return <Folder className="w-20 h-20 text-primary" />;
+      // Use smaller icons for list view
+      const folderIconSize = viewMode === 'list' ? 'w-5 h-5' : 'w-20 h-20';
+      return <Folder className={`${folderIconSize} text-primary`} />;
     }
     
     // Use the new Thumbnail component for better error handling
-    return <Thumbnail item={item} />;
+    return <Thumbnail item={item} size={viewMode === 'list' ? 'sm' : 'lg'} />;
   };
 
   if (isLoading) {
@@ -311,7 +313,7 @@ export const FileGrid = ({
             })}
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {items.map((item, index) => {
               const isRenaming = renamingItem?.index === index;
               const isDragging = draggedItem?.name === item.name;
@@ -335,9 +337,9 @@ export const FileGrid = ({
                 >
                   <button
                     onClick={() => !isRenaming && handleItemClick(item)}
-                    className="w-full flex items-center gap-3 p-2 rounded hover:bg-accent transition-all duration-200 group hover:scale-[1.01] active:scale-[0.98]"
+                    className="w-full flex items-center gap-3 p-1.5 rounded transition-all duration-200 group hover:bg-accent/50 active:scale-[0.995]"
                   >
-                    <div className="flex-shrink-0">{getFileIcon(item)}</div>
+                    <div className="flex-shrink-0 w-5 h-5">{getFileIcon(item)}</div>
                     {isRenaming ? (
                       <div className="flex-1">
                         <RenameInput
