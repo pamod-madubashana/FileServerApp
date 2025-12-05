@@ -321,7 +321,7 @@ export const FileGrid = ({
               <div className="col-span-2">Type</div>
               <div className="col-span-2 text-right">Size</div>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {items.map((item, index) => {
                 const isRenaming = renamingItem?.index === index;
                 const isDragging = draggedItem?.name === item.name;
