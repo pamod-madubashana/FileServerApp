@@ -231,6 +231,17 @@ export const FileGrid = ({
     return <Thumbnail item={item} size={viewMode === 'list' ? 'sm' : 'lg'} />;
   };
 
+  // Format file size in a human-readable format
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-background">
@@ -370,7 +381,7 @@ export const FileGrid = ({
                         {item.type === 'folder' ? 'Folder' : (item.fileType || 'File')}
                       </div>
                       <div className="col-span-2 flex items-center justify-end text-xs text-muted-foreground">
-                        {item.type === 'folder' ? '' : (item.size ? `${(item.size / 1024).toFixed(1)} KB` : '')}
+                        {item.type === 'folder' ? '' : (item.size ? formatFileSize(item.size) : '')}
                       </div>
                     </button>
                   </div>
