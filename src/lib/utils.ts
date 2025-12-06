@@ -138,8 +138,30 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
  * Downloads a file using browser APIs
  */
 async function downloadFileBrowser(url: string, filename: string, onProgress?: (progress: number) => void): Promise<string> {
+  // Add authentication headers for browser environment
+  const headers: Record<string, string> = {};
+  
+  // Check if we're in Tauri and have an auth token
+  const isTauri = !!(window as any).__TAURI__;
+  if (isTauri) {
+    try {
+      const tauri_auth = localStorage.getItem('tauri_auth_token');
+      if (tauri_auth) {
+        const authData = JSON.parse(tauri_auth);
+        if (authData.auth_token) {
+          headers['X-Auth-Token'] = authData.auth_token;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to get auth token from localStorage:', e);
+    }
+  }
+  
   // Fetch the file with progress tracking
-  const response = await fetch(url);
+  const response = await fetch(url, { 
+    headers,
+    credentials: 'include' // Include cookies for session-based auth
+  });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }

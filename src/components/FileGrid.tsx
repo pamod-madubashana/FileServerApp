@@ -165,17 +165,55 @@ export const FileGrid = ({
     } else if (item.fileType === "photo" && item.file_unique_id) {
       // Open image in viewer with file name instead of unique ID
       const baseUrl = getApiBaseUrl();
-      const imageUrl = baseUrl 
+      let imageUrl = baseUrl 
         ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
         : `/dl/${encodeURIComponent(item.name)}`;
+      
+      // For Tauri environment, add auth token as query parameter
+      const isTauri = !!(window as any).__TAURI__;
+      if (isTauri) {
+        try {
+          const tauriAuth = localStorage.getItem('tauri_auth_token');
+          if (tauriAuth) {
+            const authData = JSON.parse(tauriAuth);
+            if (authData.auth_token) {
+              // Add auth token as query parameter
+              const separator = imageUrl.includes('?') ? '&' : '?';
+              imageUrl = `${imageUrl}${separator}auth_token=${authData.auth_token}`;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to add auth token to image URL", e);
+        }
+      }
+      
       setImageViewer({ url: imageUrl, fileName: item.name });
     } else if ((item.fileType === "video" || item.fileType === "audio" || item.fileType === "voice") && item.file_unique_id) {
       // Always use built-in player (remove external player option)
       console.log("Opening media in built-in player");
       const baseUrl = getApiBaseUrl();
-      const mediaUrl = baseUrl 
+      let mediaUrl = baseUrl 
         ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
         : `/dl/${encodeURIComponent(item.name)}`;
+      
+      // For Tauri environment, add auth token as query parameter
+      const isTauri = !!(window as any).__TAURI__;
+      if (isTauri) {
+        try {
+          const tauriAuth = localStorage.getItem('tauri_auth_token');
+          if (tauriAuth) {
+            const authData = JSON.parse(tauriAuth);
+            if (authData.auth_token) {
+              // Add auth token as query parameter
+              const separator = mediaUrl.includes('?') ? '&' : '?';
+              mediaUrl = `${mediaUrl}${separator}auth_token=${authData.auth_token}`;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to add auth token to media URL", e);
+        }
+      }
+      
       setMediaPlayer({ 
         url: mediaUrl, 
         fileName: item.name, 

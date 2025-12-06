@@ -33,11 +33,29 @@ fn log_error(message: &str) {
 async fn download_file(url: &str, save_path: &str, app_handle: tauri::AppHandle) -> Result<(), String> {
     log::info!("Starting download from {} to {}", url, save_path);
     
-    // Create HTTP client
-    let client = reqwest::Client::new();
+    // Parse URL to check if we need to add auth token
+    let parsed_url = url::Url::parse(url).map_err(|e| format!("Invalid URL: {}", e))?;
+    let mut final_url = url.to_string();
+    let mut headers = reqwest::header::HeaderMap::new();
+    
+    // Check if this is a local API URL that needs authentication
+    if parsed_url.host_str() == Some("localhost") || parsed_url.host_str() == Some("127.0.0.1") {
+        // Try to get auth token from app state or environment
+        // For now, we'll check if there's a query parameter with auth token
+        if let Some(auth_token) = parsed_url.query_pairs().find(|(key, _)| key == "auth_token").map(|(_, value)| value.to_string()) {
+            log::info!("Adding auth token from URL query parameter");
+            headers.insert("X-Auth-Token", auth_token.parse().map_err(|_| "Invalid auth token")?);
+        }
+    }
+    
+    // Create HTTP client with headers
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
     
     // Send GET request
-    let response = client.get(url).send().await.map_err(|e| format!("Failed to send request: {}", e))?;
+    let response = client.get(&final_url).send().await.map_err(|e| format!("Failed to send request: {}", e))?;
     
     // Check if request was successful
     if !response.status().is_success() {
