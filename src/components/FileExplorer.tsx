@@ -1028,6 +1028,13 @@ export const FileExplorer = () => {
           onClose={() => setContextMenu(null)}
           isClipboardPasted={isClipboardPasted()} // Pass the clipboard pasted status
           hasClipboard={hasClipboard} // Pass the clipboard status function
+          disableDelete={
+            // Disable delete for specific virtual folders in Home
+            currentPath.length === 1 && 
+            currentPath[0] === "Home" && 
+            contextMenu.item && 
+            ["Images", "Documents", "Audio", "Voice Messages", "Videos"].includes(contextMenu.item.name)
+          }
         />
       )}
     </div>

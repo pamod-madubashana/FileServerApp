@@ -31,6 +31,7 @@ interface ContextMenuProps {
   onDownload?: () => void | Promise<void>;
   isClipboardPasted?: boolean; // Add prop to track if clipboard item has been pasted
   hasClipboard?: () => boolean; // Add prop to track if there's clipboard content
+  disableDelete?: boolean; // Add prop to disable delete option
 }
 
 interface MenuItem {
@@ -58,6 +59,7 @@ export const ContextMenu = ({
   onDownload,
   isClipboardPasted, // Destructure the new prop
   hasClipboard, // Destructure the new prop
+  disableDelete = false, // Destructure the new prop with default value
 }: ContextMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -210,6 +212,7 @@ export const ContextMenu = ({
         action: "delete",
         shortcut: "Del",
         danger: true,
+        disabled: disableDelete, // Use the disableDelete prop
       },
       { divider: true, label: "", action: "" },
       {
@@ -258,21 +261,17 @@ export const ContextMenu = ({
             }
 
             const Icon = item.icon;
-            const isDisabled = item.disabled || (item.action === "paste" && (!hasClipboard || !hasClipboard() || isClipboardPasted));
-
+            const isDisabled = item.disabled || (item.action === "paste" && (!hasClipboard || !hasClipboard()));
+            
             return (
               <button
-                key={index}
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (!isDisabled) {
-                    await handleAction(item.action);
-                  }
-                }}
+                key={item.action}
+                onClick={() => !isDisabled && handleAction(item.action)}
                 disabled={isDisabled}
-                className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-sm transition-all group ${isDisabled
-                  ? "text-muted-foreground/40 cursor-not-allowed"
-                  : item.danger
+                className={`w-full flex items-center justify-between px-3 py-2 text-left text-sm transition-colors group ${
+                  isDisabled
+                    ? "text-muted-foreground/50 cursor-not-allowed"
+                    : item.danger
                     ? "text-foreground hover:bg-destructive hover:text-destructive-foreground"
                     : "text-foreground hover:bg-accent hover:text-accent-foreground"
                   }`}
