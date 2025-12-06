@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FileItem } from "./types";
 import { FileText, Image as ImageIcon, FileVideo, FileAudio, FileArchive } from "lucide-react";
 import { getApiBaseUrl } from "@/lib/api";
@@ -6,6 +6,67 @@ import { getApiBaseUrl } from "@/lib/api";
 interface ThumbnailProps {
   item: FileItem;
   size?: 'sm' | 'md' | 'lg'; // Size variants for different views
+}
+
+// Simple cache to store loaded thumbnails
+const thumbnailCache = new Map<string, string>();
+
+// Queue to manage thumbnail loading
+const loadingQueue: ((() => void) | null)[] = [];
+let activeLoads = 0;
+const MAX_CONCURRENT_LOADS = 6; // Limit concurrent loads to prevent browser overload
+
+// Process the loading queue
+function processQueue() {
+  if (activeLoads >= MAX_CONCURRENT_LOADS) return;
+  
+  while (activeLoads < MAX_CONCURRENT_LOADS && loadingQueue.length > 0) {
+    const job = loadingQueue.shift();
+    if (job) {
+      activeLoads++;
+      job();
+    }
+  }
+}
+
+// Add a thumbnail load job to the queue
+function queueThumbnailLoad(
+  thumbnailId: string, 
+  url: string,
+  onLoad: (dataUrl: string) => void,
+  onError: () => void
+) {
+  const job = () => {
+    // Check cache first
+    if (thumbnailCache.has(thumbnailId)) {
+      onLoad(thumbnailCache.get(thumbnailId)!);
+      activeLoads--;
+      processQueue();
+      return;
+    }
+    
+    // Fetch the thumbnail
+    fetch(url, { credentials: 'include' })  // Include cookies for session auth
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.blob();
+      })
+      .then(blob => {
+        const dataUrl = URL.createObjectURL(blob);
+        thumbnailCache.set(thumbnailId, dataUrl);
+        onLoad(dataUrl);
+      })
+      .catch(() => {
+        onError();
+      })
+      .finally(() => {
+        activeLoads--;
+        processQueue();
+      });
+  };
+  
+  loadingQueue.push(job);
+  processQueue();
 }
 
 export const Thumbnail = ({ item, size = 'lg' }: ThumbnailProps) => {
@@ -19,12 +80,71 @@ export const Thumbnail = ({ item, size = 'lg' }: ThumbnailProps) => {
   const currentSizeClass = sizeClasses[size];
   const [thumbnailError, setThumbnailError] = useState(false);
   const [thumbnailLoading, setThumbnailLoading] = useState(true);
+  const [thumbnailSrc, setThumbnailSrc] = useState<string | null>(null);
+  const isMounted = useRef(true);
 
   // Reset error state when item changes
   useEffect(() => {
     setThumbnailError(false);
     setThumbnailLoading(true);
+    setThumbnailSrc(null);
+    isMounted.current = true;
+    
+    return () => {
+      isMounted.current = false;
+    };
   }, [item.thumbnail]);
+
+  // Load thumbnail with queuing
+  useEffect(() => {
+    if (!item.thumbnail || thumbnailError) return;
+    
+    // Construct the full thumbnail URL using the API base URL
+    const baseUrl = getApiBaseUrl();
+    let thumbnailUrl = baseUrl 
+      ? `${baseUrl}/api/file/${item.thumbnail}/thumbnail` 
+      : `/api/file/${item.thumbnail}/thumbnail`;
+
+    // For Tauri environment, add auth token as query parameter
+    const isTauri = !!(window as any).__TAURI__;
+    if (isTauri) {
+      try {
+        const tauriAuth = localStorage.getItem('tauri_auth_token');
+        if (tauriAuth) {
+          const authData = JSON.parse(tauriAuth);
+          if (authData.auth_token) {
+            // Add auth token as query parameter
+            const separator = thumbnailUrl.includes('?') ? '&' : '?';
+            thumbnailUrl = `${thumbnailUrl}${separator}auth_token=${authData.auth_token}`;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to add auth token to thumbnail URL", e);
+      }
+    }
+    
+    // Queue the thumbnail load
+    queueThumbnailLoad(
+      item.thumbnail,
+      thumbnailUrl,
+      (dataUrl) => {
+        if (isMounted.current) {
+          setThumbnailSrc(dataUrl);
+          setThumbnailLoading(false);
+        }
+      },
+      () => {
+        if (isMounted.current) {
+          setThumbnailError(true);
+          setThumbnailLoading(false);
+        }
+      }
+    );
+    
+    return () => {
+      // Cleanup function
+    };
+  }, [item.thumbnail, thumbnailError]);
 
   // If it's a folder, show folder icon
   if (item.type === "folder") {
@@ -48,30 +168,6 @@ export const Thumbnail = ({ item, size = 'lg' }: ThumbnailProps) => {
     );
   }
 
-  // Construct the full thumbnail URL using the API base URL
-  const baseUrl = getApiBaseUrl();
-  let thumbnailUrl = baseUrl 
-    ? `${baseUrl}/api/file/${item.thumbnail}/thumbnail` 
-    : `/api/file/${item.thumbnail}/thumbnail`;
-
-  // For Tauri environment, add auth token as query parameter
-  const isTauri = !!(window as any).__TAURI__;
-  if (isTauri) {
-    try {
-      const tauriAuth = localStorage.getItem('tauri_auth_token');
-      if (tauriAuth) {
-        const authData = JSON.parse(tauriAuth);
-        if (authData.auth_token) {
-          // Add auth token as query parameter
-          const separator = thumbnailUrl.includes('?') ? '&' : '?';
-          thumbnailUrl = `${thumbnailUrl}${separator}auth_token=${authData.auth_token}`;
-        }
-      }
-    } catch (e) {
-      console.error("Failed to add auth token to thumbnail URL", e);
-    }
-  }
-
   return (
     <div className={`relative ${currentSizeClass} flex items-center justify-center`}>
       {thumbnailLoading && (
@@ -79,18 +175,20 @@ export const Thumbnail = ({ item, size = 'lg' }: ThumbnailProps) => {
           {getDefaultFileIcon(item)}
         </div>
       )}
-      <img
-        src={thumbnailUrl}
-        alt={item.name}
-        className={`max-w-full max-h-full object-contain rounded-lg transition-all duration-300 ${thumbnailLoading ? 'opacity-0' : 'opacity-100'} hover:scale-105 hover:shadow-lg`}
-        onLoad={() => {
-          setThumbnailLoading(false);
-        }}
-        onError={() => {
-          setThumbnailError(true);
-          setThumbnailLoading(false);
-        }}
-      />
+      {thumbnailSrc && (
+        <img
+          src={thumbnailSrc}
+          alt={item.name}
+          className={`max-w-full max-h-full object-contain rounded-lg transition-all duration-300 ${thumbnailLoading ? 'opacity-0' : 'opacity-100'} hover:scale-105 hover:shadow-lg`}
+          onLoad={() => {
+            setThumbnailLoading(false);
+          }}
+          onError={() => {
+            setThumbnailError(true);
+            setThumbnailLoading(false);
+          }}
+        />
+      )}
     </div>
   );
 };
