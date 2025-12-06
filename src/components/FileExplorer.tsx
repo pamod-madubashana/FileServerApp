@@ -265,6 +265,9 @@ export const FileExplorer = () => {
       setShowSettings(false);
       setShowUserManagement(false);
       
+      // Reset currentPath to Home when returning to file view
+      setCurrentPath(["Home"]);
+      
       // Close navigation sidebar when returning to file view
       const event = new CustomEvent('toggleNavigationSidebar', { detail: { action: 'close' } });
       window.dispatchEvent(event);
