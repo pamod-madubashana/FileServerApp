@@ -39,11 +39,13 @@ export const FileExplorer = () => {
       // Split the path and filter out empty segments
       const pathSegments = location.pathname.split('/').filter(segment => segment.length > 0);
       if (pathSegments.length > 0) {
+        // Decode each segment to handle URL encoding (e.g., %20 for spaces)
+        const decodedSegments = pathSegments.map(segment => decodeURIComponent(segment));
         // If the first segment is not "Home", add it
-        if (pathSegments[0] !== "Home") {
-          return ["Home", ...pathSegments];
+        if (decodedSegments[0] !== "Home") {
+          return ["Home", ...decodedSegments];
         }
-        return pathSegments;
+        return decodedSegments;
       }
     }
     
@@ -137,7 +139,7 @@ export const FileExplorer = () => {
     // Update the browser history with the new path
     const pathString = currentPath.length === 1 && currentPath[0] === "Home" 
       ? "/" 
-      : "/" + currentPath.slice(1).join('/');
+      : "/" + currentPath.slice(1).map(segment => encodeURIComponent(segment)).join('/');
     
     // Use replaceState for the initial load to avoid creating extra history entries
     if (window.history.state === null) {
@@ -158,7 +160,9 @@ export const FileExplorer = () => {
         if (pathSegments.length === 0) {
           setCurrentPath(["Home"]);
         } else {
-          setCurrentPath(pathSegments);
+          // Decode each segment to handle URL encoding (e.g., %20 for spaces)
+          const decodedSegments = pathSegments.map(segment => decodeURIComponent(segment));
+          setCurrentPath(decodedSegments);
         }
       }
       
@@ -181,7 +185,7 @@ export const FileExplorer = () => {
         setShowUserManagement(false);
       }
     };
-
+    
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
