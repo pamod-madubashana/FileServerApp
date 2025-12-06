@@ -308,7 +308,7 @@ export const FileExplorer = () => {
 
   // Filter files based on current path and search query
   const getFilteredItems = (): FileItem[] => {
-    // If we're in Home and no filter is selected, show virtual folders and user-created folders
+    // If we're in Home and no filter is selected, show virtual folders, user-created folders, and files in root
     if (currentFolder === "Home" && selectedFilter === "all") {
       const filteredFolders = virtualFolders.filter((folder) =>
         folder.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -320,9 +320,26 @@ export const FileExplorer = () => {
         folder.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
-      // Combine and sort folders first, then alphabetically
-      const allFolders = [...filteredFolders, ...filteredUserFolders];
-      return allFolders.sort((a, b) => a.name.localeCompare(b.name));
+      // Add files that are directly in the root directory (Home)
+      const rootFiles = files.filter((f) => f.type !== "folder" && f.file_path === "/");
+      const filteredRootFiles = rootFiles.filter((file) =>
+        file.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+      // Combine folders and root files, then sort
+      const allItems = [...filteredFolders, ...filteredUserFolders, ...filteredRootFiles];
+      return allItems.sort((a, b) => {
+        // If both are folders or both are files, sort alphabetically
+        if (a.type === b.type) {
+          return a.name.localeCompare(b.name);
+        }
+        // If 'a' is a folder and 'b' is a file, 'a' comes first
+        if (a.type === "folder") {
+          return -1;
+        }
+        // If 'a' is a file and 'b' is a folder, 'b' comes first
+        return 1;
+      });
     }
 
     // If we're in a specific folder or have a filter, show files
