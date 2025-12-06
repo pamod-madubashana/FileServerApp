@@ -328,10 +328,10 @@ export const FileExplorer = () => {
 
     // Filter by folder/type
     if (currentFolder === "Images" || selectedFilter === "photo") {
-      // For virtual folders, show only files with the exact path
+      // For virtual folders, show all files with the exact path (not just photos)
       if (currentApiPath.startsWith("/Home/")) {
         filteredFiles = files.filter((f) => 
-          (f.fileType === "photo" && f.file_path === currentApiPath) || 
+          (f.file_path === currentApiPath) || 
           (f.type === "folder" && f.file_path === currentApiPath)
         );
       } else {
@@ -339,10 +339,10 @@ export const FileExplorer = () => {
         filteredFiles = files.filter((f) => f.fileType === "photo" || f.type === "folder");
       }
     } else if (currentFolder === "Documents" || selectedFilter === "document") {
-      // For virtual folders, show only files with the exact path
+      // For virtual folders, show all files with the exact path (not just documents)
       if (currentApiPath.startsWith("/Home/")) {
         filteredFiles = files.filter((f) => 
-          (f.fileType === "document" && f.file_path === currentApiPath) || 
+          (f.file_path === currentApiPath) || 
           (f.type === "folder" && f.file_path === currentApiPath)
         );
       } else {
@@ -350,10 +350,10 @@ export const FileExplorer = () => {
         filteredFiles = files.filter((f) => f.fileType === "document" || f.type === "folder");
       }
     } else if (currentFolder === "Videos" || selectedFilter === "video") {
-      // For virtual folders, show only files with the exact path
+      // For virtual folders, show all files with the exact path (not just videos)
       if (currentApiPath.startsWith("/Home/")) {
         filteredFiles = files.filter((f) => 
-          (f.fileType === "video" && f.file_path === currentApiPath) || 
+          (f.file_path === currentApiPath) || 
           (f.type === "folder" && f.file_path === currentApiPath)
         );
       } else {
@@ -361,10 +361,10 @@ export const FileExplorer = () => {
         filteredFiles = files.filter((f) => f.fileType === "video" || f.type === "folder");
       }
     } else if (currentFolder === "Audio" || selectedFilter === "audio") {
-      // For virtual folders, show only files with the exact path
+      // For virtual folders, show all files with the exact path (not just audio)
       if (currentApiPath.startsWith("/Home/")) {
         filteredFiles = files.filter((f) => 
-          (f.fileType === "audio" && f.file_path === currentApiPath) || 
+          (f.file_path === currentApiPath) || 
           (f.type === "folder" && f.file_path === currentApiPath)
         );
       } else {
@@ -372,10 +372,10 @@ export const FileExplorer = () => {
         filteredFiles = files.filter((f) => f.fileType === "audio" || f.type === "folder");
       }
     } else if (currentFolder === "Voice Messages" || selectedFilter === "voice") {
-      // For virtual folders, show only files with the exact path
+      // For virtual folders, show all files with the exact path (not just voice messages)
       if (currentApiPath.startsWith("/Home/")) {
         filteredFiles = files.filter((f) => 
-          (f.fileType === "voice" && f.file_path === currentApiPath) || 
+          (f.file_path === currentApiPath) || 
           (f.type === "folder" && f.file_path === currentApiPath)
         );
       } else {
@@ -883,6 +883,8 @@ export const FileExplorer = () => {
               onRenameConfirm={confirmRename}
               onRenameCancel={() => setRenamingItem(null)}
               currentFolder={currentFolder}
+              currentPath={currentPath}
+              currentApiPath={currentApiPath}
               onNewFolder={() => setNewFolderDialogOpen(true)}
               isLoading={isLoading}
               cutItem={clipboard?.operation === "cut" && !isClipboardPasted() ? clipboard.item : null}

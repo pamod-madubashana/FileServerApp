@@ -26,11 +26,14 @@ interface FileGridProps {
   onRenameConfirm: (newName: string) => void;
   onRenameCancel: () => void;
   currentFolder: string;
+  currentPath?: string[]; // Add full path information
+  currentApiPath?: string; // Add API path information
   onNewFolder?: () => void;
   isLoading?: boolean;
   cutItem?: FileItem | null; // Add prop to track cut item
   hasClipboard?: () => boolean; // Add prop to track if there's clipboard content
   isClipboardPasted?: boolean; // Add prop to track if clipboard item has been pasted
+  onFileUploaded?: (file: FileItem) => void; // Callback for when a file is uploaded
 }
 
 interface ContextMenuState {
@@ -63,6 +66,9 @@ export const FileGrid = ({
   cutItem,
   hasClipboard,
   isClipboardPasted,
+  onFileUploaded,
+  currentPath,
+  currentApiPath,
 }: FileGridProps) => {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [draggedItem, setDraggedItem] = useState<FileItem | null>(null);
@@ -254,7 +260,15 @@ export const FileGrid = ({
   // Add file upload handler
   const handleFileUpload = async (files: FileList) => {
     try {
-      const currentPathStr = `/${currentFolder}`;
+      // Use the API path if available, otherwise construct it
+      let currentPathStr = currentApiPath || `/${currentFolder}`;
+      console.log('Current folder:', currentFolder);
+      console.log('Current path array:', currentPath);
+      console.log('Current API path:', currentApiPath);
+      console.log('Using path for upload:', currentPathStr);
+      
+      // DEBUG: Log the path being sent
+      console.log('Uploading file to path:', currentPathStr);
       
       // Upload each file
       for (let i = 0; i < files.length; i++) {
@@ -275,10 +289,35 @@ export const FileGrid = ({
           const errorData = await response.json();
           throw new Error(errorData.detail || 'Failed to upload file');
         }
+        
+        // Get the uploaded file data
+        const result = await response.json();
+        
+        // Create a FileItem from the response
+        const uploadedFile = {
+          id: result.file.id,
+          file_unique_id: result.file.file_unique_id,
+          name: result.file.file_name,
+          type: 'file',
+          icon: '', // Will be set by the getFileIcon function
+          extension: result.file.file_name.split('.').pop(),
+          size: result.file.file_size,
+          fileType: result.file.file_type,
+          thumbnail: result.file.thumbnail,
+          file_path: result.file.file_path,
+          modified: result.file.modified,
+        } as FileItem;
+        
+        // Add the uploaded file to the current items list
+        if (onFileUploaded) {
+          onFileUploaded(uploadedFile);
+        } else {
+          // Fallback to refresh if no callback provided
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }
       }
-      
-      // Refresh the file list after upload
-      window.location.reload();
     } catch (error: any) {
       console.error('Upload error:', error);
       alert(`Upload failed: ${error.message || 'Unknown error'}`);
