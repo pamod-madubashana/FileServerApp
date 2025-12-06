@@ -1,20 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import "plyr/dist/plyr.css";
+import { FileAudio } from "lucide-react";
 
 interface MediaPlayerProps {
   mediaUrl: string;
   fileName: string;
   fileType: "video" | "audio" | "voice";
+  startPosition?: { x: number; y: number; width: number; height: number };
   onClose: () => void;
 }
 
-export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlayerProps) => {
+export const MediaPlayer = ({ mediaUrl, fileName, fileType, startPosition, onClose }: MediaPlayerProps) => {
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const plyrInstance = useRef<any>(null);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false); // Start hidden for open animation
+  const [isAnimating, setIsAnimating] = useState(!!startPosition);
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const animationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Trigger open animation after component mounts
+    setIsVisible(true);
+    
     let isMounted = true;
     
     const initPlayer = async () => {
@@ -213,6 +220,30 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
     
     initPlayer();
     
+    // Start animation after a brief moment to allow rendering
+    if (startPosition) {
+      const animationTimeout = setTimeout(() => {
+        setIsAnimating(false);
+      }, 50);
+      
+      return () => {
+        isMounted = false;
+        clearTimeout(animationTimeout);
+        // Clear the timeout if component unmounts
+        if (closeTimerRef.current) {
+          clearTimeout(closeTimerRef.current);
+        }
+        if (plyrInstance.current) {
+          plyrInstance.current.stop(); // Stop playback on unmount
+          plyrInstance.current.destroy();
+          plyrInstance.current = null;
+        }
+        if (playerContainerRef.current) {
+          playerContainerRef.current.innerHTML = '';
+        }
+      };
+    }
+    
     return () => {
       isMounted = false;
       // Clear the timeout if component unmounts
@@ -228,7 +259,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
         playerContainerRef.current.innerHTML = '';
       }
     };
-  }, [mediaUrl, fileName, fileType, onClose]);
+  }, [mediaUrl, fileName, fileType, onClose, startPosition]);
 
   const handleClose = (e?: React.MouseEvent) => {
     if (e) {
@@ -254,10 +285,116 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
   const isAudio = fileType === "audio" || fileType === "voice";
   
   if (isAudio) {
+    // If we have a start position, render the animation element
+    if (startPosition && isAnimating) {
+      return (
+        <>
+          {/* Animation element that moves from icon to player position */}
+          <div 
+            ref={animationRef}
+            className="fixed backdrop-blur-lg bg-black/30 border border-white/10 rounded-xl shadow-2xl z-50 flex items-center justify-center pointer-events-none"
+            style={{
+              left: `${startPosition.x}px`,
+              top: `${startPosition.y}px`,
+              width: `${startPosition.width}px`,
+              height: `${startPosition.height}px`,
+              transition: 'all 0.3s ease-out',
+              transform: 'translate(0, 0)',
+              opacity: 1,
+            }}
+          >
+            <FileAudio className="w-1/2 h-1/2 text-white" />
+          </div>
+          
+          {/* Actual player that appears after animation */}
+          <div 
+            className={`fixed bottom-4 right-4 w-80 backdrop-blur-lg bg-black/30 border border-white/10 rounded-xl shadow-2xl z-50 transition-all duration-300 ease-in-out`}
+            style={{
+              transition: 'all 0.3s ease-out 0.1s',
+              opacity: isAnimating ? 0 : (isVisible ? 1 : 0),
+              transform: isAnimating ? 'translateY(0)' : (isVisible ? 'translateY(0)' : 'translateY(100%)'),
+            }}
+          >
+            <div className="flex items-center justify-between p-3 border-b border-white/10">
+              <div className="text-white text-sm font-medium truncate">{fileName}</div>
+              <button
+                onClick={handleClose}
+                className="text-white/80 hover:text-white transition-colors ml-2"
+                aria-label="Close player"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            
+            <div 
+              ref={playerContainerRef}
+              className="p-3"
+              style={{ 
+                minHeight: '60px'
+              }}
+            />
+            
+            <style>{`
+              .plyr {
+                width: 100% !important;
+                max-width: 100% !important;
+              }
+              .plyr__controls {
+                background: transparent !important;
+                padding: 0 !important;
+                padding-right: 5px !important; /* Reduce padding to prevent overflow */
+              }
+              .plyr__control {
+                color: white !important;
+                border-radius: 50% !important; /* Make play button circular */
+                background: rgba(255, 255, 255, 0.1) !important;
+                width: 32px !important;
+                height: 32px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+              }
+              .plyr__control:hover {
+                background: rgba(255, 255, 255, 0.2) !important;
+              }
+              .plyr__progress {
+                margin: 0 !important;
+                margin-right: 5px !important; /* Add small margin to prevent overflow */
+              }
+              .plyr__time {
+                color: white !important;
+                font-size: 0.75rem !important;
+              }
+              audio {
+                width: 100% !important;
+              }
+            `}</style>
+          </div>
+        </>
+      );
+    }
+    
+    // Regular player with dropdown open animation
     return (
-      <div className={`fixed bottom-4 right-4 w-80 backdrop-blur-lg bg-black/30 border border-white/10 rounded-xl shadow-2xl z-50 transition-all duration-300 ease-in-out ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
-      }`}>
+      <div className={`fixed bottom-4 right-4 w-80 backdrop-blur-lg bg-black/30 border border-white/10 rounded-xl shadow-2xl z-50 transition-all duration-300 ease-in-out`}
+        style={{
+          transform: isVisible ? 'translateY(0)' : 'translateY(100%)',
+          opacity: isVisible ? 1 : 0,
+        }}
+      >
         <div className="flex items-center justify-between p-3 border-b border-white/10">
           <div className="text-white text-sm font-medium truncate">{fileName}</div>
           <button
@@ -303,7 +440,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
           .plyr__control {
             color: white !important;
             border-radius: 50% !important; /* Make play button circular */
-            background: #38ace2 !important;
+            background: rgba(255, 255, 255, 0.1) !important;
             width: 32px !important;
             height: 32px !important;
             display: flex !important;
@@ -311,7 +448,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
             justify-content: center !important;
           }
           .plyr__control:hover {
-            background: #38ace2 !important;
+            background: rgba(255, 255, 255, 0.2) !important;
           }
           .plyr__progress {
             margin: 0 !important;
