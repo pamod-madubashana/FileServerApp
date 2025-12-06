@@ -360,7 +360,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, startPosition, onClo
               .plyr__control {
                 color: white !important;
                 border-radius: 50% !important; /* Make play button circular */
-                background: rgba(255, 255, 255, 0.1) !important;
+                background: #3b82f6 !important; /* Blue background color */
                 width: 32px !important;
                 height: 32px !important;
                 display: flex !important;
@@ -368,7 +368,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, startPosition, onClo
                 justify-content: center !important;
               }
               .plyr__control:hover {
-                background: rgba(255, 255, 255, 0.2) !important;
+                background: #2563eb !important; /* Darker blue on hover */
               }
               .plyr__progress {
                 margin: 0 !important;
@@ -440,7 +440,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, startPosition, onClo
           .plyr__control {
             color: white !important;
             border-radius: 50% !important; /* Make play button circular */
-            background: rgba(255, 255, 255, 0.1) !important;
+            background: #3b82f6 !important; /* Blue background color */
             width: 32px !important;
             height: 32px !important;
             display: flex !important;
@@ -448,7 +448,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, startPosition, onClo
             justify-content: center !important;
           }
           .plyr__control:hover {
-            background: rgba(255, 255, 255, 0.2) !important;
+            background: #2563eb !important; /* Darker blue on hover */
           }
           .plyr__progress {
             margin: 0 !important;
