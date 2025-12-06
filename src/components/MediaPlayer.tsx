@@ -95,7 +95,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
             
             plyrInstance.current = new PlyrConstructor(mediaElement, {
               controls: isAudio 
-                ? ['progress'] // Only timeline for audio/voice
+                ? ['play', 'progress'] // Play button and timeline for audio/voice
                 : [ // Full controls for video
                   'play-large',
                   'play',
@@ -255,14 +255,14 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
   
   if (isAudio) {
     return (
-      <div className={`fixed bottom-4 right-4 w-80 bg-black bg-opacity-90 rounded-lg shadow-xl z-50 transition-all duration-300 ease-in-out ${
+      <div className={`fixed bottom-4 right-4 w-80 backdrop-blur-lg bg-black/30 border border-white/10 rounded-xl shadow-2xl z-50 transition-all duration-300 ease-in-out ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
       }`}>
-        <div className="flex items-center justify-between p-3 border-b border-gray-700">
+        <div className="flex items-center justify-between p-3 border-b border-white/10">
           <div className="text-white text-sm font-medium truncate">{fileName}</div>
           <button
             onClick={handleClose}
-            className="text-white hover:text-gray-300 transition-colors ml-2"
+            className="text-white/80 hover:text-white transition-colors ml-2"
             aria-label="Close player"
           >
             <svg
@@ -321,11 +321,11 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
 
   // For video, keep the full-screen view
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex flex-col">
       <div className="absolute top-4 right-4 z-10">
         <button
           onClick={handleClose}
-          className="text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 rounded-full p-2"
+          className="text-white hover:text-gray-300 transition-colors bg-black/30 backdrop-blur rounded-full p-2"
           aria-label="Close player"
         >
           <svg
