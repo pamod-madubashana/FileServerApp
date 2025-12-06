@@ -88,24 +88,28 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
             // Type assertion for TypeScript
             const PlyrConstructor = Plyr as new (...args: any[]) => any;
             
-            // Initialize Plyr
+            // Initialize Plyr with different settings for audio/voice vs video
+            const isAudio = fileType === "audio" || fileType === "voice";
+            
             plyrInstance.current = new PlyrConstructor(mediaElement, {
-              controls: [
-                'play-large',
-                'play',
-                'progress',
-                'current-time',
-                'duration',
-                'mute',
-                'volume',
-                'captions',
-                'settings',
-                'pip',
-                'airplay',
-                'download',
-                'fullscreen'
-              ],
-              settings: ['captions', 'quality', 'speed', 'loop'],
+              controls: isAudio 
+                ? ['progress'] // Only timeline for audio/voice
+                : [ // Full controls for video
+                  'play-large',
+                  'play',
+                  'progress',
+                  'current-time',
+                  'duration',
+                  'mute',
+                  'volume',
+                  'captions',
+                  'settings',
+                  'pip',
+                  'airplay',
+                  'download',
+                  'fullscreen'
+                ],
+              settings: isAudio ? [] : ['captions', 'quality', 'speed', 'loop'],
               ratio: '16:9',
               quality: {
                 default: 576,
@@ -125,10 +129,12 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
                 global: true
               },
               fullscreen: {
-                enabled: true,
+                enabled: !isAudio, // Disable fullscreen for audio/voice
                 fallback: true,
                 iosNative: true
               },
+              autopause: false, // Don't pause when another player starts
+              autoplay: isAudio, // Auto-play for audio/voice only
               i18n: {
                 restart: 'Restart',
                 rewind: 'Rewind {seektime}s',
@@ -165,6 +171,32 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
             plyrInstance.current.on('error', (error: any) => {
               console.error('Plyr error:', error);
             });
+            
+            // Auto-play for audio/voice
+            if (isAudio) {
+              // Ensure the player is ready before playing
+              mediaElement.addEventListener('canplay', () => {
+                if (plyrInstance.current && !plyrInstance.current.playing) {
+                  plyrInstance.current.play();
+                }
+              });
+              
+              // Try to play immediately as well
+              setTimeout(() => {
+                if (plyrInstance.current && !plyrInstance.current.playing) {
+                  plyrInstance.current.play().catch(e => {
+                    console.warn('Autoplay failed:', e);
+                  });
+                }
+              }, 100);
+              
+              // Auto-close widget when playback ends
+              plyrInstance.current.on('ended', () => {
+                if (isMounted) {
+                  onClose();
+                }
+              });
+            }
           } catch (error) {
             console.error('Error initializing Plyr:', error);
           }
@@ -179,6 +211,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
     return () => {
       isMounted = false;
       if (plyrInstance.current) {
+        plyrInstance.current.stop(); // Stop playback on unmount
         plyrInstance.current.destroy();
         plyrInstance.current = null;
       }
@@ -186,13 +219,81 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
         playerContainerRef.current.innerHTML = '';
       }
     };
-  }, [mediaUrl, fileName, fileType]);
+  }, [mediaUrl, fileName, fileType, onClose]);
 
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
     onClose();
   };
 
+  // For audio and voice messages, render as a floating widget in the bottom right
+  const isAudio = fileType === "audio" || fileType === "voice";
+  
+  if (isAudio) {
+    return (
+      <div className="fixed bottom-4 right-4 w-80 bg-black bg-opacity-90 rounded-lg shadow-xl z-50">
+        <div className="flex items-center justify-between p-3 border-b border-gray-700">
+          <div className="text-white text-sm font-medium truncate">{fileName}</div>
+          <button
+            onClick={handleClose}
+            className="text-white hover:text-gray-300 transition-colors ml-2"
+            aria-label="Close player"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        
+        <div 
+          ref={playerContainerRef}
+          className="p-3"
+          style={{ 
+            minHeight: '60px'
+          }}
+        />
+        
+        <style>{`
+          .plyr {
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .plyr__controls {
+            background: transparent !important;
+            padding: 0 !important;
+            padding-right: 5px !important; /* Reduce padding to prevent overflow */
+          }
+          .plyr__control {
+            color: white !important;
+          }
+          .plyr__progress {
+            margin: 0 !important;
+            margin-right: 5px !important; /* Add small margin to prevent overflow */
+          }
+          .plyr__time {
+            color: white !important;
+            font-size: 0.75rem !important;
+          }
+          audio {
+            width: 100% !important;
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // For video, keep the full-screen view
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
       <div className="absolute top-4 right-4 z-10">
@@ -228,7 +329,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
         style={{ 
           padding: '2rem',
           maxHeight: '90vh',
-          maxWidth: fileType === 'video' ? '90vw' : '600px',
+          maxWidth: '90vw',
           margin: '0 auto'
         }}
       />
