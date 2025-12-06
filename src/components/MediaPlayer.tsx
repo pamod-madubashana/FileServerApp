@@ -302,6 +302,16 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
           }
           .plyr__control {
             color: white !important;
+            border-radius: 50% !important; /* Make play button circular */
+            background: #38ace2 !important;
+            width: 32px !important;
+            height: 32px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+          }
+          .plyr__control:hover {
+            background: #38ace2 !important;
           }
           .plyr__progress {
             margin: 0 !important;
