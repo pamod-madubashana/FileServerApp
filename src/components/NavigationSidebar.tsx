@@ -32,7 +32,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     }
   }, [isOpen]);
 
-  // Check if user is owner
+  // Check if user is owner - now with dependency on location to recheck on navigation
   useEffect(() => {
     const checkOwnerStatus = async () => {
       try {
@@ -45,7 +45,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
     };
 
     checkOwnerStatus();
-  }, []);
+  }, [location]); // Re-run when location changes
 
   // Close sidebar when resizing from mobile to desktop
   useEffect(() => {
