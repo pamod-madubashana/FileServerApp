@@ -242,10 +242,10 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
   };
 
   return (
-    <div className="flex-1 overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:px-6">
+    <div className="flex-1 overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-6 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto h-full flex flex-col">
-        <div className="flex items-center justify-between mb-8 flex-shrink-0">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
+        <div className="flex items-center justify-between mb-6 flex-shrink-0">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
           <button
             onClick={() => {
               // Close the settings page and navigate back to file explorer
@@ -261,18 +261,21 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <Card className="mb-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl text-gray-900 dark:text-white">Server Configuration</CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400">
+        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6">
+          {/* Server Configuration Card */}
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg">
+            <CardHeader className="pb-4 pt-5 px-6">
+              <CardTitle className="text-xl text-gray-900 dark:text-white">Server Configuration</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400 text-sm">
                 Configure the backend server URL for API connections
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 py-6">
-              <div className="space-y-6">
+            <CardContent className="py-4 px-6">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="server-url" className="text-gray-700 dark:text-gray-300">Backend Server URL</Label>
+                  <Label htmlFor="server-url" className="text-gray-700 dark:text-gray-300 text-sm font-medium">
+                    Backend Server URL
+                  </Label>
                   <Input
                     id="server-url"
                     value={tempServerUrl}
@@ -281,10 +284,10 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
                       if (error) setError(""); // Clear error when user types
                     }}
                     placeholder="https://your-server.com"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-sm h-9"
                   />
                   {error && <p className="text-sm text-red-500">{error}</p>}
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Enter the full URL to your backend server. Current default is {((): string => {
                       const url = new URL(window.location.origin);
                       url.port = "8000";
@@ -293,33 +296,42 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
                   </p>
                 </div>
                 
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Tip: Press Ctrl+Alt+R anywhere to reset to default settings
                 </p>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={handleReset} className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <CardFooter className="flex justify-between pb-5 px-6 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={handleReset} 
+                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 h-8 text-sm px-3"
+              >
                 Reset to Default
               </Button>
-              <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button 
+                onClick={handleSave} 
+                className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-sm px-3"
+              >
                 Save Changes
               </Button>
             </CardFooter>
           </Card>
           
-          {/* Index Chat Settings */}
-          <Card className="mb-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl text-gray-900 dark:text-white">Index Chat Settings</CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400">
+          {/* Index Chat Settings Card */}
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg">
+            <CardHeader className="pb-4 pt-5 px-6">
+              <CardTitle className="text-xl text-gray-900 dark:text-white">Index Chat Settings</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400 text-sm">
                 Configure the Telegram chat ID used for indexing files
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 py-6">
-              <div className="space-y-6">
+            <CardContent className="py-4 px-6">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="index-chat-id" className="text-gray-700 dark:text-gray-300">Index Chat ID</Label>
+                  <Label htmlFor="index-chat-id" className="text-gray-700 dark:text-gray-300 text-sm font-medium">
+                    Index Chat ID
+                  </Label>
                   <Input
                     id="index-chat-id"
                     type="number"
@@ -328,37 +340,42 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
                       setTempIndexChatId(e.target.value);
                     }}
                     placeholder="Enter Telegram chat ID"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-sm h-9"
                   />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Enter the Telegram chat ID where files should be indexed from. 
                     If you've previously started indexing, this will be pre-filled.
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Leave empty to use the default behavior.
                   </p>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={handleSaveIndexChatId} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <CardFooter className="flex justify-end pb-5 px-6 pt-4">
+              <Button 
+                onClick={handleSaveIndexChatId} 
+                className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-sm px-3"
+              >
                 Save Index Chat
               </Button>
             </CardFooter>
           </Card>
           
-          {/* Download Folder Settings - Separated from Server Configuration */}
-          <Card className="mb-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl text-gray-900 dark:text-white">Download Settings</CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400">
+          {/* Download Settings Card */}
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg mb-6">
+            <CardHeader className="pb-4 pt-5 px-6">
+              <CardTitle className="text-xl text-gray-900 dark:text-white">Download Settings</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400 text-sm">
                 Configure where downloaded files are saved
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 py-6">
-              <div className="space-y-6">
+            <CardContent className="py-4 px-6">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="download-folder" className="text-gray-700 dark:text-gray-300">Download Folder</Label>
+                  <Label htmlFor="download-folder" className="text-gray-700 dark:text-gray-300 text-sm font-medium">
+                    Download Folder
+                  </Label>
                   <div className="flex gap-2">
                     <Input
                       id="download-folder"
@@ -367,31 +384,34 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
                         setTempDownloadFolder(e.target.value);
                       }}
                       placeholder="Click 'Browse' to select download folder"
-                      className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex-1"
+                      className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-sm h-9 flex-1"
                       readOnly
                     />
                     <Button 
                       onClick={selectDownloadFolder}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      className="bg-blue-600 hover:bg-blue-700 text-white h-9 text-sm px-3"
                     >
                       Browse
                     </Button>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Files will be automatically downloaded to this folder. Leave empty to use the default download location.
                   </p>
                   
                   {/* Show a note for browser users */}
                   {typeof window !== 'undefined' && !window.__TAURI__ && (
-                    <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400">
                       Note: Folder selection is only available in the desktop app. In browsers, files will be saved to your default download location.
                     </p>
                   )}
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={handleSaveDownloadFolder} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <CardFooter className="flex justify-end pb-5 px-6 pt-4">
+              <Button 
+                onClick={handleSaveDownloadFolder} 
+                className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-sm px-3"
+              >
                 Save Changes
               </Button>
             </CardFooter>
