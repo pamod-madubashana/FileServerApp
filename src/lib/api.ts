@@ -195,17 +195,22 @@ const getAuthHeaders = (): Record<string, string> => {
   return headers;
 };
 
-// Utility function to implement fetch with timeout
-export const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout: number = 3000): Promise<Response> => {
-  // Add auth headers to all requests
+// Utility function to add auth headers to fetch options
+const addAuthHeaders = (options: RequestInit): RequestInit => {
   const authHeaders = getAuthHeaders();
-  const mergedOptions = {
+  return {
     ...options,
     headers: {
       ...authHeaders,
-      ...(options.headers as Record<string, string>)
+      ...(options.headers as Record<string, string> || {})
     }
   };
+};
+
+// Utility function to implement fetch with timeout
+export const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout: number = 3000): Promise<Response> => {
+  // Add auth headers to all requests
+  const mergedOptions = addAuthHeaders(options);
   
   // Ensure credentials are properly handled
   if (options.credentials) {
@@ -280,25 +285,10 @@ export const api = {
             credentials: 'include', // Include cookies for session-based auth
         };
         
-        // Add auth token for Tauri environment
-        if ((window as any).__TAURI__) {
-            const tauri_auth = localStorage.getItem('tauri_auth_token');
-            if (tauri_auth) {
-                try {
-                    const authData = JSON.parse(tauri_auth);
-                    if (authData.auth_token) {
-                        fetchOptions.headers = {
-                            ...fetchOptions.headers,
-                            'X-Auth-Token': authData.auth_token
-                        };
-                    }
-                } catch (e) {
-                    logger.error('Failed to parse Tauri auth token:', e);
-                }
-            }
-        }
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
         
-        const response = await fetchWithTimeout(`${apiUrl}/files?path=${encodeURIComponent(path)}`, fetchOptions, 3000); // 3 second timeout
+        const response = await fetchWithTimeout(`${apiUrl}/files?path=${encodeURIComponent(path)}`, mergedOptions, 3000); // 3 second timeout
 
         if (!response.ok) {
             throw new Error(`Failed to fetch files: ${response.statusText}`);
@@ -317,25 +307,10 @@ export const api = {
             credentials: 'include',
         };
         
-        // Add auth token for Tauri environment
-        if ((window as any).__TAURI__) {
-            const tauri_auth = localStorage.getItem('tauri_auth_token');
-            if (tauri_auth) {
-                try {
-                    const authData = JSON.parse(tauri_auth);
-                    if (authData.auth_token) {
-                        fetchOptions.headers = {
-                            ...fetchOptions.headers,
-                            'X-Auth-Token': authData.auth_token
-                        };
-                    }
-                } catch (e) {
-                    logger.error('Failed to parse Tauri auth token:', e);
-                }
-            }
-        }
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
         
-        const response = await fetchWithTimeout(`${apiUrl}/auth/check`, fetchOptions, 3000); // 3 second timeout
+        const response = await fetchWithTimeout(`${apiUrl}/auth/check`, mergedOptions, 3000); // 3 second timeout
 
         if (!response.ok) {
             throw new Error(`Failed to check auth: ${response.statusText}`);
@@ -348,10 +323,17 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         // For the default case, we need to append /api to the base URL
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
-        const response = await fetchWithTimeout(`${apiUrl}/auth/logout`, {
+        
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
             method: 'POST',
             credentials: 'include',
-        }, 3000); // 3 second timeout
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/auth/logout`, mergedOptions, 3000); // 3 second timeout
 
         if (!response.ok) {
             throw new Error(`Failed to logout: ${response.statusText}`);
@@ -364,10 +346,16 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
-        const response = await fetchWithTimeout(`${apiUrl}/user/profile`, {
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
             method: 'GET',
             credentials: 'include',
-        }, 3000);
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/user/profile`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch user profile: ${response.statusText}`);
@@ -396,10 +384,16 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
-        const response = await fetchWithTimeout(`${apiUrl}/users`, {
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
             method: 'GET',
             credentials: 'include',
-        }, 3000);
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/users`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch users: ${response.statusText}`);
@@ -412,14 +406,20 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
-        const response = await fetchWithTimeout(`${apiUrl}/users`, {
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
             method: 'POST',
             credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(userData),
-        }, 3000);
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/users`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to add user: ${response.statusText}`);
@@ -432,14 +432,20 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
-        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}`, {
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
             method: 'PUT',
             credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(userData),
-        }, 3000);
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to update user: ${response.statusText}`);
@@ -452,10 +458,16 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
-        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}`, {
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
             method: 'DELETE',
             credentials: 'include',
-        }, 3000);
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to delete user: ${response.statusText}`);
@@ -466,14 +478,20 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
-        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}/password`, {
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
             credentials: 'include',
             body: JSON.stringify(passwordData),
-        }, 5000);
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}/password`, mergedOptions, 5000);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -487,10 +505,16 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
-        const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, {
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
             method: 'GET',
             credentials: 'include',
-        }, 3000);
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch index chat: ${response.statusText}`);
@@ -503,14 +527,20 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
-        const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, {
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
             method: 'PUT',
             credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(indexChatData),
-        }, 3000);
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to update index chat: ${response.statusText}`);
