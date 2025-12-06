@@ -71,6 +71,14 @@ export interface ChangePasswordRequest {
   new_password: string;
 }
 
+export interface IndexChatResponse {
+  index_chat_id: number | null;
+}
+
+export interface UpdateIndexChatRequest {
+  index_chat_id: number | null;
+}
+
 const getDefaultApiUrl = () => {
   const savedUrl = localStorage.getItem("serverUrl");
   if (savedUrl) {
@@ -470,6 +478,42 @@ export const api = {
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(errorText || `Failed to change user password: ${response.status}`);
+        }
+
+        return response.json();
+    },
+
+    async getUserIndexChat(): Promise<IndexChatResponse> {
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, {
+            method: 'GET',
+            credentials: 'include',
+        }, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch index chat: ${response.statusText}`);
+        }
+
+        return response.json();
+    },
+
+    async updateUserIndexChat(indexChatData: UpdateIndexChatRequest): Promise<IndexChatResponse> {
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(indexChatData),
+        }, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to update index chat: ${response.statusText}`);
         }
 
         return response.json();

@@ -799,7 +799,7 @@ export const FileExplorer = () => {
   }, [currentPath, selectedFilter]);
 
   return (
-    <div className="flex h-screen bg-background text-foreground select-none">
+    <div className="flex h-full bg-background text-foreground select-none">
       <Sidebar
         currentPath={currentPath}
         onNavigate={handleFilterChange}
@@ -808,7 +808,7 @@ export const FileExplorer = () => {
         selectedFilter={selectedFilter}
       />
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {showProfile ? (
           <motion.div
             key="profile"
@@ -816,7 +816,7 @@ export const FileExplorer = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col h-full"
           >
             <ProfileContent onBack={() => setShowProfile(false)} />
           </motion.div>
@@ -827,7 +827,7 @@ export const FileExplorer = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col h-full"
           >
             <SettingsContent onBack={() => setShowSettings(false)} />
           </motion.div>
@@ -838,7 +838,7 @@ export const FileExplorer = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col h-full"
           >
             <UserManagementContent onBack={() => {
               setShowUserManagement(false);

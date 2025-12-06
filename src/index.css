@@ -141,6 +141,37 @@ All colors MUST be HSL.
   }
 }
 
+/* Custom scrollbar styles */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(210 40% 98%);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(215 24% 26%);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(200 98% 39%);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(217 32% 17%);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(215 16% 46%);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(198 93% 59%);
+}
+
 @layer base {
   * {
     @apply border-border;

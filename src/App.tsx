@@ -33,7 +33,6 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/settings" element={<Index />} />
         <Route path="/profile" element={<Index />} />
-        <Route path="/test-download" element={<TestDownload />} />
         <Route path="/" element={<Index />} />
         {/* Handle dynamic paths for file explorer */}
         <Route path="/:path/*" element={<Index />} />
