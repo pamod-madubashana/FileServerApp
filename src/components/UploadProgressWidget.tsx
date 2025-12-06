@@ -82,9 +82,9 @@ export const UploadProgressWidget = ({
     const allCompleted = progress.every(p => p.status === 'completed' || p.status === 'failed');
     if (allCompleted && progress.length > 0 && !isComplete) {
       setIsComplete(true);
-      setTimeout(() => {
-        onComplete();
-      }, 1000); // Auto-close after 1 second when complete
+      // Call onComplete immediately when all files are completed
+      // No delay needed since the progress simulation already takes time
+      onComplete();
     }
   }, [progress, isComplete, onComplete]);
 

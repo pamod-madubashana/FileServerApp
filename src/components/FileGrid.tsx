@@ -317,17 +317,12 @@ export const FileGrid = ({
           modified: result.file.modified,
         } as FileItem;
         
-        // Add the uploaded file to the current items list
-        if (onFileUploaded) {
-          onFileUploaded(uploadedFile);
-        } else if (onItemsChange) {
-          // Add the new file to the existing items list
-          onItemsChange([...items, uploadedFile]);
-        } else if (onRefresh) {
-          // Refresh the file list from the API
-          onRefresh();
-        }
-        // Don't reload the page here, let the progress widget handle it
+        // Don't add the uploaded file to the grid immediately
+        // Instead, let the progress widget onComplete handler refresh the file list
+        // when the progress reaches 100%
+        
+        // The onComplete handler in UploadProgressWidget will call onRefresh()
+        // which will fetch the updated file list from the server
       }
     } catch (error: any) {
       console.error('Upload error:', error);
