@@ -6,6 +6,7 @@ import { RenameInput } from "./RenameInput";
 import { ImageViewer } from "./ImageViewer";
 import { MediaPlayer } from "./MediaPlayer";
 import { Thumbnail } from "./Thumbnail";
+import { UploadProgressWidget } from "./UploadProgressWidget";
 import { getApiBaseUrl } from "@/lib/api";
 import { getPlayerPreference } from "@/lib/playerSettings";
 import type { Event } from '@tauri-apps/api/event';
@@ -34,6 +35,8 @@ interface FileGridProps {
   hasClipboard?: () => boolean; // Add prop to track if there's clipboard content
   isClipboardPasted?: boolean; // Add prop to track if clipboard item has been pasted
   onFileUploaded?: (file: FileItem) => void; // Callback for when a file is uploaded
+  onItemsChange?: (items: FileItem[]) => void; // Callback for when items change
+  onRefresh?: () => void; // Callback to refresh the file list
 }
 
 interface ContextMenuState {
@@ -67,6 +70,8 @@ export const FileGrid = ({
   hasClipboard,
   isClipboardPasted,
   onFileUploaded,
+  onItemsChange,
+  onRefresh,
   currentPath,
   currentApiPath,
 }: FileGridProps) => {
@@ -80,6 +85,7 @@ export const FileGrid = ({
   } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false); // Add drag over state
   const [dropTarget, setDropTarget] = useState<FileItem | null>(null); // Track drop target
+  const [uploadingFiles, setUploadingFiles] = useState<File[] | null>(null); // Track uploading files
   const dragCounter = useRef(0); // Track drag enter/leave events
 
   // Check if we're running in Tauri
@@ -270,6 +276,9 @@ export const FileGrid = ({
       // DEBUG: Log the path being sent
       console.log('Uploading file to path:', currentPathStr);
       
+      // Set uploading files state to show progress widget
+      setUploadingFiles(Array.from(files));
+      
       // Upload each file
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -311,16 +320,20 @@ export const FileGrid = ({
         // Add the uploaded file to the current items list
         if (onFileUploaded) {
           onFileUploaded(uploadedFile);
-        } else {
-          // Fallback to refresh if no callback provided
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
+        } else if (onItemsChange) {
+          // Add the new file to the existing items list
+          onItemsChange([...items, uploadedFile]);
+        } else if (onRefresh) {
+          // Refresh the file list from the API
+          onRefresh();
         }
+        // Don't reload the page here, let the progress widget handle it
       }
     } catch (error: any) {
       console.error('Upload error:', error);
       alert(`Upload failed: ${error.message || 'Unknown error'}`);
+      // Hide progress widget on error
+      setUploadingFiles(null);
     }
   };
 
@@ -329,8 +342,12 @@ export const FileGrid = ({
     e.preventDefault();
     dragCounter.current++;
     
-    // Only show drag overlay for actual files, not other elements
-    if (e.dataTransfer.types.includes('Files')) {
+    // Only show drag overlay for actual files from OS, not internal item drags
+    const hasInternalData = e.dataTransfer.types.includes('application/json');
+    const hasFiles = e.dataTransfer.types.includes('Files');
+    
+    // Show upload overlay only for file drags from OS
+    if (hasFiles && !hasInternalData) {
       setIsDragOver(true);
     }
   };
@@ -349,9 +366,14 @@ export const FileGrid = ({
   // Handle drag over event for files
   const handleFileDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    // Only show drag overlay for actual files, not other elements
-    if (e.dataTransfer.types.includes('Files')) {
+    // Only show drag overlay for actual files from OS, not internal item drags
+    const hasInternalData = e.dataTransfer.types.includes('application/json');
+    const hasFiles = e.dataTransfer.types.includes('Files');
+    
+    // Show upload overlay only for file drags from OS
+    if (hasFiles && !hasInternalData) {
       e.dataTransfer.dropEffect = "copy";
+      setIsDragOver(true);
     }
   };
 
@@ -363,8 +385,24 @@ export const FileGrid = ({
     setIsDragOver(false);
 
     try {
-      // Check if dropped items are files
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      // Check if this is a file drag from the OS (not an internal item drag)
+      // Internal item drags will have application/json data
+      const hasInternalData = e.dataTransfer.types.includes('application/json');
+      
+      // If it's an internal drag, don't treat as file upload regardless of other data types
+      if (hasInternalData) {
+        // This is an internal item drag, let the item drop handlers handle it
+        // If no item drop handler caught it, it means it was dropped in an invalid location
+        // In this case, we should just clear the drag state
+        setDraggedItem(null);
+        return;
+      }
+      
+      // Check for actual file data from OS
+      const hasFiles = e.dataTransfer.types.includes('Files');
+      
+      // If it's a file drag from OS, handle as file upload
+      if (hasFiles && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         handleFileUpload(e.dataTransfer.files);
         return;
       }
@@ -441,6 +479,24 @@ export const FileGrid = ({
       onDragLeave={handleDragLeave}
       onDrop={handleFileDrop}
     >
+      {/* Upload Progress Widget */}
+      {uploadingFiles && (
+        <UploadProgressWidget
+          files={uploadingFiles}
+          currentPath={currentApiPath || `/${currentFolder}`}
+          onComplete={() => {
+            setUploadingFiles(null);
+            // Refresh the file list if a refresh function is provided
+            if (onRefresh) {
+              onRefresh();
+            }
+          }}
+          onCancel={() => {
+            setUploadingFiles(null);
+          }}
+        />
+      )}
+      
       <div
         className={`flex-1 overflow-y-auto p-4 ${isDragOver ? 'bg-blue-50 border-2 border-dashed border-blue-500 rounded-lg' : ''}`}
         onContextMenu={(e) => {

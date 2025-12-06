@@ -320,7 +320,9 @@ export const FileExplorer = () => {
         folder.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
-      return [...filteredFolders, ...filteredUserFolders];
+      // Combine and sort folders first, then alphabetically
+      const allFolders = [...filteredFolders, ...filteredUserFolders];
+      return allFolders.sort((a, b) => a.name.localeCompare(b.name));
     }
 
     // If we're in a specific folder or have a filter, show files
@@ -395,7 +397,19 @@ export const FileExplorer = () => {
       );
     }
 
-    return filteredFiles;
+    // Sort folders first, then files, both alphabetically
+    return filteredFiles.sort((a, b) => {
+      // If both are folders or both are files, sort alphabetically
+      if (a.type === b.type) {
+        return a.name.localeCompare(b.name);
+      }
+      // If 'a' is a folder and 'b' is a file, 'a' comes first
+      if (a.type === "folder") {
+        return -1;
+      }
+      // If 'a' is a file and 'b' is a folder, 'b' comes first
+      return 1;
+    });
   };
 
   const filteredItems = getFilteredItems();
@@ -890,6 +904,7 @@ export const FileExplorer = () => {
               cutItem={clipboard?.operation === "cut" && !isClipboardPasted() ? clipboard.item : null}
               hasClipboard={hasClipboard}
               isClipboardPasted={isClipboardPasted()}
+              onRefresh={refetch}
             />
           </div>
         )}
