@@ -73,7 +73,13 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   
   // Automatically open sidebar when on specific pages
   useEffect(() => {
-    if (pagesWithSidebarOpen.includes(location.pathname)) {
+    if (location.pathname === '/login') {
+      // Always close sidebar on login page
+      setIsOpen(false);
+      // Reset flags when on login page
+      manuallyOpenedRef.current = false;
+      isAutoOpenedRef.current = false;
+    } else if (pagesWithSidebarOpen.includes(location.pathname)) {
       setIsOpen(true);
       // Mark as auto-opened to distinguish from manual opening
       isAutoOpenedRef.current = true;
