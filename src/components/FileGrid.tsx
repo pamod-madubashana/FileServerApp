@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FileItem } from "./types";
 import { Folder, FileText, Image as ImageIcon, FileArchive } from "lucide-react";
 import { ContextMenu } from "./ContextMenu";
@@ -60,9 +60,9 @@ export const FileGrid = ({
   currentFolder,
   onNewFolder,
   isLoading,
-  cutItem, // Destructure the new prop
-  hasClipboard, // Destructure the new prop
-  isClipboardPasted, // Destructure the new prop
+  cutItem,
+  hasClipboard,
+  isClipboardPasted,
 }: FileGridProps) => {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [draggedItem, setDraggedItem] = useState<FileItem | null>(null);
@@ -72,6 +72,9 @@ export const FileGrid = ({
     fileName: string;
     fileType: "video" | "audio" | "voice";
   } | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false); // Add drag over state
+  const [dropTarget, setDropTarget] = useState<FileItem | null>(null); // Track drop target
+  const dragCounter = useRef(0); // Track drag enter/leave events
 
   // Check if we're running in Tauri
   const isTauri = !!(window as any).__TAURI__;
@@ -92,23 +95,32 @@ export const FileGrid = ({
         
         // Listen for Tauri drag enter events
         unlistenDragEnter = await eventModule.listen('tauri://drag-enter', (event: Event<any>) => {
-          // We don't need to prevent default here since we're just listening
-          // The webview will still handle the events normally
+          // Set drag over state when entering
+          setIsDragOver(true);
         });
 
         // Listen for Tauri drag over events
         unlistenDragOver = await eventModule.listen('tauri://drag-over', (event: Event<any>) => {
-          // We don't need to prevent default here since we're just listening
+          // Keep drag over state
+          setIsDragOver(true);
         });
 
         // Listen for Tauri drag drop events
         unlistenDragDrop = await eventModule.listen('tauri://drag-drop', (event: Event<any>) => {
-          // We don't need to prevent default here since we're just listening
+          // Handle dropped files in Tauri
+          setIsDragOver(false);
+          if (event && event.payload) {
+            // The payload should contain the file paths
+            console.log('Tauri drag drop event:', event.payload);
+            // In a real implementation, we would need to handle the file paths
+            // This is a simplified version for now
+          }
         });
 
         // Listen for Tauri drag leave events
         unlistenDragLeave = await eventModule.listen('tauri://drag-leave', (event: Event<any>) => {
-          // We don't need to prevent default here since we're just listening
+          // Clear drag over state when leaving
+          setIsDragOver(false);
         });
       } catch (error) {
         console.error('Failed to initialize Tauri drag listeners:', error);
@@ -239,22 +251,114 @@ export const FileGrid = ({
     setDraggedItem(null);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+  // Add file upload handler
+  const handleFileUpload = async (files: FileList) => {
+    try {
+      const currentPathStr = `/${currentFolder}`;
+      
+      // Upload each file
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api/files/upload` : '/api/files/upload';
+        
+        const response = await fetch(`${apiUrl}?path=${encodeURIComponent(currentPathStr)}`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to upload file');
+        }
+      }
+      
+      // Refresh the file list after upload
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      alert(`Upload failed: ${error.message || 'Unknown error'}`);
+    }
   };
 
-  const handleDrop = (e: React.DragEvent, targetItem: FileItem) => {
+  // Handle drag enter event
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current++;
+    
+    // Only show drag overlay for actual files, not other elements
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragOver(true);
+    }
+  };
+
+  // Handle drag leave event
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current--;
+    
+    // Only hide the drag overlay when we've left the container completely
+    if (dragCounter.current === 0) {
+      setIsDragOver(false);
+    }
+  };
+
+  // Handle drag over event for files
+  const handleFileDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    // Only show drag overlay for actual files, not other elements
+    if (e.dataTransfer.types.includes('Files')) {
+      e.dataTransfer.dropEffect = "copy";
+    }
+  };
+
+  // Handle drop event on files
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0; // Reset counter
+    setIsDragOver(false);
+
+    try {
+      // Check if dropped items are files
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFileUpload(e.dataTransfer.files);
+        return;
+      }
+    } catch (error) {
+      console.error('Error handling file drop:', error);
+      alert('Failed to handle file drop. Please try again.');
+    }
+  };
+
+  // Handle drag over event for items
+  const handleItemDragOver = (e: React.DragEvent, targetItem: FileItem) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDropTarget(targetItem);
+  };
+
+  // Handle drop event on items
+  const handleItemDrop = (e: React.DragEvent, targetItem: FileItem) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!draggedItem || targetItem.type !== "folder" || draggedItem.name === targetItem.name) {
-      return;
-    }
+    try {
+      if (!draggedItem || targetItem.type !== "folder" || draggedItem.name === targetItem.name) {
+        return;
+      }
 
-    // Pass the target item (folder) to onMove instead of just the name
-    onMove(draggedItem, targetItem);
-    setDraggedItem(null);
+      // Pass the target item (folder) to onMove instead of just the name
+      onMove(draggedItem, targetItem);
+      setDraggedItem(null);
+    } catch (error) {
+      console.error('Error handling item drop:', error);
+      alert('Failed to move item. Please try again.');
+    }
   };
 
   const getFileIcon = (item: FileItem) => {
@@ -292,9 +396,14 @@ export const FileGrid = ({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-background select-none">
+    <div className="flex-1 flex flex-col bg-background select-none" data-drag-container
+      onDragOver={handleFileDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleFileDrop}
+    >
       <div
-        className="flex-1 overflow-y-auto p-4"
+        className={`flex-1 overflow-y-auto p-4 ${isDragOver ? 'bg-blue-50 border-2 border-dashed border-blue-500 rounded-lg' : ''}`}
         onContextMenu={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -311,6 +420,17 @@ export const FileGrid = ({
           });
         }}
       >
+        {/* Upload indicator when dragging files over */}
+        {isDragOver && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg z-50 pointer-events-none border-2 border-dashed border-primary">
+            <div className="text-center p-6 bg-background rounded-lg shadow-lg pointer-events-auto border border-border">
+              <div className="text-2xl mb-2">📁</div>
+              <p className="text-lg font-semibold text-foreground">Drop files here to upload</p>
+              <p className="text-muted-foreground">Upload to {currentFolder}</p>
+            </div>
+          </div>
+        )}
+        
         {viewMode === "grid" ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
             {items.map((item, index) => {
@@ -324,8 +444,8 @@ export const FileGrid = ({
                   draggable={!isRenaming}
                   onDragStart={(e) => handleDragStart(e, item)}
                   onDragEnd={handleDragEnd}
-                  onDragOver={item.type === "folder" ? handleDragOver : undefined}
-                  onDrop={item.type === "folder" ? (e) => handleDrop(e, item) : undefined}
+                  onDragOver={item.type === "folder" ? (e) => handleItemDragOver(e, item) : undefined}
+                  onDrop={item.type === "folder" ? (e) => handleItemDrop(e, item) : undefined}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -382,8 +502,8 @@ export const FileGrid = ({
                     draggable={!isRenaming}
                     onDragStart={(e) => handleDragStart(e, item)}
                     onDragEnd={handleDragEnd}
-                    onDragOver={item.type === "folder" ? handleDragOver : undefined}
-                    onDrop={item.type === "folder" ? (e) => handleDrop(e, item) : undefined}
+                    onDragOver={item.type === "folder" ? (e) => handleItemDragOver(e, item) : undefined}
+                    onDrop={item.type === "folder" ? (e) => handleItemDrop(e, item) : undefined}
                     onContextMenu={(e) => !isRenaming && handleContextMenu(e, item, index)}
                     className={`transition-all duration-200 hover:shadow-md active:scale-[0.98] ${isDragging ? "opacity-50" : ""} 
                       ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
