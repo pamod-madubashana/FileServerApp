@@ -19,9 +19,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
       }}
+      position="bottom-left"
       {...props}
     />
   );
 };
-
 export { Toaster, toast };

@@ -12,6 +12,8 @@ import { NavigationSidebar } from "@/components/NavigationSidebar";
 import { AuthWrapper } from "@/components/AuthWrapper";
 // Remove the import for DownloadQueue since we're moving it to the FileExplorer
 import logger from "@/lib/logger";
+// Import the new backend connection hook
+import { useBackendConnection } from "@/hooks/useViteConnection";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,9 @@ const AppRoutes = () => {
 
 const App = () => {
   logger.info("Initializing App component");
+  
+  // Use the backend connection hook to monitor connection status
+  useBackendConnection();
   
   useEffect(() => {
     // Check system preference
