@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "plyr/dist/plyr.css";
 
 interface MediaPlayerProps {
@@ -11,6 +11,7 @@ interface MediaPlayerProps {
 export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlayerProps) => {
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const plyrInstance = useRef<any>(null);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -193,7 +194,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
               // Auto-close widget when playback ends
               plyrInstance.current.on('ended', () => {
                 if (isMounted) {
-                  onClose();
+                  handleClose();
                 }
               });
             }
@@ -221,9 +222,18 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
     };
   }, [mediaUrl, fileName, fileType, onClose]);
 
-  const handleClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onClose();
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    
+    // Start the dropdown animation
+    setIsVisible(false);
+    
+    // Wait for animation to complete before calling onClose
+    setTimeout(() => {
+      onClose();
+    }, 300); // Match the duration of the CSS transition
   };
 
   // For audio and voice messages, render as a floating widget in the bottom right
@@ -231,7 +241,9 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
   
   if (isAudio) {
     return (
-      <div className="fixed bottom-4 right-4 w-80 bg-black bg-opacity-90 rounded-lg shadow-xl z-50">
+      <div className={`fixed bottom-4 right-4 w-80 bg-black bg-opacity-90 rounded-lg shadow-xl z-50 transition-all duration-300 ease-in-out ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
+      }`}>
         <div className="flex items-center justify-between p-3 border-b border-gray-700">
           <div className="text-white text-sm font-medium truncate">{fileName}</div>
           <button
