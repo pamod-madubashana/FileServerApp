@@ -12,6 +12,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const plyrInstance = useRef<any>(null);
   const [isVisible, setIsVisible] = useState(true);
+  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -194,7 +195,10 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
               // Auto-close widget when playback ends
               plyrInstance.current.on('ended', () => {
                 if (isMounted) {
-                  handleClose();
+                  // Keep the widget visible for 5 seconds before closing
+                  closeTimerRef.current = setTimeout(() => {
+                    handleClose();
+                  }, 5000); // 5 seconds delay
                 }
               });
             }
@@ -211,6 +215,10 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
     
     return () => {
       isMounted = false;
+      // Clear the timeout if component unmounts
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
       if (plyrInstance.current) {
         plyrInstance.current.stop(); // Stop playback on unmount
         plyrInstance.current.destroy();
@@ -225,6 +233,12 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, onClose }: MediaPlay
   const handleClose = (e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
+    }
+    
+    // Clear any pending close timers
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
     }
     
     // Start the dropdown animation
