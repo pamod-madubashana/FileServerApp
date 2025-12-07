@@ -35,7 +35,7 @@ async fn download_file(url: &str, save_path: &str, app_handle: tauri::AppHandle)
     
     // Parse URL to check if we need to add auth token
     let parsed_url = url::Url::parse(url).map_err(|e| format!("Invalid URL: {}", e))?;
-    let mut final_url = url.to_string();
+    let final_url = url.to_string();
     let mut headers = reqwest::header::HeaderMap::new();
     
     // Check if this is a local API URL that needs authentication
