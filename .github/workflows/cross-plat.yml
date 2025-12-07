@@ -1,0 +1,89 @@
+name: Build & Release Tauri App
+
+on:
+  push:
+    branches: [ main, master ]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read version from VERSION file
+        id: get_version
+        run: |
+          version=$(cat VERSION | tr -d '\n' | tr -d '\r')
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Extract release notes
+        id: get_release_notes
+        run: |
+          msg="${{ github.event.head_commit.message }}"
+          release_notes=$(printf "%s" "$msg" | tail -n +2)
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$release_notes" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install npm deps
+        run: npm install
+
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli
+
+      # macOS needs extra setup for signing disabled
+      - name: Disable macOS signing
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "TAURI_SIGNING_PRIVATE_KEY=" >> $GITHUB_ENV
+          echo "TAURI_SIGNING_PASSWORD=" >> $GITHUB_ENV
+
+      - name: Build Tauri app
+        run: npm run tauri build
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          name: Release ${{ steps.get_version.outputs.version }}
+          body: ${{ steps.get_release_notes.outputs.release_notes }}
+          draft: false
+          prerelease: false
+          files: |
+            src-tauri/target/release/**/*.exe
+            src-tauri/target/release/**/*.msi
+            src-tauri/target/release/**/*.dmg
+            src-tauri/target/release/**/*.app
+            src-tauri/target/release/**/*.AppImage
+            src-tauri/target/release/**/*.deb
+            src-tauri/target/release/**/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
