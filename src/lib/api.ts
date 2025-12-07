@@ -18,6 +18,11 @@ export interface FilesResponse {
     files: ApiFile[];
 }
 
+export interface UploadFileResponse {
+    message: string;
+    file: ApiFile;
+}
+
 export interface UserProfile {
   username: string;
   email?: string;
@@ -339,6 +344,11 @@ export const api = {
             throw new Error(`Failed to logout: ${response.statusText}`);
         }
 
+        // Clear auth token from localStorage
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('authToken');
+        }
+
         return response.json();
     },
 
@@ -544,6 +554,34 @@ export const api = {
 
         if (!response.ok) {
             throw new Error(`Failed to update index chat: ${response.statusText}`);
+        }
+
+        return response.json();
+    },
+
+    async uploadFile(file: File, path: string = '/'): Promise<UploadFileResponse> {
+        const baseUrl = getApiBaseUrl();
+        // For the default case, we need to append /api to the base URL
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('path', path);
+        
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/files/upload`, mergedOptions, 30000); // 30 second timeout for file uploads
+
+        if (!response.ok) {
+            throw new Error(`Failed to upload file: ${response.statusText}`);
         }
 
         return response.json();

@@ -375,11 +375,6 @@ export const FileGrid = ({
           return true;
         }
         
-        // According to project specification "Preserve Zero-Size Directory Placeholders During Filtering":
-        // Do not skip entries solely based on size 0 and empty type. Directory placeholders appear this way;
-        // they must be allowed to pass through so recursive traversal can process their contents.
-        // However, we need to distinguish between actual directory placeholders and actual files.
-        
         // Keep files that have either:
         // 1. Content (size > 0)
         // 2. A type (indicating it's a real file)
@@ -393,9 +388,9 @@ export const FileGrid = ({
           return true;
         }
         
-        // If we get here, it's a file with size 0 and no type, and no path structure
-        // This is likely a placeholder, but according to the spec we should preserve it
-        // unless we can definitively say it's not needed
+        // According to project specification "Preserve Zero-Size Directory Placeholders During Filtering":
+        // Do not skip entries solely based on size 0 and empty type. Directory placeholders appear this way;
+        // they must be allowed to pass through so recursive traversal can process their contents.
         console.log('Preserving potential directory placeholder:', file.name);
         return true;
       });
@@ -440,11 +435,68 @@ export const FileGrid = ({
         throw new Error('No valid files to upload after filtering');
       }
       
-      // For now, just log the valid files instead of trying to upload them
-      // since the uploadFiles function doesn't seem to be implemented
-      console.log('Would upload these files:', validFiles);
+      // Set uploading files state to show the progress widget
+      const filesToUpload = validFiles.map(f => {
+        if ('file' in f && f.file instanceof File) {
+          return f.file;
+        } else if (f instanceof File) {
+          return f;
+        }
+        return null;
+      }).filter(Boolean) as File[];
+      
+      setUploadingFiles(filesToUpload);
+      
+      // Import the API client
+      const { api } = await import('@/lib/api');
+      
+      // Upload each file
+      const uploadPromises = validFiles.map(async (fileObj) => {
+        let file: File;
+        let fullPath: string | undefined;
+        
+        if ('file' in fileObj && fileObj.file instanceof File) {
+          // TraversedFile object
+          file = fileObj.file;
+          fullPath = fileObj.fullPath;
+        } else if (fileObj instanceof File) {
+          // Regular File object
+          file = fileObj;
+          fullPath = fileObj.name;
+        } else {
+          throw new Error('Invalid file object');
+        }
+        
+        // For folder uploads, we need to construct the correct path
+        let uploadPath = currentPathStr;
+        if (fullPath && fullPath.includes('/')) {
+          // This is a file within a folder structure, we need to preserve the folder structure
+          const pathParts = fullPath.split('/');
+          if (pathParts.length > 1) {
+            // Remove the file name to get the folder path
+            const folderPath = pathParts.slice(0, -1).join('/');
+            uploadPath = `${currentPathStr}/${folderPath}`;
+          }
+        }
+        
+        console.log(`Uploading file ${file.name} to path: ${uploadPath}`);
+        
+        try {
+          // Upload the file
+          const result = await api.uploadFile(file, uploadPath);
+          console.log('Upload result:', result);
+          return result;
+        } catch (error) {
+          console.error(`Failed to upload file ${file.name}:`, error);
+          throw error;
+        }
+      });
+      
+      // Wait for all uploads to complete
+      await Promise.all(uploadPromises);
       
       // Reset states
+      setUploadingFiles(null);
       setIsDirectoryUpload(false);
       
       // Refresh file list
@@ -453,11 +505,12 @@ export const FileGrid = ({
       }
       
       // Show success message
-      alert('Files processed successfully!');
+      alert('Files uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
+      setUploadingFiles(null);
       setIsDirectoryUpload(false);
-      alert(`Processing failed: ${error.message || 'Unknown error'}`);
+      alert(`Upload failed: ${error.message || 'Unknown error'}`);
     }
   };
 

@@ -73,6 +73,41 @@ const DropZoneDemo: React.FC = () => {
               </li>
             ))}
           </ul>
+          
+          <button 
+            onClick={async () => {
+              try {
+                // Import the API client
+                const { api } = await import('@/lib/api');
+                
+                // Upload each file
+                for (const fileObj of files) {
+                  try {
+                    const result = await api.uploadFile(fileObj.file, '/');
+                    console.log('Upload result:', result);
+                    alert(`File ${fileObj.file.name} uploaded successfully!`);
+                  } catch (error) {
+                    console.error(`Failed to upload file ${fileObj.file.name}:`, error);
+                    alert(`Failed to upload file ${fileObj.file.name}: ${error.message || 'Unknown error'}`);
+                  }
+                }
+              } catch (error) {
+                console.error('Upload error:', error);
+                alert(`Upload failed: ${error.message || 'Unknown error'}`);
+              }
+            }}
+            style={{
+              marginTop: '10px',
+              padding: '8px 16px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Upload Files
+          </button>
         </div>
       )}
     </div>
