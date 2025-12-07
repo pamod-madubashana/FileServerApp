@@ -887,7 +887,7 @@ export const FileGrid = ({
         // Try to read as binary first for proper file handling
         let fileContent: ArrayBuffer | string;
         try {
-          // Use readFile with Uint8Array to get binary data
+          // Use readFile to get binary data
           fileContent = await fs.readFile(file.path);
         } catch (binaryError) {
           // Fallback to text reading
