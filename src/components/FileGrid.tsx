@@ -30,6 +30,8 @@ interface FileGridProps {
   currentPath?: string[]; // Add full path information
   currentApiPath?: string; // Add API path information
   onNewFolder?: () => void;
+  onUploadFiles?: () => void; // Add upload files callback
+  onUploadFolder?: () => void; // Add upload folder callback
   isLoading?: boolean;
   cutItem?: FileItem | null; // Add prop to track cut item
   hasClipboard?: () => boolean; // Add prop to track if there's clipboard content
@@ -65,6 +67,8 @@ export const FileGrid = ({
   onRenameCancel,
   currentFolder,
   onNewFolder,
+  onUploadFiles, // Add this
+  onUploadFolder, // Add this
   isLoading,
   cutItem,
   hasClipboard,
@@ -86,7 +90,12 @@ export const FileGrid = ({
   const [isDragOver, setIsDragOver] = useState(false); // Add drag over state
   const [dropTarget, setDropTarget] = useState<FileItem | null>(null); // Track drop target
   const [uploadingFiles, setUploadingFiles] = useState<File[] | null>(null); // Track uploading files
+  const [isDirectoryUpload, setIsDirectoryUpload] = useState(false); // Track if this is a directory upload
   const dragCounter = useRef(0); // Track drag enter/leave events
+  
+  // Reference for the hidden file input
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const directoryInputRef = useRef<HTMLInputElement>(null);
 
   // Check if we're running in Tauri
   const isTauri = !!(window as any).__TAURI__;
@@ -264,7 +273,7 @@ export const FileGrid = ({
   };
 
   // Add file upload handler
-  const handleFileUpload = async (files: FileList) => {
+  const handleFileUpload = async (files: FileList | File[], isDirUpload: boolean = false) => {
     try {
       // Use the API path if available, otherwise construct it
       let currentPathStr = currentApiPath || `/${currentFolder}`;
@@ -272,24 +281,140 @@ export const FileGrid = ({
       console.log('Current path array:', currentPath);
       console.log('Current API path:', currentApiPath);
       console.log('Using path for upload:', currentPathStr);
-      
-      // DEBUG: Log the path being sent
-      console.log('Uploading file to path:', currentPathStr);
+      console.log('Is directory upload:', isDirUpload);
       
       // Validate inputs
-      if (!files || files.length === 0) {
+      if (!files || (Array.isArray(files) ? files.length === 0 : files.length === 0)) {
         throw new Error('No files selected for upload');
       }
       
-      // Set uploading files state to show progress widget
-      setUploadingFiles(Array.from(files));
+      // Convert to array if it's a FileList
+      const filesArray = Array.isArray(files) ? files : Array.from(files);
+      
+      // Log all files for debugging
+      console.log('All files received:', filesArray.map(f => ({
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        webkitRelativePath: 'webkitRelativePath' in f ? (f as any).webkitRelativePath : 'N/A'
+      })));
+      
+      // Filter out clearly problematic files
+      const validFiles = Array.from(files).filter(file => {
+        // Skip files with no name
+        if (!file.name) {
+          console.warn('Skipping file with no name');
+          return false;
+        }
+        
+        // Skip system files that are definitely not user files
+        if (file.name === 'Thumbs.db' || file.name === 'desktop.ini') {
+          console.warn('Skipping system file:', file.name);
+          return false;
+        }
+        
+        // For directory uploads, be more permissive since we want to process all files
+        if (isDirUpload) {
+          // Skip entries that are clearly not files (have no webkitRelativePath)
+          if (!('webkitRelativePath' in file) || !(file as any).webkitRelativePath) {
+            console.warn('Skipping non-file entry in directory upload:', file.name);
+            return false;
+          }
+          return true;
+        }
+        
+        // For regular file uploads, skip entries that appear to be directories
+        // Directories typically have:
+        // - No file type
+        // - 0 size
+        // - No webkitRelativePath or empty webkitRelativePath
+        if (file.size === 0 && !file.type && (!('webkitRelativePath' in file) || !(file as any).webkitRelativePath)) {
+          console.warn('Skipping directory entry:', file.name);
+          return false;
+        }
+        
+        // Keep all other files
+        return true;
+      });
+      
+      // Log valid files for debugging
+      console.log('Valid files after filtering:', validFiles.map(f => ({
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        webkitRelativePath: 'webkitRelativePath' in f ? (f as any).webkitRelativePath : 'N/A'
+      })));
+      
+      // If no valid files remain, show a message and exit
+      if (validFiles.length === 0) {
+        const allFileNames = filesArray.map(f => f.name).join(', ');
+        alert(`No valid files to upload. Folder may be empty or contain only system files.\n\nFiles detected: ${allFileNames || 'None'}`);
+        setUploadingFiles(null);
+        setIsDirectoryUpload(false);
+        return;
+      }
+      
+      // Set uploading files state to show progress widget (only valid files)
+      setUploadingFiles(validFiles);
       
       // Import the API utilities
       const { getApiBaseUrl, fetchWithTimeout } = await import('@/lib/api');
       
-      // Upload each file
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      // For directory uploads, create the entire folder structure at once
+      if (isDirUpload) {
+        // Collect all unique folder paths
+        const folderPaths = new Set<string>();
+        
+        for (let i = 0; i < validFiles.length; i++) {
+          const file = validFiles[i];
+          
+          if ('webkitRelativePath' in file) {
+            const relativePath = (file as any).webkitRelativePath;
+            if (relativePath) {
+              // Extract the directory path from the relative path
+              const pathParts = relativePath.split('/');
+              if (pathParts.length > 1) {
+                // Remove the filename (last part)
+                const folderPathParts = pathParts.slice(0, -1);
+                // Create full path by joining with current path
+                const fullPath = `${currentPathStr}/${folderPathParts.join('/')}`;
+                folderPaths.add(fullPath);
+              }
+            }
+          }
+        }
+        
+        // Log folder paths for debugging
+        console.log('Folder paths to create:', Array.from(folderPaths));
+        
+        // Create all folder paths
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        for (const folderPath of Array.from(folderPaths)) {
+          try {
+            await fetchWithTimeout(`${apiUrl}/folders/create-path`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                fullPath: folderPath,
+              }),
+            }).catch(err => {
+              // Ignore errors for folder creation - it might already exist
+              console.log(`Folder path ${folderPath} might already exist`);
+            });
+          } catch (err) {
+            console.log('Error creating folder path (might already exist):', err);
+          }
+        }
+      }
+      
+      // Upload each valid file
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
         
         // Validate file
         if (!file) {
@@ -298,15 +423,68 @@ export const FileGrid = ({
         
         console.log('Uploading file:', file.name, 'size:', file.size, 'type:', file.type);
         
-        const formData = new FormData();
-        formData.append('file', file);
+        // Check if file is actually empty (not just reported as 0 size)
+        if (file.size === 0) {
+          try {
+            // Try to read the file to see if it actually has content
+            const fileArrayBuffer = await file.arrayBuffer();
+            if (fileArrayBuffer.byteLength === 0) {
+              console.warn('Skipping truly empty file:', file.name);
+              continue; // Skip this file but continue with others
+            }
+          } catch (readError: any) {
+            // Check if this is a directory or special file that can't be read
+            if (readError.name === 'NotFoundError' || readError.message.includes('not found') || readError.message.includes('directory')) {
+              console.warn('Skipping directory or unreadable file:', file.name);
+              continue; // Skip this file but continue with others
+            }
+            
+            console.warn('Error reading file, skipping:', file.name, readError);
+            continue; // Skip this file but continue with others
+          }
+        }
         
+        // Determine the target path for this file
+        let targetPath = currentPathStr;
+        
+        // If this is a directory upload, we need to create the folder structure
+        if (isDirUpload && 'webkitRelativePath' in file) {
+          const relativePath = (file as any).webkitRelativePath;
+          if (relativePath) {
+            // Extract the directory path from the relative path
+            const pathParts = relativePath.split('/');
+            if (pathParts.length > 1) {
+              // Remove the filename (last part)
+              const folderPathParts = pathParts.slice(0, -1);
+              // Join with the current path
+              targetPath = `${currentPathStr}/${folderPathParts.join('/')}`;
+            }
+          }
+        }
+        
+        const formData = new FormData();
+        // For directory uploads, extract just the filename part (last part after the last slash)
+        if (isDirUpload && 'webkitRelativePath' in file) {
+          const relativePath = (file as any).webkitRelativePath;
+          if (relativePath) {
+            // Extract just the filename (last part after the last slash)
+            const pathParts = relativePath.split('/');
+            const actualFileName = pathParts[pathParts.length - 1];
+            // Append with the clean filename
+            formData.append('file', file, actualFileName);
+          } else {
+            formData.append('file', file);
+          }
+        } else {
+          formData.append('file', file);
+        }
+
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api/files/upload` : '/api/files/upload';
         
         // Use fetchWithTimeout to ensure proper auth header handling in Tauri
         // Properly encode the path parameter
-        const encodedPath = encodeURIComponent(currentPathStr);
+        const encodedPath = encodeURIComponent(targetPath);
         console.log('Encoded path for upload:', encodedPath);
         
         const response = await fetchWithTimeout(`${apiUrl}?path=${encodedPath}`, {
@@ -361,6 +539,7 @@ export const FileGrid = ({
       alert(`Upload failed: ${error.message || 'Unknown error'}`);
       // Hide progress widget on error
       setUploadingFiles(null);
+      setIsDirectoryUpload(false);
     }
   };
 
@@ -428,9 +607,58 @@ export const FileGrid = ({
       // Check for actual file data from OS
       const hasFiles = e.dataTransfer.types.includes('Files');
       
+      // Log drag transfer data for debugging
+      console.log('Drag transfer types:', e.dataTransfer.types);
+      console.log('Number of files:', e.dataTransfer.files?.length);
+      
+      // Try to get items from the DataTransfer object (may include directories)
+      if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+        console.log('DataTransfer items:', e.dataTransfer.items.length);
+        // Log item kinds and types
+        for (let i = 0; i < e.dataTransfer.items.length; i++) {
+          console.log(`Item ${i}: kind=${e.dataTransfer.items[i].kind}, type=${e.dataTransfer.items[i].type}`);
+        }
+      }
+      
       // If it's a file drag from OS, handle as file upload
       if (hasFiles && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        handleFileUpload(e.dataTransfer.files);
+        const files = e.dataTransfer.files;
+        
+        // Log all files for debugging
+        console.log('Files in drop event:', Array.from(files).map(f => ({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          webkitRelativePath: 'webkitRelativePath' in f ? (f as any).webkitRelativePath : 'N/A'
+        })));
+        
+        // Check if this looks like a folder drop (single entry with no webkitRelativePath and 0 size)
+        // This happens when a folder is dragged directly onto the drop zone
+        if (files.length === 1 && files[0].size === 0 && !files[0].type && 
+            (!('webkitRelativePath' in files[0]) || !(files[0] as any).webkitRelativePath)) {
+          console.log('Detected folder drop, triggering directory upload dialog');
+          // This appears to be a folder being dropped directly, trigger the directory upload
+          triggerDirectoryUpload();
+          return;
+        }
+        
+        // Check if any of the files have webkitRelativePath (indicating folder upload)
+        let isDirectoryUpload = false;
+        for (let i = 0; i < files.length; i++) {
+          if ('webkitRelativePath' in files[i] && (files[i] as any).webkitRelativePath) {
+            isDirectoryUpload = true;
+            break;
+          }
+        }
+        
+        console.log('Is directory upload detected:', isDirectoryUpload);
+        
+        // For directory uploads, set the flag and handle specially
+        if (isDirectoryUpload) {
+          setIsDirectoryUpload(true);
+        }
+        
+        handleFileUpload(files, isDirectoryUpload);
         return;
       }
     } catch (error) {
@@ -488,6 +716,15 @@ export const FileGrid = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Add functions to trigger file/directory uploads
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const triggerDirectoryUpload = () => {
+    directoryInputRef.current?.click();
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-background">
@@ -506,13 +743,48 @@ export const FileGrid = ({
       onDragLeave={handleDragLeave}
       onDrop={handleFileDrop}
     >
+      {/* Hidden file input for regular file uploads */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        multiple
+        onChange={(e) => {
+          if (e.target.files && e.target.files.length > 0) {
+            handleFileUpload(e.target.files, false);
+            // Reset the input
+            e.target.value = '';
+          }
+        }}
+      />
+      
+      {/* Hidden directory input for directory uploads */}
+      <input
+        type="file"
+        ref={directoryInputRef}
+        className="hidden"
+        multiple
+        {...({ webkitdirectory: "" } as any)} // TypeScript workaround with proper typing
+        onChange={(e) => {
+          if (e.target.files && e.target.files.length > 0) {
+            setIsDirectoryUpload(true);
+            handleFileUpload(e.target.files, true);
+            // Reset the input
+            e.target.value = '';
+            setIsDirectoryUpload(false);
+          }
+        }}
+      />
+      
       {/* Upload Progress Widget */}
       {uploadingFiles && (
         <UploadProgressWidget
           files={uploadingFiles}
           currentPath={currentApiPath || `/${currentFolder}`}
+          isDirectoryUpload={isDirectoryUpload}
           onComplete={() => {
             setUploadingFiles(null);
+            setIsDirectoryUpload(false);
             // Refresh the file list if a refresh function is provided
             if (onRefresh) {
               onRefresh();
@@ -520,6 +792,7 @@ export const FileGrid = ({
           }}
           onCancel={() => {
             setUploadingFiles(null);
+            setIsDirectoryUpload(false);
           }}
         />
       )}
@@ -685,7 +958,9 @@ export const FileGrid = ({
           onDelete={() => contextMenu.item && onDelete(contextMenu.item, contextMenu.index)}
           onRename={() => contextMenu.item && onRename(contextMenu.item, contextMenu.index)}
           onNewFolder={onNewFolder}
-          onDownload={() => contextMenu.item && onDownload(contextMenu.item)} // Add this line
+          onDownload={() => contextMenu.item && onDownload(contextMenu.item)}
+          onUploadFiles={triggerFileUpload} // Use the trigger function
+          onUploadFolder={triggerDirectoryUpload} // Use the trigger function
           onClose={() => setContextMenu(null)}
           hasClipboard={hasClipboard}
           isClipboardPasted={isClipboardPasted}

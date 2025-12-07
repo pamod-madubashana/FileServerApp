@@ -14,6 +14,7 @@ import {
   Star,
   Archive,
   RefreshCw,
+  Upload,
 } from "lucide-react";
 
 interface ContextMenuProps {
@@ -29,6 +30,8 @@ interface ContextMenuProps {
   onRename: () => void;
   onNewFolder?: () => void;
   onDownload?: () => void | Promise<void>;
+  onUploadFiles?: () => void; // Add upload files callback
+  onUploadFolder?: () => void; // Add upload folder callback
   isClipboardPasted?: boolean; // Add prop to track if clipboard item has been pasted
   hasClipboard?: () => boolean; // Add prop to track if there's clipboard content
   disableDelete?: boolean; // Add prop to disable delete option
@@ -57,6 +60,8 @@ export const ContextMenu = ({
   onRename,
   onNewFolder,
   onDownload,
+  onUploadFiles, // Destructure the new prop
+  onUploadFolder, // Destructure the new prop
   isClipboardPasted, // Destructure the new prop
   hasClipboard, // Destructure the new prop
   disableDelete = false, // Destructure the new prop with default value
@@ -124,6 +129,14 @@ export const ContextMenu = ({
         await onDownload?.();
         onClose();
         break;
+      case "upload_files":
+        onUploadFiles?.();
+        onClose();
+        break;
+      case "upload_folder":
+        onUploadFolder?.();
+        onClose();
+        break;
       default:
         onClose();
     }
@@ -146,10 +159,14 @@ export const ContextMenu = ({
       },
       { divider: true, label: "", action: "" },
       {
-        icon: Download,
+        icon: Upload,
         label: "Upload Files",
-        action: "upload",
-        disabled: true,
+        action: "upload_files",
+      },
+      {
+        icon: Upload,
+        label: "Upload Folder",
+        action: "upload_folder",
       },
       { divider: true, label: "", action: "" },
       {

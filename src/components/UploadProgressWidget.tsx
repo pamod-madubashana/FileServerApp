@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 
 interface UploadProgress {
   fileName: string;
+  filePath: string; // Add filePath to show directory structure
   progress: number;
   status: 'uploading' | 'completed' | 'failed';
   error?: string;
@@ -10,6 +11,7 @@ interface UploadProgress {
 interface UploadProgressWidgetProps {
   files: File[];
   currentPath: string;
+  isDirectoryUpload?: boolean; // Add prop to indicate directory upload
   onComplete: () => void;
   onCancel: () => void;
 }
@@ -17,26 +19,45 @@ interface UploadProgressWidgetProps {
 export const UploadProgressWidget = ({ 
   files, 
   currentPath, 
+  isDirectoryUpload = false,
   onComplete, 
   onCancel 
 }: UploadProgressWidgetProps) => {
   const [progress, setProgress] = useState<UploadProgress[]>(
-    files.map(file => ({
-      fileName: file.name,
-      progress: 0,
-      status: 'uploading'
-    }))
+    files.map(file => {
+      // For directory uploads, show the relative path
+      let filePath = file.name;
+      if (isDirectoryUpload && 'webkitRelativePath' in file) {
+        filePath = (file as any).webkitRelativePath || file.name;
+      }
+      
+      return {
+        fileName: file.name,
+        filePath,
+        progress: 0,
+        status: 'uploading'
+      };
+    })
   );
   const [isComplete, setIsComplete] = useState(false);
   const progressIntervals = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Update progress when files are provided
   useEffect(() => {
-    setProgress(files.map(file => ({
-      fileName: file.name,
-      progress: 0,
-      status: 'uploading'
-    })));
+    setProgress(files.map(file => {
+      // For directory uploads, show the relative path
+      let filePath = file.name;
+      if (isDirectoryUpload && 'webkitRelativePath' in file) {
+        filePath = (file as any).webkitRelativePath || file.name;
+      }
+      
+      return {
+        fileName: file.name,
+        filePath,
+        progress: 0,
+        status: 'uploading'
+      };
+    }));
     setIsComplete(false);
     
     // Clear any existing intervals
@@ -48,6 +69,7 @@ export const UploadProgressWidget = ({
       const interval = setInterval(() => {
         setProgress(prev => {
           const updated = [...prev];
+          // Find by fileName since that's what we use as key
           const fileIndex = updated.findIndex(p => p.fileName === file.name);
           
           if (fileIndex !== -1 && updated[fileIndex].status === 'uploading') {
@@ -75,7 +97,7 @@ export const UploadProgressWidget = ({
       progressIntervals.current.forEach(interval => clearInterval(interval));
       progressIntervals.current.clear();
     };
-  }, [files]);
+  }, [files, isDirectoryUpload]);
 
   // Check if all files are completed
   useEffect(() => {
@@ -96,7 +118,9 @@ export const UploadProgressWidget = ({
     <div className="fixed bottom-4 right-4 z-50 w-80 bg-background border border-border rounded-lg shadow-lg">
       <div className="p-4">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold">Uploading to {currentPath}</h3>
+          <h3 className="font-semibold">
+            {isDirectoryUpload ? 'Uploading folder to' : 'Uploading to'} {currentPath}
+          </h3>
           <button 
             onClick={onCancel}
             className="text-muted-foreground hover:text-foreground"
@@ -127,7 +151,7 @@ export const UploadProgressWidget = ({
                 )}
               </div>
               <div className="flex-1 truncate">
-                {fileProgress.fileName}
+                {fileProgress.filePath}
               </div>
               <div className="text-muted-foreground">
                 {fileProgress.status === 'uploading' && `${Math.round(fileProgress.progress)}%`}
