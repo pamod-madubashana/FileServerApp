@@ -300,9 +300,8 @@ export const FileExplorer = () => {
   const currentApiPath = isVirtualFolder
     ? `/${currentPath.join('/')}`  // This will create paths like /Home/Images
     : currentPath.length === 1 && currentPath[0] === "Home"
-      ? "/"
+      ? "/Home"
       : `/${currentPath.join('/')}`;  // For user folders, use the full path like /Home/Images/test
-
   const { files, isLoading, isError, error, refetch } = useFiles(currentApiPath);
   const { clipboard, copyItem, cutItem, clearClipboard, hasClipboard, isClipboardPasted, pasteItem, moveItem } = useFileOperations();
 

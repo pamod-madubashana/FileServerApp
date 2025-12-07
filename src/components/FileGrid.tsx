@@ -543,19 +543,20 @@ export const FileGrid = ({
             // the file should go to /Home/Documents/myfolder/subfolder/file.txt
             
             // Create the full path by combining current path with the full relative path
-            if (currentPathStr === '/Home' || currentPathStr === '/') {
+            if (currentPathStr === '/') {
               // If we're at root, the full path is "/Home/fullPath"
               uploadPath = `/Home/${fullPath}`;
+            } else if (currentPathStr === '/Home') {
+              // If we're in /Home, just append the fullPath
+              uploadPath = `/Home/${fullPath}`;
             } else {
-              // If we're in a subdirectory, combine the paths
+              // If we're in a subdirectory like /Home/Documents, combine the paths correctly
               // Ensure currentPathStr doesn't end with slash
               const cleanCurrentPath = currentPathStr.replace(/\/$/, ''); // Remove trailing slash
               uploadPath = `${cleanCurrentPath}/${fullPath}`;
-            }
-            console.log(`Final uploadPath for file: ${uploadPath}`);
+            }            console.log(`Final uploadPath for file: ${uploadPath}`);
           }
-        }
-        
+        }        
         console.log(`Uploading file ${file.name} to path: ${uploadPath}`);
         
         try {
