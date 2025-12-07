@@ -109,6 +109,11 @@ const DropZone: React.FC<DropZoneProps> = ({ onFilesLoaded, children }) => {
       const files = await scanDropItems(e.dataTransfer.items);
       console.log('DropZone got files:', files.length);
       
+      // Log details of each file
+      files.forEach((file, index) => {
+        console.log(`File ${index}: name=${file.name}, fullPath=${file.fullPath}, size=${file.size}`);
+      });
+      
       // Check if we got any files
       if (files.length === 0) {
         // No files were processed, show a message to the user

@@ -6,8 +6,37 @@ const DropZoneDemo: React.FC = () => {
   const [files, setFiles] = useState<TraversedFile[]>([]);
 
   const handleFilesLoaded = (loadedFiles: TraversedFile[]) => {
-    setFiles(loadedFiles);
-    console.log('Files loaded:', loadedFiles);
+    // Filter out placeholder files but keep traversed files with proper paths
+    const validFiles = loadedFiles.filter(fileObj => {
+      // For traversed files, we should keep them even if they have size 0
+      // because they came from our folder traversal logic and have proper fullPaths
+      if (fileObj.fullPath && fileObj.fullPath !== fileObj.file.name) {
+        // This is a traversed file with a path structure, keep it
+        return true;
+      }
+      
+      // Keep files that have either:
+      // 1. Content (size > 0)
+      // 2. A type (indicating it's a real file)
+      if (fileObj.file.size > 0 || fileObj.file.type) {
+        return true;
+      }
+      
+      // For files with size 0 and no type, we need to be more careful
+      // If it has a meaningful path structure (contains slashes), it's likely from folder traversal
+      if (fileObj.fullPath && fileObj.fullPath.includes('/') && fileObj.fullPath !== fileObj.file.name) {
+        return true;
+      }
+      
+      // According to project specification "Preserve Zero-Size Directory Placeholders During Filtering":
+      // Do not skip entries solely based on size 0 and empty type. Directory placeholders appear this way;
+      // they must be allowed to pass through so recursive traversal can process their contents.
+      console.log('Preserving potential directory placeholder:', fileObj.file.name);
+      return true;
+    });
+    
+    setFiles(validFiles);
+    console.log('Files loaded:', validFiles);
   };
 
   return (
@@ -39,8 +68,8 @@ const DropZoneDemo: React.FC = () => {
             {files.map((file, index) => (
               <li key={index}>
                 <strong>{file.fullPath}</strong> - 
-                {file.size > 0 ? `${(file.size / 1024).toFixed(2)} KB` : '0 KB'} - 
-                {file.type || 'unknown type'}
+                {file.file.size > 0 ? `${(file.file.size / 1024).toFixed(2)} KB` : '0 KB'} - 
+                {file.file.type || 'unknown type'}
               </li>
             ))}
           </ul>
