@@ -884,7 +884,16 @@ export const FileGrid = ({
 
         // Read the file content using Tauri fs
         const fs = await import('@tauri-apps/plugin-fs');
-        const fileContent = await fs.readTextFile(file.path);
+        // Try to read as binary first for proper file handling
+        let fileContent: ArrayBuffer | string;
+        try {
+          // Use readFile with Uint8Array to get binary data
+          fileContent = await fs.readFile(file.path);
+        } catch (binaryError) {
+          // Fallback to text reading
+          console.warn('Failed to read as binary, trying text:', binaryError);
+          fileContent = await fs.readTextFile(file.path);
+        }
         
         // Create a Blob from the file content
         const blob = new Blob([fileContent]);
