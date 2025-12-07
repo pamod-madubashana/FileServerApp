@@ -279,6 +279,9 @@ export const FileGrid = ({
       // Set uploading files state to show progress widget
       setUploadingFiles(Array.from(files));
       
+      // Import the API utilities
+      const { getApiBaseUrl, fetchWithTimeout } = await import('@/lib/api');
+      
       // Upload each file
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -288,7 +291,8 @@ export const FileGrid = ({
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api/files/upload` : '/api/files/upload';
         
-        const response = await fetch(`${apiUrl}?path=${encodeURIComponent(currentPathStr)}`, {
+        // Use fetchWithTimeout to ensure proper auth header handling in Tauri
+        const response = await fetchWithTimeout(`${apiUrl}?path=${encodeURIComponent(currentPathStr)}`, {
           method: 'POST',
           body: formData,
           credentials: 'include'
