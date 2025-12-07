@@ -25,33 +25,41 @@ jobs:
       - name: Read version from VERSION file
         id: get_version
         run: |
-          version=$(cat VERSION | tr -d '\n' | tr -d '\r')
-          echo "version=$version" >> $GITHUB_OUTPUT
+          $version = Get-Content "${{ github.workspace }}/VERSION" -Raw
+          $version = $version.Trim()
+          echo "version=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Extract release notes
+      - name: Extract release notes from commit message
         id: get_release_notes
         run: |
-          msg="${{ github.event.head_commit.message }}"
-          release_notes=$(printf "%s" "$msg" | tail -n +2)
-          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$release_notes" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          $msg="${{ github.event.head_commit.message }}"
+          # Extract everything after the first line (version line)
+          $lines = $msg -split "`n"
+          $releaseNotes = ($lines | Select-Object -Skip 1) -join "`n"
+          # Trim whitespace
+          $releaseNotes = $releaseNotes.Trim()
+          # Export as output
+          echo "release_notes<<EOF" >> $env:GITHUB_OUTPUT
+          echo "$releaseNotes" >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
 
-      - name: Install npm deps
+      - name: Install dependencies
         run: npm install
 
       - name: Install Tauri CLI
