@@ -58,8 +58,9 @@ async fn download_file(url: &str, save_path: &str, auth_token: Option<String>, a
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
     
-    // Send GET request
-    let response = client.get(&final_url).send().await.map_err(|e| format!("Failed to send request: {}", e))?;
+    // Send GET request with headers
+    let request = client.get(&final_url).headers(headers);
+    let response = request.send().await.map_err(|e| format!("Failed to send request: {}", e))?;
     
     // Check if request was successful
     if !response.status().is_success() {
