@@ -276,6 +276,11 @@ export const FileGrid = ({
       // DEBUG: Log the path being sent
       console.log('Uploading file to path:', currentPathStr);
       
+      // Validate inputs
+      if (!files || files.length === 0) {
+        throw new Error('No files selected for upload');
+      }
+      
       // Set uploading files state to show progress widget
       setUploadingFiles(Array.from(files));
       
@@ -285,6 +290,14 @@ export const FileGrid = ({
       // Upload each file
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        
+        // Validate file
+        if (!file) {
+          throw new Error('Invalid file object');
+        }
+        
+        console.log('Uploading file:', file.name, 'size:', file.size, 'type:', file.type);
+        
         const formData = new FormData();
         formData.append('file', file);
         
@@ -292,15 +305,30 @@ export const FileGrid = ({
         const apiUrl = baseUrl ? `${baseUrl}/api/files/upload` : '/api/files/upload';
         
         // Use fetchWithTimeout to ensure proper auth header handling in Tauri
-        const response = await fetchWithTimeout(`${apiUrl}?path=${encodeURIComponent(currentPathStr)}`, {
+        // Properly encode the path parameter
+        const encodedPath = encodeURIComponent(currentPathStr);
+        console.log('Encoded path for upload:', encodedPath);
+        
+        const response = await fetchWithTimeout(`${apiUrl}?path=${encodedPath}`, {
           method: 'POST',
           body: formData,
           credentials: 'include'
         });
         
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || 'Failed to upload file');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Upload failed with status:', response.status, 'and data:', errorData);
+          
+          // Try to get more detailed error information
+          let errorMessage = `Failed to upload file: ${response.status} ${response.statusText}`;
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          } else if (errorData.errors) {
+            // Handle validation errors
+            errorMessage = 'Validation error: ' + JSON.stringify(errorData.errors);
+          }
+          
+          throw new Error(errorMessage);
         }
         
         // Get the uploaded file data

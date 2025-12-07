@@ -235,7 +235,7 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
         const response = await http.fetch(url, {
           method: mergedOptions.method || 'GET',
           headers: mergedOptions.headers,
-          body: typeof mergedOptions.body === 'string' ? mergedOptions.body : (mergedOptions.body ? JSON.stringify(mergedOptions.body) : undefined),
+          body: mergedOptions.body instanceof FormData ? mergedOptions.body : (typeof mergedOptions.body === 'string' ? mergedOptions.body : (mergedOptions.body ? JSON.stringify(mergedOptions.body) : undefined)),
           credentials: mergedOptions.credentials === 'include' ? 'include' : 'omit',
         });
         
