@@ -25,23 +25,23 @@ jobs:
       - name: Read version from VERSION file
         id: get_version
         run: |
-          $version = Get-Content "${{ github.workspace }}/VERSION" -Raw
-          $version = $version.Trim()
-          echo "version=$version" >> $env:GITHUB_OUTPUT
+          version=$(cat "${{ github.workspace }}/VERSION" | tr -d ' \t\n\r')
+          echo "version=$version" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Extract release notes from commit message
         id: get_release_notes
         run: |
-          $msg="${{ github.event.head_commit.message }}"
+          msg="${{ github.event.head_commit.message }}"
           # Extract everything after the first line (version line)
-          $lines = $msg -split "`n"
-          $releaseNotes = ($lines | Select-Object -Skip 1) -join "`n"
+          releaseNotes=$(echo "$msg" | tail -n +2)
           # Trim whitespace
-          $releaseNotes = $releaseNotes.Trim()
+          releaseNotes=$(echo "$releaseNotes" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           # Export as output
-          echo "release_notes<<EOF" >> $env:GITHUB_OUTPUT
-          echo "$releaseNotes" >> $env:GITHUB_OUTPUT
-          echo "EOF" >> $env:GITHUB_OUTPUT
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$releaseNotes" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -61,9 +61,11 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        shell: bash
 
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli
+        shell: bash
 
       # macOS needs extra setup for signing disabled
       - name: Disable macOS signing
@@ -71,9 +73,11 @@ jobs:
         run: |
           echo "TAURI_SIGNING_PRIVATE_KEY=" >> $GITHUB_ENV
           echo "TAURI_SIGNING_PASSWORD=" >> $GITHUB_ENV
+        shell: bash
 
       - name: Build Tauri app
         run: npm run tauri build
+        shell: bash
         env:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
