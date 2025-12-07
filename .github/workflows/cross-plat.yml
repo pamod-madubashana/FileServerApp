@@ -27,32 +27,8 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf imagemagick
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
         shell: bash
-
-      # Install ImageMagick on macOS
-      - name: Install ImageMagick on macOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install imagemagick
-        shell: bash
-
-      # Convert ICO to PNG for cross-platform compatibility
-      - name: Convert ICO to PNG icons
-        run: |
-          # Create PNG icons from ICO file
-          mkdir -p src-tauri/icons
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            # On Windows, ImageMagick might be available as magick
-            magick convert src-tauri/icons/icon.ico src-tauri/icons/icon.png || true
-            magick convert src-tauri/icons/icon.ico -resize 256x256 src-tauri/icons/icon@256.png || true
-          else
-            # On Linux and macOS, use convert command
-            convert src-tauri/icons/icon.ico src-tauri/icons/icon.png || true
-            convert src-tauri/icons/icon.ico -resize 256x256 src-tauri/icons/icon@256.png || true
-          fi
-        shell: bash
-        working-directory: src/frontend
 
       - name: Read version from VERSION file
         id: get_version
