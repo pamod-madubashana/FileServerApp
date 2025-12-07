@@ -499,6 +499,9 @@ export const FileGrid = ({
       for (const folderName of topLevelFoldersToCreate) {
         try {
           console.log(`Creating folder '${folderName}' in path '${currentPathStr}'`);
+          // The folder's path parameter represents WHERE the folder is located
+          // For example, if we're in /Home/Documents and creating folder "qwes", 
+          // we call createFolder("qwes", "/Home/Documents") - the folder will be located at /Home/Documents
           await api.createFolder(folderName, currentPathStr);
           console.log(`Successfully created folder: ${folderName}`);
         } catch (error) {
@@ -533,28 +536,33 @@ export const FileGrid = ({
         if (fullPath && fullPath.includes('/')) {
           // This preserves the folder structure from the dropped folder
           // For example, if fullPath is "qwes/subfolder/file.txt" and currentPathStr is "/Home/Documents"
-          // The final path should be "/Home/Documents/qwes/subfolder"
+          // The final path should be "/Home/Documents/qwes/subfolder" (without the filename)
           const pathParts = fullPath.split('/');
           console.log(`Processing file fullPath: ${fullPath}, pathParts:`, pathParts);
           
           if (pathParts.length >= 1) {
             // For folder uploads, we want to preserve the complete structure of the dropped folder
             // If we're in /Home/Documents and drop a folder "myfolder" containing "subfolder/file.txt",
-            // the file should go to /Home/Documents/myfolder/subfolder/file.txt
+            // the file should go to /Home/Documents/myfolder/subfolder (path to the folder, not including filename)
             
-            // Create the full path by combining current path with the full relative path
+            // Remove the filename (last part) to get just the folder path
+            const folderPathParts = pathParts.slice(0, -1); // All parts except the last one (filename)
+            const folderPathRelative = folderPathParts.join('/');
+            
+            // Create the full path by combining current path with the relative folder path
             if (currentPathStr === '/') {
-              // If we're at root, the full path is "/Home/fullPath"
-              uploadPath = `/Home/${fullPath}`;
+              // If we're at root, the full path is "/Home/folderPath"
+              uploadPath = `/Home/${folderPathRelative}`;
             } else if (currentPathStr === '/Home') {
-              // If we're in /Home, just append the fullPath
-              uploadPath = `/Home/${fullPath}`;
+              // If we're in /Home, just append the folderPath
+              uploadPath = `/Home/${folderPathRelative}`;
             } else {
               // If we're in a subdirectory like /Home/Documents, combine the paths correctly
               // Ensure currentPathStr doesn't end with slash
               const cleanCurrentPath = currentPathStr.replace(/\/$/, ''); // Remove trailing slash
-              uploadPath = `${cleanCurrentPath}/${fullPath}`;
-            }            console.log(`Final uploadPath for file: ${uploadPath}`);
+              uploadPath = `${cleanCurrentPath}/${folderPathRelative}`;
+            }
+            console.log(`Final uploadPath for file: ${uploadPath}`);
           }
         }        
         console.log(`Uploading file ${file.name} to path: ${uploadPath}`);
