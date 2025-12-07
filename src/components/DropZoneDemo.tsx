@@ -141,18 +141,10 @@ const DropZoneDemo: React.FC = () => {
                       const pathParts = fileObj.fullPath.split('/');
                       
                       if (pathParts.length >= 1) {
-                        // Get the top-level folder name (first part of the path)
-                        const topLevelFolder = pathParts[0];
-                        console.log(`File top level folder: ${topLevelFolder}`);
-                        
-                        // Skip if the top-level folder is just "Home"
-                        if (topLevelFolder === 'Home') {
-                          console.log(`Skipping top-level folder that is 'Home': ${topLevelFolder}`);
-                          return;
-                        }
-                        
-                        // Create the full path for the top-level folder
-                        uploadPath = `/Home/${topLevelFolder}`;
+                        // For folder uploads, we want to preserve the complete structure of the dropped folder
+                        // If we're at root, the full path is "/Home/fullPath"
+                        const fullPath = fileObj.fullPath;
+                        uploadPath = `/Home/${fullPath}`;
                       }
                     }
                     

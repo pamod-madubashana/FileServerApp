@@ -527,8 +527,8 @@ export const FileGrid = ({
         let uploadPath = currentPathStr;
         console.log(`Initial uploadPath: ${uploadPath}`);
         
-        // If we have a full path structure (e.g., "qwes/ITN.txt"), we need to:
-        // 1. Extract the folder structure (e.g., "qwes")
+        // If we have a full path structure (e.g., "qwes/subfolder/file.txt"), we need to:
+        // 1. Extract the folder structure relative to the dropped folder
         // 2. Append it to the current path
         if (fullPath && fullPath.includes('/')) {
           // This preserves the folder structure from the dropped folder
@@ -538,25 +538,19 @@ export const FileGrid = ({
           console.log(`Processing file fullPath: ${fullPath}, pathParts:`, pathParts);
           
           if (pathParts.length >= 1) {
-            // Get the top-level folder name (first part of the path)
-            const topLevelFolder = pathParts[0];
-            console.log(`File top level folder: ${topLevelFolder}`);
+            // For folder uploads, we want to preserve the complete structure of the dropped folder
+            // If we're in /Home/Documents and drop a folder "myfolder" containing "subfolder/file.txt",
+            // the file should go to /Home/Documents/myfolder/subfolder/file.txt
             
-            // Skip if the top-level folder is just "Home"
-            if (topLevelFolder === 'Home') {
-              console.log(`Skipping top-level folder that is 'Home': ${topLevelFolder}`);
-              return;
-            }
-            
-            // Create the full path for the top-level folder
+            // Create the full path by combining current path with the full relative path
             if (currentPathStr === '/Home' || currentPathStr === '/') {
-              // If we're at root, the full path is "/Home/topLevelFolder"
-              uploadPath = `/Home/${topLevelFolder}`;
+              // If we're at root, the full path is "/Home/fullPath"
+              uploadPath = `/Home/${fullPath}`;
             } else {
               // If we're in a subdirectory, combine the paths
               // Ensure currentPathStr doesn't end with slash
               const cleanCurrentPath = currentPathStr.replace(/\/$/, ''); // Remove trailing slash
-              uploadPath = `${cleanCurrentPath}/${topLevelFolder}`;
+              uploadPath = `${cleanCurrentPath}/${fullPath}`;
             }
             console.log(`Final uploadPath for file: ${uploadPath}`);
           }
