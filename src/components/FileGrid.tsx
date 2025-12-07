@@ -127,14 +127,104 @@ export const FileGrid = ({
         });
 
         // Listen for Tauri drag drop events
-        unlistenDragDrop = await eventModule.listen('tauri://drag-drop', (event: Event<any>) => {
+        unlistenDragDrop = await eventModule.listen('tauri://drag-drop', async (event: Event<any>) => {
           // Handle dropped files in Tauri
           setIsDragOver(false);
           if (event && event.payload) {
             // The payload should contain the file paths
             console.log('Tauri drag drop event:', event.payload);
-            // In a real implementation, we would need to handle the file paths
-            // This is a simplified version for now
+            
+            // Check if we have paths in the payload
+            if (event.payload.paths && Array.isArray(event.payload.paths)) {
+              const paths = event.payload.paths;
+              console.log('Dropped paths:', paths);
+              
+              // Handle single path drops
+              if (paths.length === 1) {
+                try {
+                  // Import the Tauri fs module
+                  const fs = await import('@tauri-apps/plugin-fs');
+                  
+                  // Check if the path is a directory
+                  const stat = await fs.stat(paths[0]);
+                  if (stat.isDirectory) {
+                    console.log('Dropped directory:', paths[0]);
+                    
+                    // Scan the directory directly
+                    const tauriFs = await import('@/lib/tauri-fs');
+                    const files = await tauriFs.scanDirectory(paths[0]);
+                    
+                    if (files && files.length > 0) {
+                      // Convert scanned files to File-like objects for upload
+                      await handleNativeFolderUpload(files);
+                    }
+                    return;
+                  } else {
+                    // Handle single file drop
+                    console.log('Dropped single file:', paths[0]);
+                    // For single files, we can read them directly
+                    const tauriFs = await import('@/lib/tauri-fs');
+                    const scannedFile = {
+                      name: paths[0].split('/').pop() || paths[0].split('\\').pop() || 'unknown',
+                      path: paths[0],
+                      size: stat.size || 0,
+                      modified: stat.mtime ? new Date(stat.mtime) : new Date(),
+                      relativePath: ''
+                    };
+                    
+                    // Convert to File-like object and upload
+                    await handleNativeFolderUpload([scannedFile]);
+                    return;
+                  }
+                } catch (statError) {
+                  console.warn('Error checking if path is directory:', statError);
+                }
+              }
+              
+              // Handle multiple paths
+              if (paths.length > 1) {
+                console.log('Multiple paths dropped, handling as batch');
+                try {
+                  // Import the Tauri fs module
+                  const fs = await import('@tauri-apps/plugin-fs');
+                  
+                  // Collect all files (both direct files and files in directories)
+                  const allFiles: any[] = [];
+                  
+                  for (const path of paths) {
+                    try {
+                      const stat = await fs.stat(path);
+                      if (stat.isDirectory) {
+                        // Scan directory
+                        const tauriFs = await import('@/lib/tauri-fs');
+                        const dirFiles = await tauriFs.scanDirectory(path);
+                        allFiles.push(...dirFiles);
+                      } else {
+                        // Add single file
+                        const scannedFile = {
+                          name: path.split('/').pop() || path.split('\\').pop() || 'unknown',
+                          path: path,
+                          size: stat.size || 0,
+                          modified: stat.mtime ? new Date(stat.mtime) : new Date(),
+                          relativePath: ''
+                        };
+                        allFiles.push(scannedFile);
+                      }
+                    } catch (pathError) {
+                      console.warn('Error processing path:', path, pathError);
+                    }
+                  }
+                  
+                  if (allFiles.length > 0) {
+                    // Upload all collected files
+                    await handleNativeFolderUpload(allFiles);
+                  }
+                  return;
+                } catch (batchError) {
+                  console.error('Error handling batch drop:', batchError);
+                }
+              }
+            }
           }
         });
 
@@ -607,6 +697,14 @@ export const FileGrid = ({
       // Check if we're in Tauri environment
       const isTauri = !!(window as any).__TAURI__;
       
+      // In Tauri, let the Tauri drag drop event listener handle the drop
+      // The web drag drop event doesn't give us access to file paths for security reasons
+      if (isTauri) {
+        console.log('In Tauri environment, letting Tauri drag drop event listener handle the drop');
+        // Just return and let the Tauri event listener handle it
+        return;
+      }
+      
       // Check for actual file data from OS
       const hasFiles = e.dataTransfer.types.includes('Files');
       
@@ -634,22 +732,6 @@ export const FileGrid = ({
           type: f.type,
           webkitRelativePath: 'webkitRelativePath' in f ? (f as any).webkitRelativePath : 'N/A'
         })));
-        
-        // In Tauri environment, we can try to handle folder drops natively
-        if (isTauri) {
-          // Check if this looks like a folder drop (single entry with no webkitRelativePath and 0 size)
-          // This happens when a folder is dragged directly onto the drop zone
-          if (files.length === 1 && files[0].size === 0 && !files[0].type && 
-              (!('webkitRelativePath' in files[0]) || !(files[0] as any).webkitRelativePath)) {
-            console.log('Detected folder drop in Tauri, using native folder scanning');
-            // Use native Tauri folder scanning
-            const tauriFs = await import('@/lib/tauri-fs');
-            // For drag and drop, we would need to get the actual folder path
-            // This is complex in Tauri, so we'll still use the dialog approach for now
-            triggerDirectoryUpload();
-            return;
-          }
-        }
         
         // Check if any of the files have webkitRelativePath (indicating folder upload)
         let isDirectoryUpload = false;
