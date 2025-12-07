@@ -232,10 +232,21 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
       if (http) {
         logger.info('[API] Using Tauri HTTP plugin for request to:', url);
         // Make the request using Tauri's HTTP plugin
+        // Special handling for FormData to prevent stringification which breaks file uploads
+        let bodyToSend: any = undefined;
+        if (mergedOptions.body instanceof FormData) {
+          // Pass FormData directly for file uploads
+          bodyToSend = mergedOptions.body;
+        } else if (typeof mergedOptions.body === 'string') {
+          bodyToSend = mergedOptions.body;
+        } else if (mergedOptions.body) {
+          bodyToSend = JSON.stringify(mergedOptions.body);
+        }
+        
         const response = await http.fetch(url, {
           method: mergedOptions.method || 'GET',
           headers: mergedOptions.headers,
-          body: mergedOptions.body instanceof FormData ? mergedOptions.body : (typeof mergedOptions.body === 'string' ? mergedOptions.body : (mergedOptions.body ? JSON.stringify(mergedOptions.body) : undefined)),
+          body: bodyToSend,
           credentials: mergedOptions.credentials === 'include' ? 'include' : 'omit',
         });
         
@@ -243,7 +254,7 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
         // Return the response directly as it's already a standard Response object
         return response;
       } else {
-        logger.warn('[API] Tauri HTTP plugin not available after waiting, falling back to standard fetch');
+
       }
     } catch (error) {
       logger.error('[API] Tauri HTTP request failed, falling back to standard fetch:', error);

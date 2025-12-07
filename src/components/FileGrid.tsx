@@ -584,7 +584,7 @@ export const FileGrid = ({
   };
 
   // Handle drop event on files
-  const handleFileDrop = (e: React.DragEvent) => {
+  const handleFileDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     dragCounter.current = 0; // Reset counter
@@ -603,6 +603,9 @@ export const FileGrid = ({
         setDraggedItem(null);
         return;
       }
+      
+      // Check if we're in Tauri environment
+      const isTauri = !!(window as any).__TAURI__;
       
       // Check for actual file data from OS
       const hasFiles = e.dataTransfer.types.includes('Files');
@@ -632,14 +635,20 @@ export const FileGrid = ({
           webkitRelativePath: 'webkitRelativePath' in f ? (f as any).webkitRelativePath : 'N/A'
         })));
         
-        // Check if this looks like a folder drop (single entry with no webkitRelativePath and 0 size)
-        // This happens when a folder is dragged directly onto the drop zone
-        if (files.length === 1 && files[0].size === 0 && !files[0].type && 
-            (!('webkitRelativePath' in files[0]) || !(files[0] as any).webkitRelativePath)) {
-          console.log('Detected folder drop, triggering directory upload dialog');
-          // This appears to be a folder being dropped directly, trigger the directory upload
-          triggerDirectoryUpload();
-          return;
+        // In Tauri environment, we can try to handle folder drops natively
+        if (isTauri) {
+          // Check if this looks like a folder drop (single entry with no webkitRelativePath and 0 size)
+          // This happens when a folder is dragged directly onto the drop zone
+          if (files.length === 1 && files[0].size === 0 && !files[0].type && 
+              (!('webkitRelativePath' in files[0]) || !(files[0] as any).webkitRelativePath)) {
+            console.log('Detected folder drop in Tauri, using native folder scanning');
+            // Use native Tauri folder scanning
+            const tauriFs = await import('@/lib/tauri-fs');
+            // For drag and drop, we would need to get the actual folder path
+            // This is complex in Tauri, so we'll still use the dialog approach for now
+            triggerDirectoryUpload();
+            return;
+          }
         }
         
         // Check if any of the files have webkitRelativePath (indicating folder upload)
@@ -721,8 +730,228 @@ export const FileGrid = ({
     fileInputRef.current?.click();
   };
 
-  const triggerDirectoryUpload = () => {
-    directoryInputRef.current?.click();
+  const triggerDirectoryUpload = async () => {
+    try {
+      // Check if we're in Tauri environment
+      const isTauri = !!(window as any).__TAURI__;
+      
+      if (isTauri) {
+        // Use native Tauri folder scanning
+        const tauriFs = await import('@/lib/tauri-fs');
+        const files = await tauriFs.pickAndScanDirectory();
+        
+        if (files && files.length > 0) {
+          // Convert scanned files to File-like objects for upload
+          await handleNativeFolderUpload(files);
+        }
+        return;
+      }
+      
+      // Fallback to web-based approach for non-Tauri environments
+      directoryInputRef.current?.click();
+    } catch (error) {
+      console.error('Error triggering directory upload:', error);
+      alert('Failed to select folder. Please try again.');
+    }
+  };
+
+  // Handle native folder upload from Tauri file system
+  const handleNativeFolderUpload = async (scannedFiles: any[]) => {
+    try {
+      // Use the API path if available, otherwise construct it
+      let currentPathStr = currentApiPath || `/${currentFolder}`;
+      console.log('Current folder:', currentFolder);
+      console.log('Current path array:', currentPath);
+      console.log('Current API path:', currentApiPath);
+      console.log('Using path for upload:', currentPathStr);
+      console.log('Scanned files count:', scannedFiles.length);
+
+      // Validate inputs
+      if (!scannedFiles || scannedFiles.length === 0) {
+        throw new Error('No files selected for upload');
+      }
+
+      // Log all files for debugging
+      console.log('All scanned files:', scannedFiles);
+
+      // Filter out clearly problematic files
+      const validFiles = scannedFiles.filter(file => {
+        // Skip files with no name
+        if (!file.name) {
+          console.warn('Skipping file with no name');
+          return false;
+        }
+
+        // Skip system files that are definitely not user files
+        if (file.name === 'Thumbs.db' || file.name === 'desktop.ini') {
+          console.warn('Skipping system file:', file.name);
+          return false;
+        }
+
+        // Keep all other files
+        return true;
+      });
+
+      // Log valid files for debugging
+      console.log('Valid files after filtering:', validFiles);
+
+      // If no valid files remain, show a message and exit
+      if (validFiles.length === 0) {
+        const allFileNames = scannedFiles.map(f => f.name).join(', ');
+        alert(`No valid files to upload. Folder may be empty or contain only system files.\n\nFiles detected: ${allFileNames || 'None'}`);
+        setUploadingFiles(null);
+        setIsDirectoryUpload(false);
+        return;
+      }
+
+      // Set uploading files state to show progress widget (only valid files)
+      // Convert scanned files to File-like objects for the progress widget
+      const fileLikeObjects = validFiles.map(file => ({
+        name: file.name,
+        size: file.size,
+        type: '', // We don't have type info from native scanning
+      }));
+      setUploadingFiles(fileLikeObjects as any);
+
+      // Import the API utilities
+      const { getApiBaseUrl, fetchWithTimeout } = await import('@/lib/api');
+
+      // Collect all unique folder paths
+      const folderPaths = new Set<string>();
+
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+        if (file.relativePath) {
+          // Extract the directory path from the relative path
+          const pathParts = file.relativePath.split('/');
+          if (pathParts.length > 1) {
+            // Remove the filename (last part)
+            const folderPathParts = pathParts.slice(0, -1);
+            // Create full path by joining with current path
+            const fullPath = `${currentPathStr}/${folderPathParts.join('/')}`;
+            folderPaths.add(fullPath);
+          }
+        }
+      }
+
+      // Log folder paths for debugging
+      console.log('Folder paths to create:', Array.from(folderPaths));
+
+      // Create all folder paths
+      const baseUrl = getApiBaseUrl();
+      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+
+      for (const folderPath of Array.from(folderPaths)) {
+        try {
+          await fetchWithTimeout(`${apiUrl}/folders/create-path`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              fullPath: folderPath,
+            }),
+          }).catch(err => {
+            // Ignore errors for folder creation - it might already exist
+            console.log(`Folder path ${folderPath} might already exist`);
+          });
+        } catch (err) {
+          console.log('Error creating folder path (might already exist):', err);
+        }
+      }
+
+      // Upload each valid file
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+
+        console.log('Uploading file:', file.name, 'size:', file.size);
+
+        // Determine the target path for this file
+        let targetPath = currentPathStr;
+
+        // If this file has a relative path, we need to create the folder structure
+        if (file.relativePath) {
+          // Extract the directory path from the relative path
+          const pathParts = file.relativePath.split('/');
+          if (pathParts.length > 1) {
+            // Remove the filename (last part)
+            const folderPathParts = pathParts.slice(0, -1);
+            // Join with the current path
+            targetPath = `${currentPathStr}/${folderPathParts.join('/')}`;
+          }
+        }
+
+        // Read the file content using Tauri fs
+        const fs = await import('@tauri-apps/plugin-fs');
+        const fileContent = await fs.readTextFile(file.path);
+        
+        // Create a Blob from the file content
+        const blob = new Blob([fileContent]);
+        
+        // Create FormData
+        const formData = new FormData();
+        formData.append('file', blob, file.name);
+
+        const baseUrl = getApiBaseUrl();
+        const apiUrl = baseUrl ? `${baseUrl}/api/files/upload` : '/api/files/upload';
+
+        // Use fetchWithTimeout to ensure proper auth header handling in Tauri
+        // Properly encode the path parameter
+        const encodedPath = encodeURIComponent(targetPath);
+        console.log('Encoded path for upload:', encodedPath);
+
+        const response = await fetchWithTimeout(`${apiUrl}?path=${encodedPath}`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Upload failed with status:', response.status, 'and data:', errorData);
+
+          // Try to get more detailed error information
+          let errorMessage = `Failed to upload file: ${response.status} ${response.statusText}`;
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          } else if (errorData.errors) {
+            // Handle validation errors
+            errorMessage = 'Validation error: ' + JSON.stringify(errorData.errors);
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        // Get the uploaded file data
+        const result = await response.json();
+
+        // Create a FileItem from the response
+        const uploadedFile = {
+          id: result.file.id,
+          file_unique_id: result.file.file_unique_id,
+          name: result.file.file_name,
+          type: 'file',
+          icon: '', // Will be set by the getFileIcon function
+          extension: result.file.file_name?.split('.').pop(),
+          size: result.file.file_size,
+          fileType: result.file.file_type,
+          thumbnail: result.file.thumbnail,
+          file_path: result.file.file_path,
+          modified: result.file.modified,
+        } as FileItem;
+
+        // Don't add the uploaded file to the grid immediately
+        // Instead, let the progress widget onComplete handler refresh the file list
+        // when the progress reaches 100%
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      alert(`Upload failed: ${error.message || 'Unknown error'}`);
+      // Hide progress widget on error
+      setUploadingFiles(null);
+      setIsDirectoryUpload(false);
+    }
   };
 
   if (isLoading) {
