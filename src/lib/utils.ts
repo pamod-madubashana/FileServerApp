@@ -112,8 +112,25 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
   }
 
   try {
+    // Get auth token for Tauri environment
+    let authToken = null;
+    const isTauri = !!(window as any).__TAURI__;
+    if (isTauri) {
+      try {
+        const tauri_auth = localStorage.getItem('tauri_auth_token');
+        if (tauri_auth) {
+          const authData = JSON.parse(tauri_auth);
+          if (authData.auth_token) {
+            authToken = authData.auth_token;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to get auth token from localStorage:', e);
+      }
+    }
+    
     // Use our custom Tauri command to download the file
-    await invoke('download_file', { url, savePath: filePath });
+    await invoke('download_file', { url, savePath: filePath, authToken });
     
     // Report completion
     if (onProgress) {

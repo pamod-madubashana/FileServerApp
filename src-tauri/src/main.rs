@@ -30,7 +30,7 @@ fn log_error(message: &str) {
 
 // Download command that downloads a file from a URL and saves it to a specified path
 #[tauri::command]
-async fn download_file(url: &str, save_path: &str, app_handle: tauri::AppHandle) -> Result<(), String> {
+async fn download_file(url: &str, save_path: &str, auth_token: Option<String>, app_handle: tauri::AppHandle) -> Result<(), String> {
     log::info!("Starting download from {} to {}", url, save_path);
     
     // Parse URL to check if we need to add auth token
@@ -40,9 +40,13 @@ async fn download_file(url: &str, save_path: &str, app_handle: tauri::AppHandle)
     
     // Check if this is a local API URL that needs authentication
     if parsed_url.host_str() == Some("localhost") || parsed_url.host_str() == Some("127.0.0.1") {
-        // Try to get auth token from app state or environment
-        // For now, we'll check if there's a query parameter with auth token
-        if let Some(auth_token) = parsed_url.query_pairs().find(|(key, _)| key == "auth_token").map(|(_, value)| value.to_string()) {
+        // Try to get auth token from parameters first
+        if let Some(token) = auth_token {
+            log::info!("Adding auth token from parameters");
+            headers.insert("X-Auth-Token", token.parse().map_err(|_| "Invalid auth token")?);
+        }
+        // Fallback to query parameter
+        else if let Some(auth_token) = parsed_url.query_pairs().find(|(key, _)| key == "auth_token").map(|(_, value)| value.to_string()) {
             log::info!("Adding auth token from URL query parameter");
             headers.insert("X-Auth-Token", auth_token.parse().map_err(|_| "Invalid auth token")?);
         }
