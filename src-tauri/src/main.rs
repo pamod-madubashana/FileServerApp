@@ -54,7 +54,7 @@ async fn download_file(url: &str, save_path: &str, auth_token: Option<String>, a
     
     // Create HTTP client with headers
     let client = reqwest::Client::builder()
-        .default_headers(headers)
+        .default_headers(headers.clone())
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
     
