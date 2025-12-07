@@ -885,7 +885,7 @@ export const FileGrid = ({
         // Read the file content using Tauri fs
         const fs = await import('@tauri-apps/plugin-fs');
         // Try to read as binary first for proper file handling
-        let fileContent: ArrayBuffer | string;
+        let fileContent: Uint8Array | string;
         try {
           // Use readFile to get binary data
           fileContent = await fs.readFile(file.path);
