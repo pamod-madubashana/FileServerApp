@@ -144,7 +144,6 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     console.error('Download failed:', error);
     throw new Error(`Download failed: ${error}`);
   } finally {
-    // Clean up the event listener
     if (unlisten) {
       unlisten();
     }
