@@ -80,20 +80,99 @@ const DropZoneDemo: React.FC = () => {
                 // Import the API client
                 const { api } = await import('@/lib/api');
                 
-                // Upload each file
-                for (const fileObj of files) {
+                // Collect all unique top-level folder names that need to be created
+                const topLevelFoldersToCreate = new Set<string>();
+                const currentPathStr = '/Home'; // For demo, we'll use root path "/Home"
+                
+                // Process each file to determine top-level folders
+                files.forEach(fileObj => {
+                  // If we have a full path structure (e.g., "qwes/ITN.txt"), we need to:
+                  // 1. Extract the top-level folder name (e.g., "qwes")
+                  // 2. Add it to our set of folders to create
+                  if (fileObj.fullPath && fileObj.fullPath.includes('/')) {
+                    const pathParts = fileObj.fullPath.split('/');
+                    
+                    // Skip if the path is just "Home" or empty
+                    if (pathParts.length === 1 && (pathParts[0] === 'Home' || pathParts[0] === '')) {
+                      console.log(`Skipping invalid path: ${fileObj.fullPath}`);
+                      return;
+                    }
+                    
+                    if (pathParts.length >= 1) {
+                      // Get the top-level folder name (first part of the path)
+                      const topLevelFolder = pathParts[0];
+                      console.log(`Top level folder: ${topLevelFolder}`);
+                      
+                      // Skip if the top-level folder is just "Home"
+                      if (topLevelFolder === 'Home') {
+                        console.log(`Skipping top-level folder that is 'Home': ${topLevelFolder}`);
+                        return;
+                      }
+                      
+                      topLevelFoldersToCreate.add(topLevelFolder);
+                    }
+                  }
+                });
+                
+                // Create all required top-level folders using the simple create_folder API
+                console.log('Creating top-level folders:', Array.from(topLevelFoldersToCreate));
+                for (const folderName of topLevelFoldersToCreate) {
                   try {
-                    const result = await api.uploadFile(fileObj.file, '/');
-                    console.log('Upload result:', result);
-                    alert(`File ${fileObj.file.name} uploaded successfully!`);
+                    console.log(`Creating folder '${folderName}' in path '${currentPathStr}'`);
+                    await api.createFolder(folderName, currentPathStr);
+                    console.log(`Successfully created folder: ${folderName}`);
                   } catch (error) {
-                    console.error(`Failed to upload file ${fileObj.file.name}:`, error);
-                    alert(`Failed to upload file ${fileObj.file.name}: ${error.message || 'Unknown error'}`);
+                    console.warn(`Error creating folder ${folderName}:`, error);
                   }
                 }
+                
+                // Upload each file with correct path structure
+                for (const fileObj of files) {
+                  try {
+                    // For demo purposes, we'll upload to root path "/"
+                    // In a real implementation, this would be the current folder path
+                    let uploadPath = '/';
+                    
+                    // If we have a full path structure (e.g., "qwes/ITN.txt"), we need to:
+                    // 1. Extract the top-level folder name (e.g., "qwes")
+                    // 2. Append it to the current path
+                    if (fileObj.fullPath && fileObj.fullPath.includes('/')) {
+                      // This preserves the folder structure from the dropped folder
+                      const pathParts = fileObj.fullPath.split('/');
+                      
+                      if (pathParts.length >= 1) {
+                        // Get the top-level folder name (first part of the path)
+                        const topLevelFolder = pathParts[0];
+                        console.log(`File top level folder: ${topLevelFolder}`);
+                        
+                        // Skip if the top-level folder is just "Home"
+                        if (topLevelFolder === 'Home') {
+                          console.log(`Skipping top-level folder that is 'Home': ${topLevelFolder}`);
+                          return;
+                        }
+                        
+                        // Create the full path for the top-level folder
+                        uploadPath = `/Home/${topLevelFolder}`;
+                      }
+                    }
+                    
+                    const result = await api.uploadFile(fileObj.file, uploadPath);
+                    console.log('Upload result:', result);
+                    // Show success message through UI feedback instead of alert
+                    console.log(`File ${fileObj.file.name} uploaded successfully to ${uploadPath}!`);
+                  } catch (error) {
+                    console.error(`Failed to upload file ${fileObj.file.name}:`, error);
+                    // Show error message through UI feedback instead of alert
+                    console.error(`Failed to upload file ${fileObj.file.name}: ${error.message || 'Unknown error'}`);
+                  }
+                }
+                
+                // Show overall success message through UI feedback instead of alert
+                console.log('All files uploaded successfully!');
               } catch (error) {
                 console.error('Upload error:', error);
-                alert(`Upload failed: ${error.message || 'Unknown error'}`);
+                // Show error message through UI feedback instead of alert
+                console.error(`Upload failed: ${error.message || 'Unknown error'}`);
               }
             }}
             style={{

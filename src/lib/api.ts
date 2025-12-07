@@ -84,6 +84,15 @@ export interface UpdateIndexChatRequest {
   index_chat_id: number | null;
 }
 
+export interface CreateFolderRequest {
+    folderName: string;
+    currentPath: string;
+}
+
+export interface CreateFolderPathRequest {
+    fullPath: string;
+}
+
 const getDefaultApiUrl = () => {
   const savedUrl = localStorage.getItem("serverUrl");
   if (savedUrl) {
@@ -582,6 +591,60 @@ export const api = {
 
         if (!response.ok) {
             throw new Error(`Failed to upload file: ${response.statusText}`);
+        }
+
+        return response.json();
+    },
+
+    async createFolder(folderName: string, currentPath: string): Promise<{ message: string }> {
+        const baseUrl = getApiBaseUrl();
+        // For the default case, we need to append /api to the base URL
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ folderName, currentPath }),
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/folders/create`, mergedOptions, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to create folder: ${response.statusText}`);
+        }
+
+        return response.json();
+    },
+
+    async createFolderPath(fullPath: string): Promise<{ message: string }> {
+        const baseUrl = getApiBaseUrl();
+        // For the default case, we need to append /api to the base URL
+        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ fullPath }),
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/folders/create-path`, mergedOptions, 3000);
+
+        if (!response.ok) {
+            throw new Error(`Failed to create folder path: ${response.statusText}`);
         }
 
         return response.json();

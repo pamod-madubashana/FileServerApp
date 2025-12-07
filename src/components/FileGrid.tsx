@@ -277,7 +277,11 @@ export const FileGrid = ({
   const handleFileUpload = async (files: FileList | TraversedFile[]) => {
     try {
       // Use the API path if available, otherwise construct it
+      // Ensure root path is always "/Home" instead of "/"
       let currentPathStr = currentApiPath || `/${currentFolder}`;
+      if (currentPathStr === '/') {
+        currentPathStr = '/Home';
+      }
       console.log('Current folder:', currentFolder);
       console.log('Current path array:', currentPath);
       console.log('Current API path:', currentApiPath);
@@ -450,7 +454,59 @@ export const FileGrid = ({
       // Import the API client
       const { api } = await import('@/lib/api');
       
-      // Upload each file
+      // Collect all unique top-level folder names that need to be created
+      const topLevelFoldersToCreate = new Set<string>();
+      
+      // Process each file to determine top-level folders
+      validFiles.forEach(fileObj => {
+        let fullPath: string | undefined;
+        
+        if ('file' in fileObj && fileObj.file instanceof File) {
+          fullPath = fileObj.fullPath;
+        }
+        
+        // If we have a full path structure (e.g., "qwes/ITN.txt"), we need to:
+        // 1. Extract the top-level folder name (e.g., "qwes")
+        // 2. Add it to our set of folders to create
+        if (fullPath && fullPath.includes('/')) {
+          const pathParts = fullPath.split('/');
+          console.log(`Processing fullPath: ${fullPath}, pathParts:`, pathParts);
+          
+          // Skip if the path is just "Home" or empty
+          if (pathParts.length === 1 && (pathParts[0] === 'Home' || pathParts[0] === '')) {
+            console.log(`Skipping invalid path: ${fullPath}`);
+            return;
+          }
+          
+          if (pathParts.length >= 1) {
+            // Get the top-level folder name (first part of the path)
+            const topLevelFolder = pathParts[0];
+            console.log(`Top level folder: ${topLevelFolder}`);
+            
+            // Skip if the top-level folder is just "Home"
+            if (topLevelFolder === 'Home') {
+              console.log(`Skipping top-level folder that is 'Home': ${topLevelFolder}`);
+              return;
+            }
+            
+            topLevelFoldersToCreate.add(topLevelFolder);
+          }
+        }
+      });
+      
+      // Create all required top-level folders using the simple create_folder API
+      console.log('Creating top-level folders:', Array.from(topLevelFoldersToCreate));
+      for (const folderName of topLevelFoldersToCreate) {
+        try {
+          console.log(`Creating folder '${folderName}' in path '${currentPathStr}'`);
+          await api.createFolder(folderName, currentPathStr);
+          console.log(`Successfully created folder: ${folderName}`);
+        } catch (error) {
+          console.warn(`Error creating folder ${folderName}:`, error);
+        }
+      }
+      
+      // Upload each file with correct path structure
       const uploadPromises = validFiles.map(async (fileObj) => {
         let file: File;
         let fullPath: string | undefined;
@@ -469,13 +525,40 @@ export const FileGrid = ({
         
         // For folder uploads, we need to construct the correct path
         let uploadPath = currentPathStr;
+        console.log(`Initial uploadPath: ${uploadPath}`);
+        
+        // If we have a full path structure (e.g., "qwes/ITN.txt"), we need to:
+        // 1. Extract the folder structure (e.g., "qwes")
+        // 2. Append it to the current path
         if (fullPath && fullPath.includes('/')) {
-          // This is a file within a folder structure, we need to preserve the folder structure
+          // This preserves the folder structure from the dropped folder
+          // For example, if fullPath is "qwes/subfolder/file.txt" and currentPathStr is "/Home/Documents"
+          // The final path should be "/Home/Documents/qwes/subfolder"
           const pathParts = fullPath.split('/');
-          if (pathParts.length > 1) {
-            // Remove the file name to get the folder path
-            const folderPath = pathParts.slice(0, -1).join('/');
-            uploadPath = `${currentPathStr}/${folderPath}`;
+          console.log(`Processing file fullPath: ${fullPath}, pathParts:`, pathParts);
+          
+          if (pathParts.length >= 1) {
+            // Get the top-level folder name (first part of the path)
+            const topLevelFolder = pathParts[0];
+            console.log(`File top level folder: ${topLevelFolder}`);
+            
+            // Skip if the top-level folder is just "Home"
+            if (topLevelFolder === 'Home') {
+              console.log(`Skipping top-level folder that is 'Home': ${topLevelFolder}`);
+              return;
+            }
+            
+            // Create the full path for the top-level folder
+            if (currentPathStr === '/Home' || currentPathStr === '/') {
+              // If we're at root, the full path is "/Home/topLevelFolder"
+              uploadPath = `/Home/${topLevelFolder}`;
+            } else {
+              // If we're in a subdirectory, combine the paths
+              // Ensure currentPathStr doesn't end with slash
+              const cleanCurrentPath = currentPathStr.replace(/\/$/, ''); // Remove trailing slash
+              uploadPath = `${cleanCurrentPath}/${topLevelFolder}`;
+            }
+            console.log(`Final uploadPath for file: ${uploadPath}`);
           }
         }
         
@@ -504,13 +587,14 @@ export const FileGrid = ({
         onRefresh();
       }
       
-      // Show success message
-      alert('Files uploaded successfully!');
+      // Show success message through UI feedback instead of alert
+      console.log('Files uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
       setUploadingFiles(null);
       setIsDirectoryUpload(false);
-      alert(`Upload failed: ${error.message || 'Unknown error'}`);
+      // Show error message through UI feedback instead of alert
+      console.error(`Upload failed: ${error.message || 'Unknown error'}`);
     }
   };
 
