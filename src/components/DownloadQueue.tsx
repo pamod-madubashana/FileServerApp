@@ -113,7 +113,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
               {activeDownloads.length} active, {queuedDownloads.length} queued
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-0 max-h-96 overflow-y-auto">
+          <CardContent className="p-0 max-h-96 overflow-y-auto overflow-x-hidden custom-scrollbar">
             {downloads.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground">
                 No downloads in queue
