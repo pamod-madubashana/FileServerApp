@@ -136,7 +136,7 @@ export const UploadProgressWidget = ({
           ></div>
         </div>
         
-        <div className="space-y-2 max-h-60 overflow-y-auto">
+        <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
           {progress.map((fileProgress, index) => (
             <div key={index} className="flex items-center gap-2 text-sm">
               <div className="flex-shrink-0 w-4">
