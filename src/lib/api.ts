@@ -631,9 +631,18 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/files/upload`, mergedOptions, 30000); // 30 second timeout for file uploads
 
         if (!response.ok) {
-            throw new Error(`Failed to upload file: ${response.statusText}`);
+            // Try to get the error message from the response body
+            let errorMessage = `Failed to upload file: ${response.statusText}`;
+            try {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                }
+            } catch (e) {
+                // If we can't parse the error response, use the generic message
+            }
+            throw new Error(errorMessage);
         }
-
         return response.json();
     },
 

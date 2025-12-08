@@ -9,6 +9,7 @@ import { MediaPlayer } from "./MediaPlayer";
 import { Thumbnail } from "./Thumbnail";
 import { UploadProgressWidget } from "./UploadProgressWidget";
 import { FloatingUploadButton } from "./FloatingUploadButton"; // Add this import
+import { TelegramVerificationDialog } from "./TelegramVerificationDialog";
 import { getApiBaseUrl } from "@/lib/api";
 import { getPlayerPreference } from "@/lib/playerSettings";
 import type { Event } from '@tauri-apps/api/event';
@@ -93,9 +94,9 @@ export const FileGrid = ({
   const [dropTarget, setDropTarget] = useState<FileItem | null>(null); // Track drop target
   const [uploadingFiles, setUploadingFiles] = useState<File[] | null>(null); // Track uploading files
   const [isDirectoryUpload, setIsDirectoryUpload] = useState(false); // Track if this is a directory upload
+  const [showTelegramVerificationDialog, setShowTelegramVerificationDialog] = useState(false); // Track Telegram verification dialog visibility
   const dragCounter = useRef(0); // Track drag enter/leave events
-  const draggedItemRef = useRef<FileItem | null>(null); // Ref for dragged item to access in Tauri events
-  
+  const draggedItemRef = useRef<FileItem | null>(null); // Ref for dragged item to access in Tauri events  
   // Update the ref whenever draggedItem changes
   useEffect(() => {
     draggedItemRef.current = draggedItem;
@@ -688,9 +689,15 @@ export const FileGrid = ({
       setUploadingFiles(null);
       setIsDirectoryUpload(false);
       // Show error message through UI feedback instead of alert
-      console.error(`Upload failed: ${error.message || 'Unknown error'}`);
-    }
-  };
+      // Check if this is the specific Telegram verification error
+      if (error.message && error.message.includes('TELEGRAM_NOT_VERIFIED')) {
+        // Show custom Telegram verification dialog
+        setShowTelegramVerificationDialog(true);
+      } else {
+        // Show error message through UI feedback instead of alert
+        console.error(`Upload failed: ${error.message || 'Unknown error'}`);
+      }
+    }  };
 
   // Handle drag enter event
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
@@ -1359,6 +1366,12 @@ export const FileGrid = ({
           onClose={() => setMediaPlayer(null)}
         />
       )}
+
+      {/* Telegram Verification Dialog */}
+      <TelegramVerificationDialog
+        open={showTelegramVerificationDialog}
+        onOpenChange={setShowTelegramVerificationDialog}
+      />
     </div>
   );
 };
