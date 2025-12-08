@@ -340,9 +340,34 @@ export const FileGrid = ({
       // Convert files to array for easier handling
       const filesArray = [];
       if (files instanceof FileList) {
-        // Convert FileList to array
+        // Convert FileList to array and check for webkitRelativePath
         for (let i = 0; i < files.length; i++) {
-          filesArray.push(files[i]);
+          const file = files[i];
+          // Check if this is a directory upload with webkitRelativePath
+          if ('webkitRelativePath' in file && (file as any).webkitRelativePath) {
+            // Extract just the file name from the webkitRelativePath
+            const fullPath = (file as any).webkitRelativePath;
+            const fileName = fullPath.split('/').pop() || file.name;
+            
+            // Create a new File object with a clean name
+            const cleanFile = new File([file], fileName, {
+              type: file.type,
+              lastModified: file.lastModified,
+            });
+            
+            // Create TraversedFile object with fullPath from webkitRelativePath
+            filesArray.push({
+              file: cleanFile,
+              name: fileName,
+              fullPath: fullPath,
+              size: file.size,
+              type: file.type,
+              lastModified: file.lastModified
+            });
+          } else {
+            // Regular file object
+            filesArray.push(file);
+          }
         }
       } else {
         // Already an array
@@ -398,6 +423,10 @@ export const FileGrid = ({
         } else if (fileObj instanceof File) {
           // Regular File object
           file = fileObj;
+          // Check for webkitRelativePath in regular File objects too
+          if ('webkitRelativePath' in fileObj && (fileObj as any).webkitRelativePath) {
+            fullPath = (fileObj as any).webkitRelativePath;
+          }
         } else {
           // Unknown object type
           console.warn('Skipping unknown file object type');
@@ -463,7 +492,7 @@ export const FileGrid = ({
             name: f.name,
             size: f.size,
             type: f.type,
-            fullPath: 'N/A',
+            fullPath: 'webkitRelativePath' in f && (f as any).webkitRelativePath ? (f as any).webkitRelativePath : 'N/A',
             lastModified: f.lastModified,
             webkitRelativePath: 'webkitRelativePath' in f ? (f as any).webkitRelativePath : 'N/A'
           };
@@ -511,6 +540,11 @@ export const FileGrid = ({
         
         if ('file' in fileObj && fileObj.file instanceof File) {
           fullPath = fileObj.fullPath;
+        } else if (fileObj instanceof File) {
+          // Check for webkitRelativePath in regular File objects too
+          if ('webkitRelativePath' in fileObj && (fileObj as any).webkitRelativePath) {
+            fullPath = (fileObj as any).webkitRelativePath;
+          }
         }
         
         // If we have a full path structure (e.g., "qwes/subfolder/file.txt"), we need to:
@@ -589,7 +623,10 @@ export const FileGrid = ({
         } else if (fileObj instanceof File) {
           // Regular File object
           file = fileObj;
-          fullPath = fileObj.name;
+          // Check for webkitRelativePath in regular File objects too
+          if ('webkitRelativePath' in fileObj && (fileObj as any).webkitRelativePath) {
+            fullPath = (fileObj as any).webkitRelativePath;
+          }
         } else {
           throw new Error('Invalid file object');
         }
