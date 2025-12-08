@@ -27,7 +27,7 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-start-dragging",
     {
-      "identifier": "opener:allow-open-path",
+      "identifier": "opener:allow-reveal-item-in-dir",
       "allow": [{ "path": "*" }]
     }
   ]

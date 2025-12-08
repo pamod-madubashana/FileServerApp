@@ -32,15 +32,9 @@ fn log_error(message: &str) {
 // Command to open a file's folder in the system file explorer
 #[tauri::command]
 fn open_file_in_folder(path: String, app: tauri::AppHandle) -> Result<(), String> {
-    let folder = Path::new(&path)
-        .parent()
-        .ok_or("No parent folder")?
-        .to_string_lossy()
-        .to_string();
-
-    // correct API: call open_path on the app.opener() (OpenerExt)
+    // Use reveal_item_in_dir to open the folder containing the file
     app.opener()
-        .open_path(folder)
+        .reveal_item_in_dir(path)
         .map_err(|e| e.to_string())?;
 
     Ok(())
