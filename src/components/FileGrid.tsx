@@ -134,7 +134,6 @@ export const FileGrid = ({
         unlistenDragEnter = await eventModule.listen('tauri://drag-enter', (event: Event<any>) => {
           // Increment the drag counter, ensuring it doesn't go negative
           dragCounter.current = Math.max(0, dragCounter.current + 1);
-          console.log('Tauri drag enter, counter:', dragCounter.current);
           
           // Only set drag over state for actual file drags (not internal moves)
           // In Tauri, we can't access DataTransfer data, so we rely on our internal state
@@ -161,11 +160,9 @@ export const FileGrid = ({
           
           if (event && event.payload) {
             // The payload should contain the file paths
-            console.log('Tauri drag drop event:', event.payload);
             // Check if this is an internal move by checking if we have a dragged item
             // In Tauri, we can't access DataTransfer data, so we rely on our internal state
             if (draggedItemRef.current) {
-              console.log('Internal drag detected in Tauri, ignoring file upload');
               // Don't process as file upload, let the item drop handlers handle it
               return;
             }
@@ -180,7 +177,6 @@ export const FileGrid = ({
         unlistenDragLeave = await eventModule.listen('tauri://drag-leave', (event: Event<any>) => {
           // Always decrement the drag counter on drag leave
           dragCounter.current = Math.max(0, dragCounter.current - 1);
-          console.log('Tauri drag leave, counter:', dragCounter.current);
           
           // Clear drag over state when counter is 0
           if (dragCounter.current === 0) {
@@ -663,7 +659,6 @@ export const FileGrid = ({
     e.preventDefault();
     e.stopPropagation();
     
-    
     // Increment the drag counter, ensuring it doesn't go negative
     dragCounter.current = Math.max(0, dragCounter.current + 1);
     
@@ -681,7 +676,6 @@ export const FileGrid = ({
     const hasFiles = e.dataTransfer.types.includes('Files');
     if (hasFiles) {
       setIsDragActive(true);
-    } else {
     }
   };
 
@@ -689,22 +683,18 @@ export const FileGrid = ({
     e.preventDefault();
     e.stopPropagation();
     
-    
     // Always decrement the drag counter on drag leave
     dragCounter.current = Math.max(0, dragCounter.current - 1);
     
     // Only hide the overlay if drag counter is 0
     if (dragCounter.current === 0) {
       setIsDragActive(false);
-    } else {
     }
   };
 
   const handleFileDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log('Drag over event');
     
     // Check for internal drag data first - this indicates item moves, not file uploads
     // Check for both application/json and text/plain for compatibility
@@ -713,14 +703,12 @@ export const FileGrid = ({
     
     // If it's an internal drag, don't set drop effect
     if (hasInternalData) {
-      console.log('Internal drag detected on over, not setting drop effect');
       return;
     }
     
     // Only set drop effect for actual file drags (not internal moves)
     const hasFiles = e.dataTransfer.types.includes('Files');
     if (hasFiles) {
-      console.log('Setting drop effect for file drag');
       e.dataTransfer.dropEffect = 'copy';
     }
   };
@@ -734,57 +722,31 @@ export const FileGrid = ({
     setIsDragActive(false);
     
     try {
-      console.log('File drop event received');
-      console.log('Data transfer types:', e.dataTransfer.types);
-      console.log('Has files:', e.dataTransfer.types.includes('Files'));
-      console.log('Files length:', e.dataTransfer.files?.length);
-      console.log('Items length:', e.dataTransfer.items?.length);
-      
-      // Log each item
-      if (e.dataTransfer.items) {
-        for (let i = 0; i < e.dataTransfer.items.length; i++) {
-          const item = e.dataTransfer.items[i];
-          console.log(`Item ${i}: kind=${item.kind}, type=${item.type}`);
-          if (item.getAsFileSystemHandle) {
-            console.log(`Item ${i} has getAsFileSystemHandle`);
-          }
-          if ('webkitGetAsEntry' in item) {
-            console.log(`Item ${i} has webkitGetAsEntry`);
-          }
-        }
-      }
-      
       // Check for internal drag data first - this indicates item moves, not file uploads
       // Check for both application/json and text/plain for compatibility
       const hasInternalData = e.dataTransfer.types.includes('application/json') || 
                              e.dataTransfer.types.includes('text/plain');
-      console.log('Has internal data:', hasInternalData);
       
       // If it's an internal drag, don't treat as file upload regardless of other data types
       if (hasInternalData) {
         // This is an internal item drag, let the item drop handlers handle it
         // If no item drop handler caught it, it means it was dropped in an invalid location
         // In this case, we should just clear the drag state
-        console.log('Internal drag detected, ignoring file upload');
         setDraggedItem(null);
         return;
       }
       
       // Check for actual file data from OS (only if no internal data)
       const hasFiles = e.dataTransfer.types.includes('Files');
-      console.log('Processing file drop, hasFiles:', hasFiles);
       
       // If it's a file drag from OS, handle as file upload
       if (hasFiles) {
-        console.log('Handling file drag from OS');
-        
         // Process items synchronously within the event handler
         // Due to browser security restrictions, we must access DataTransfer items immediately
         
         // Try modern FileSystemHandle API first (synchronously)
         const modernFiles = await processItemsWithModernAPI(e.dataTransfer.items);
         if (modernFiles && modernFiles.length > 0) {
-          console.log('Processed files with modern API:', modernFiles.length);
           handleFileUpload(modernFiles);
           return;
         }
@@ -792,19 +754,16 @@ export const FileGrid = ({
         // Try legacy Entry API (synchronously)
         const legacyFiles = await processItemsWithLegacyAPI(e.dataTransfer.items);
         if (legacyFiles && legacyFiles.length > 0) {
-          console.log('Processed files with legacy API:', legacyFiles.length);
           handleFileUpload(legacyFiles);
           return;
         }
         
         // Fallback to direct file access
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          console.log('Found files directly in dataTransfer.files');
           const files = e.dataTransfer.files;
           
           // Convert to array and process
           const fileListArray = Array.from(files);
-          console.log('Processing', fileListArray.length, 'files from dataTransfer.files');
           
           // Create TraversedFile objects for each file
           const traversedFiles: TraversedFile[] = fileListArray.map(file => ({
@@ -816,29 +775,22 @@ export const FileGrid = ({
             lastModified: file.lastModified
           }));
           
-          console.log('Created traversed files:', traversedFiles.length);
-          
           // Handle the upload
           handleFileUpload(traversedFiles);
           return;
         }
         
         // If we get here, we couldn't process any files
-        console.log('Could not process any files from drop');
         alert('Unable to process the dropped files. Please try dragging files directly from your file manager.');
         return;
-      } else {
-        console.log('No file data detected in drop event');
       }
     } catch (error) {
-      console.error('Error handling file drop:', error);
       alert('Failed to handle file drop. Please try again.');
     }
   };
   
   // Process items with modern FileSystemHandle API
   const processItemsWithModernAPI = async (items: DataTransferItemList): Promise<TraversedFile[] | null> => {
-    console.log('Processing items with modern API');
     const allFiles: TraversedFile[] = [];
     let hasHandles = false;
     
@@ -867,7 +819,6 @@ export const FileGrid = ({
                   lastModified: file.lastModified
                 });
               } catch (error) {
-                console.warn(`Failed to get file from handle:`, error);
               }
             } else if (isFileSystemDirectoryHandle(handle)) {
               try {
@@ -875,12 +826,10 @@ export const FileGrid = ({
                 const files = await traverseDirectoryWithHandle(handle, handle.name);
                 allFiles.push(...files);
               } catch (error) {
-                console.warn(`Failed to traverse directory:`, error);
               }
             }
           }
         } catch (error) {
-          console.warn('Error getting FileSystemHandle:', error);
         }
       }
     }
@@ -890,7 +839,6 @@ export const FileGrid = ({
   
   // Process items with legacy Entry API
   const processItemsWithLegacyAPI = async (items: DataTransferItemList): Promise<TraversedFile[] | null> => {
-    console.log('Processing items with legacy API');
     const allFiles: TraversedFile[] = [];
     let hasEntries = false;
     
@@ -996,46 +944,45 @@ export const FileGrid = ({
     basePath: string = ''
   ): Promise<TraversedFile[]> => {
     const files: TraversedFile[] = [];
-    
+
     try {
       const reader = entry.createReader();
       const entries: any[] = await new Promise((resolve, reject) => {
         reader.readEntries(resolve, reject);
       });
-      
+
       for (const childEntry of entries) {
-        const fullPath = basePath ? `${basePath}/${childEntry.name}` : childEntry.name;
-        
-        if (childEntry.isFile) {
+        const fullPath = basePath ? `${basePath}/${(childEntry as any).name}` : (childEntry as any).name;
+
+        if ((childEntry as any).isFile) {
           try {
             const file = await new Promise<File>((resolve, reject) => {
-              childEntry.file(resolve, reject);
+              (childEntry as any).file(resolve, reject);
             });
-            
+
+            const finalFullPath = basePath ? `${basePath}/${(childEntry as any).name}` : (childEntry as any).name;
+
             files.push({
               file,
               name: file.name,
-              fullPath,
+              fullPath: finalFullPath,
               size: file.size,
               type: file.type,
               lastModified: file.lastModified
             });
           } catch (error) {
-            console.warn(`Failed to get file ${fullPath}:`, error);
           }
-        } else if (childEntry.isDirectory) {
+        } else if ((childEntry as any).isDirectory) {
           try {
             const subFiles = await traverseDirectoryWithEntry(childEntry, fullPath);
             files.push(...subFiles);
           } catch (error) {
-            console.warn(`Failed to traverse directory ${fullPath}:`, error);
           }
         }
       }
     } catch (error) {
-      console.warn(`Failed to read directory entries for ${entry.name}:`, error);
     }
-    
+
     return files;
   };
 
@@ -1062,7 +1009,6 @@ export const FileGrid = ({
       onMove(draggedItem, targetItem);
       setDraggedItem(null);
     } catch (error) {
-      console.error('Error handling item drop:', error);
       // Clear drag state on error
       setDraggedItem(null);
       alert('Failed to move item. Please try again.');
