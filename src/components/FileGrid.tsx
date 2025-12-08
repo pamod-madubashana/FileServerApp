@@ -457,7 +457,10 @@ export const FileGrid = ({
       // Collect all unique top-level folder names that need to be created
       const topLevelFoldersToCreate = new Set<string>();
       
-      // Process each file to determine top-level folders
+      // Collect all unique folder paths that need to be created
+      const folderPathsToCreate = new Set<string>();
+      
+      // Process each file to determine all folder paths in the hierarchy
       validFiles.forEach(fileObj => {
         let fullPath: string | undefined;
         
@@ -465,9 +468,9 @@ export const FileGrid = ({
           fullPath = fileObj.fullPath;
         }
         
-        // If we have a full path structure (e.g., "qwes/ITN.txt"), we need to:
-        // 1. Extract the top-level folder name (e.g., "qwes")
-        // 2. Add it to our set of folders to create
+        // If we have a full path structure (e.g., "qwes/subfolder/file.txt"), we need to:
+        // 1. Extract all folder paths in the hierarchy
+        // 2. Add them to our set of folders to create
         if (fullPath && fullPath.includes('/')) {
           const pathParts = fullPath.split('/');
           console.log(`Processing fullPath: ${fullPath}, pathParts:`, pathParts);
@@ -479,33 +482,53 @@ export const FileGrid = ({
           }
           
           if (pathParts.length >= 1) {
-            // Get the top-level folder name (first part of the path)
-            const topLevelFolder = pathParts[0];
-            console.log(`Top level folder: ${topLevelFolder}`);
+            // Create all intermediate folder paths
+            // For a path like "folder1/subfolder1/subfolder2/file.txt"
+            // We need to create folder paths: 
+            // - currentPathStr/folder1
+            // - currentPathStr/folder1/subfolder1
+            // - currentPathStr/folder1/subfolder1/subfolder2
             
-            // Skip if the top-level folder is just "Home"
-            if (topLevelFolder === 'Home') {
-              console.log(`Skipping top-level folder that is 'Home': ${topLevelFolder}`);
-              return;
+            let cumulativePath = "";
+            for (let i = 0; i < pathParts.length - 1; i++) { // -1 because we don't want the filename
+              if (i === 0) {
+                cumulativePath = pathParts[i];
+              } else {
+                cumulativePath = `${cumulativePath}/${pathParts[i]}`;
+              }
+              
+              folderPathsToCreate.add(cumulativePath);
+              console.log(`Adding folder path to create: ${cumulativePath}`);
             }
-            
-            topLevelFoldersToCreate.add(topLevelFolder);
           }
         }
       });
       
-      // Create all required top-level folders using the simple create_folder API
-      console.log('Creating top-level folders:', Array.from(topLevelFoldersToCreate));
-      for (const folderName of topLevelFoldersToCreate) {
+      // Create all required folder paths using the recursive create_folder_path API
+      console.log('Creating folder paths:', Array.from(folderPathsToCreate));
+      for (const folderPath of folderPathsToCreate) {
         try {
-          console.log(`Creating folder '${folderName}' in path '${currentPathStr}'`);
-          // The folder's path parameter represents WHERE the folder is located
-          // For example, if we're in /Home/Documents and creating folder "qwes", 
-          // we call createFolder("qwes", "/Home/Documents") - the folder will be located at /Home/Documents
-          await api.createFolder(folderName, currentPathStr);
-          console.log(`Successfully created folder: ${folderName}`);
+          console.log(`Creating folder path '${folderPath}' in base path '${currentPathStr}'`);
+          // Construct the full path by combining current path with the relative folder path
+          let fullPathToCreate;
+          if (currentPathStr === '/') {
+            // If we're at root, the full path is "/Home/folderPath"
+            fullPathToCreate = `/Home/${folderPath}`;
+          } else if (currentPathStr === '/Home') {
+            // If we're in /Home, just append the folderPath
+            fullPathToCreate = `/Home/${folderPath}`;
+          } else {
+            // If we're in a subdirectory like /Home/Documents, combine the paths correctly
+            // Ensure currentPathStr doesn't end with slash
+            const cleanCurrentPath = currentPathStr.replace(/\/$/, ''); // Remove trailing slash
+            fullPathToCreate = `${cleanCurrentPath}/${folderPath}`;
+          }
+          
+          console.log(`Calling createFolderPath with full path: ${fullPathToCreate}`);
+          await api.createFolderPath(fullPathToCreate);
+          console.log(`Successfully created folder path: ${fullPathToCreate}`);
         } catch (error) {
-          console.warn(`Error creating folder ${folderName}:`, error);
+          console.warn(`Error creating folder path ${folderPath}:`, error);
         }
       }
       
