@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, FolderOpen, User, Settings, LogOut, Info } from "lucide-react";
+import { Home, FolderOpen, User, Settings, LogOut, Info, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
@@ -98,6 +98,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
   const baseNavItems = [
     { name: "Profile", path: "/profile", icon: User },
     { name: "Settings", path: "/settings", icon: Settings },
+    { name: "Downloads", path: "/downloads", icon: Download },
     { name: "Usage", path: "/usage", icon: Info },
   ];
 
@@ -120,6 +121,12 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
       window.dispatchEvent(event);
       // Also navigate to the settings route
       navigate("/settings");
+    } else if (item === "Downloads") {
+      // Dispatch event to show downloads in file explorer area
+      const event = new CustomEvent('showDownloads');
+      window.dispatchEvent(event);
+      // Also navigate to the downloads route
+      navigate("/downloads");
     } else if (item === "Users") {
       // Dispatch event to show users in file explorer area
       const event = new CustomEvent('showUsers');

@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Download as DownloadIcon, X as XIcon, RotateCcw as RotateCcwIcon } from "lucide-react";
+import { Download as DownloadIcon, X as XIcon, RotateCcw as RotateCcwIcon, ListOrdered } from "lucide-react";
 import { downloadManager, DownloadItem } from "@/lib/downloadManager";
+import { useNavigate } from "react-router-dom";
 
 import { invoke } from "@tauri-apps/api/core";
 
@@ -16,6 +17,7 @@ interface DownloadQueueProps {
 const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: externalIsOpen, onToggle }) => {
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Use external isOpen if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -65,7 +67,10 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
     }
   };
 
-  // Filter downloads by status
+  // Get today's downloads, limited to 6
+  const recentDownloads = downloadManager.getTodayDownloads(6);
+  
+  // Filter downloads by status for the full list
   const queuedDownloads = downloads.filter(d => d.status === 'queued');
   const activeDownloads = downloads.filter(d => d.status === 'downloading');
   const completedDownloads = downloads.filter(d => d.status === 'completed');
@@ -97,7 +102,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
         <Card className="w-80 shadow-xl backdrop-blur-md bg-background/80 border border-border/50">
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">Downloads</CardTitle>
+              <CardTitle className="text-lg">Recent Downloads</CardTitle>
               <div className="flex gap-1">
                 <Button 
                   variant="ghost" 
@@ -118,17 +123,17 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
               </div>
             </div>
             <CardDescription>
-              {activeDownloads.length} active, {queuedDownloads.length} queued
+              {activeDownloads.length} active, {recentDownloads.length} recent
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0 max-h-96 overflow-y-auto overflow-x-hidden custom-scrollbar">
-            {downloads.length === 0 ? (
+            {recentDownloads.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground">
-                No downloads in queue
+                No recent downloads
               </div>
             ) : (
               <div className="divide-y">
-                {[...activeDownloads, ...queuedDownloads, ...completedDownloads, ...failedDownloads].map((download) => (
+                {recentDownloads.map((download) => (
                   <div key={download.id} className="p-3 hover:bg-muted/50 transition-all duration-200 hover:scale-[1.01] backdrop-blur-sm bg-background/30 rounded-lg border border-border/20 mb-1">
                     <div 
                       className="flex justify-between items-start mb-1 cursor-pointer"
@@ -220,6 +225,20 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                 ))}
               </div>
             )}
+            <div className="p-3 border-t">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full"
+                onClick={() => {
+                  handleToggle();
+                  navigate("/downloads");
+                }}
+              >
+                <ListOrdered className="h-4 w-4 mr-2" />
+                View All Downloads
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

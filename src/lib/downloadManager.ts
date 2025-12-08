@@ -155,6 +155,32 @@ export class DownloadManager {
     return Array.from(this.downloads.values());
   }
 
+  // Get downloads from today
+  getTodayDownloads(limit?: number): DownloadItem[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayDownloads = Array.from(this.downloads.values()).filter(download => {
+      if (!download.endTime) return false;
+      const downloadDate = new Date(download.endTime);
+      downloadDate.setHours(0, 0, 0, 0);
+      return downloadDate.getTime() === today.getTime();
+    });
+    
+    // Sort by endTime descending (most recent first)
+    todayDownloads.sort((a, b) => {
+      if (!a.endTime || !b.endTime) return 0;
+      return b.endTime.getTime() - a.endTime.getTime();
+    });
+    
+    // Apply limit if specified
+    if (limit !== undefined) {
+      return todayDownloads.slice(0, limit);
+    }
+    
+    return todayDownloads;
+  }
+
   // Get a specific download by ID
   getDownloadById(id: string): DownloadItem | undefined {
     return this.downloads.get(id);

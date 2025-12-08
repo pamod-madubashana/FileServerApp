@@ -8,6 +8,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import TestDownload from "./pages/TestDownload";
+import Downloads from "./pages/Downloads";
 import { NavigationSidebar } from "@/components/NavigationSidebar";
 import { AuthWrapper } from "@/components/AuthWrapper";
 // Remove the import for DownloadQueue since we're moving it to the FileExplorer
@@ -33,6 +34,7 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/settings" element={<Index />} />
         <Route path="/profile" element={<Index />} />
+        <Route path="/downloads" element={<Index />} />
         <Route path="/" element={<Index />} />
         {/* Handle dynamic paths for file explorer */}
         <Route path="/:path/*" element={<Index />} />

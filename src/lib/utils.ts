@@ -174,10 +174,17 @@ async function downloadFileBrowser(url: string, filename: string, onProgress?: (
   }
   
   // Fetch the file with progress tracking
-  const response = await fetch(url, { 
-    headers,
-    credentials: 'include' // Include cookies for session-based auth
-  });
+  // Only include credentials if we're in a Tauri environment to avoid CORS issues
+  const fetchOptions: RequestInit = {
+    headers
+  };
+  
+  // Only include credentials in Tauri environment to avoid CORS issues with wildcard origins
+  if (isTauri) {
+    fetchOptions.credentials = 'include';
+  }
+  
+  const response = await fetch(url, fetchOptions);
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
