@@ -93,6 +93,12 @@ export const FileGrid = ({
   const [uploadingFiles, setUploadingFiles] = useState<File[] | null>(null); // Track uploading files
   const [isDirectoryUpload, setIsDirectoryUpload] = useState(false); // Track if this is a directory upload
   const dragCounter = useRef(0); // Track drag enter/leave events
+  const draggedItemRef = useRef<FileItem | null>(null); // Ref for dragged item to access in Tauri events
+  
+  // Update the ref whenever draggedItem changes
+  useEffect(() => {
+    draggedItemRef.current = draggedItem;
+  }, [draggedItem]);
   
   // Reference for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -117,14 +123,20 @@ export const FileGrid = ({
         
         // Listen for Tauri drag enter events
         unlistenDragEnter = await eventModule.listen('tauri://drag-enter', (event: Event<any>) => {
-          // Set drag over state when entering
-          setIsDragActive(true);
+          // Only set drag over state for actual file drags (not internal moves)
+          // In Tauri, we can't access DataTransfer data, so we rely on our internal state
+          if (!draggedItemRef.current) {
+            setIsDragActive(true);
+          }
         });
 
         // Listen for Tauri drag over events
         unlistenDragOver = await eventModule.listen('tauri://drag-over', (event: Event<any>) => {
-          // Keep drag over state
-          setIsDragActive(true);
+          // Keep drag over state for actual file drags (not internal moves)
+          // In Tauri, we can't access DataTransfer data, so we rely on our internal state
+          if (!draggedItemRef.current) {
+            setIsDragActive(true);
+          }
         });
 
         // Listen for Tauri drag drop events
@@ -134,8 +146,17 @@ export const FileGrid = ({
           if (event && event.payload) {
             // The payload should contain the file paths
             console.log('Tauri drag drop event:', event.payload);
-            // In a real implementation, we would need to handle the file paths
-            // This is a simplified version for now
+            // Check if this is an internal move by checking if we have a dragged item
+            // In Tauri, we can't access DataTransfer data, so we rely on our internal state
+            if (draggedItemRef.current) {
+              console.log('Internal drag detected in Tauri, ignoring file upload');
+              // Don't process as file upload, let the item drop handlers handle it
+              return;
+            }
+            
+            // If no internal drag, process as file upload
+            // Note: This is a simplified version - in a real implementation, 
+            // we would need to handle the file paths from the payload
           }
         });
 
@@ -259,7 +280,9 @@ export const FileGrid = ({
   const handleDragStart = (e: React.DragEvent, item: FileItem) => {
     setDraggedItem(item);
     e.dataTransfer.effectAllowed = "move";
+    // Set both application/json and text/plain data to ensure compatibility
     e.dataTransfer.setData("application/json", JSON.stringify(item));
+    e.dataTransfer.setData("text/plain", JSON.stringify(item));
     
     // In Tauri, we might need to explicitly set the drag image
     if (isTauri) {
@@ -624,9 +647,21 @@ export const FileGrid = ({
     console.log('Drag enter event');
     console.log('Data transfer types:', e.dataTransfer.types);
     
-    // Check if the drag contains files
-    if (e.dataTransfer.types.includes('Files')) {
-      console.log('Setting drag active state');
+    // Check for internal drag data first - this indicates item moves, not file uploads
+    // Check for both application/json and text/plain for compatibility
+    const hasInternalData = e.dataTransfer.types.includes('application/json') || 
+                           e.dataTransfer.types.includes('text/plain');
+    
+    // If it's an internal drag, don't set drag active state
+    if (hasInternalData) {
+      console.log('Internal drag detected on enter, not setting drag active state');
+      return;
+    }
+    
+    // Only set drag active for actual file drags (not internal moves)
+    const hasFiles = e.dataTransfer.types.includes('Files');
+    if (hasFiles) {
+      console.log('Setting drag active state for file drag');
       setIsDragActive(true);
     } else {
       console.log('Not setting drag active - no files in drag');
@@ -654,8 +689,23 @@ export const FileGrid = ({
     
     console.log('Drag over event');
     
-    // Necessary to allow drop events
-    e.dataTransfer.dropEffect = 'copy';
+    // Check for internal drag data first - this indicates item moves, not file uploads
+    // Check for both application/json and text/plain for compatibility
+    const hasInternalData = e.dataTransfer.types.includes('application/json') || 
+                           e.dataTransfer.types.includes('text/plain');
+    
+    // If it's an internal drag, don't set drop effect
+    if (hasInternalData) {
+      console.log('Internal drag detected on over, not setting drop effect');
+      return;
+    }
+    
+    // Only set drop effect for actual file drags (not internal moves)
+    const hasFiles = e.dataTransfer.types.includes('Files');
+    if (hasFiles) {
+      console.log('Setting drop effect for file drag');
+      e.dataTransfer.dropEffect = 'copy';
+    }
   };
 
   // Handle file drop with modern folder traversal
@@ -685,11 +735,10 @@ export const FileGrid = ({
         }
       }
       
-      // Reset any previous drag state
-      setDraggedItem(null);
-      
-      // Check for internal drag data (JSON) - this indicates item moves, not file uploads
-      const hasInternalData = e.dataTransfer.types.includes('application/json');
+      // Check for internal drag data first - this indicates item moves, not file uploads
+      // Check for both application/json and text/plain for compatibility
+      const hasInternalData = e.dataTransfer.types.includes('application/json') || 
+                             e.dataTransfer.types.includes('text/plain');
       console.log('Has internal data:', hasInternalData);
       
       // If it's an internal drag, don't treat as file upload regardless of other data types
@@ -702,7 +751,7 @@ export const FileGrid = ({
         return;
       }
       
-      // Check for actual file data from OS
+      // Check for actual file data from OS (only if no internal data)
       const hasFiles = e.dataTransfer.types.includes('Files');
       console.log('Processing file drop, hasFiles:', hasFiles);
       
@@ -985,6 +1034,8 @@ export const FileGrid = ({
 
     try {
       if (!draggedItem || targetItem.type !== "folder" || draggedItem.name === targetItem.name) {
+        // Clear drag state even if we can't move the item
+        setDraggedItem(null);
         return;
       }
 
@@ -993,6 +1044,8 @@ export const FileGrid = ({
       setDraggedItem(null);
     } catch (error) {
       console.error('Error handling item drop:', error);
+      // Clear drag state on error
+      setDraggedItem(null);
       alert('Failed to move item. Please try again.');
     }
   };
