@@ -5,8 +5,6 @@ import { Progress } from "@/components/ui/progress";
 import { Download as DownloadIcon, X as XIcon, RotateCcw as RotateCcwIcon } from "lucide-react";
 import { downloadManager, DownloadItem } from "@/lib/downloadManager";
 
-// Import Tauri opener plugin for opening files
-import { openPath } from '@tauri-apps/plugin-opener';
 import { invoke } from "@tauri-apps/api/core";
 
 interface DownloadQueueProps {

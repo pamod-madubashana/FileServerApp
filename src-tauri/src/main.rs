@@ -6,7 +6,7 @@ use tokio::io::AsyncWriteExt;
 use futures::StreamExt;
 use dirs;
 use std::path::Path;
-use tauri_plugin_shell::ShellExt;
+use tauri_plugin_shell::open as open_shell;
 
 // Logging commands that can be called from the frontend
 #[tauri::command]
@@ -31,16 +31,14 @@ fn log_error(message: &str) {
 
 // Command to open a file's folder in the system file explorer
 #[tauri::command]
-fn open_file_in_folder(path: String, app: tauri::AppHandle) -> Result<(), String> {
+fn open_file_in_folder(path: String) -> Result<(), String> {
     let folder = std::path::Path::new(&path)
         .parent()
         .ok_or("No parent folder")?
         .to_string_lossy()
         .to_string();
 
-    app.shell()
-        .open(folder, None)
-        .map_err(|e| e.to_string())?;
+    open_shell(&folder, None).map_err(|e| e.to_string())?;
 
     Ok(())
 }
