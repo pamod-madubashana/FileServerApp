@@ -7,6 +7,7 @@ import { downloadManager, DownloadItem } from "@/lib/downloadManager";
 
 // Import Tauri opener plugin for opening files
 import { openPath } from '@tauri-apps/plugin-opener';
+import { invoke } from "@tauri-apps/api/core";
 
 interface DownloadQueueProps {
   className?: string;
@@ -55,6 +56,15 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
 
   const clearCompleted = () => {
     downloadManager.clearCompleted();
+  };
+
+  // Function to open a downloaded file's folder
+  const openDownloadedFile = async (path: string) => {
+    try {
+      await invoke("open_file_in_folder", { path });
+    } catch (error) {
+      console.error("Failed to open file folder:", error);
+    }
   };
 
   // Filter downloads by status
@@ -133,12 +143,10 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                           console.log('Download item clicked:', { isTauri, filePath: download.filePath, download });
                           
                           if (isTauri) {
-                            // For Tauri, use the file path to open with system default app
+                            // For Tauri, use the file path to open the folder containing the file
                             if (download.filePath) {
-                              console.log('Opening file in Tauri:', download.filePath);
-                              openPath(download.filePath).catch(err => {
-                                console.error('Failed to open file:', err);
-                              });
+                              console.log('Opening file folder in Tauri:', download.filePath);
+                              openDownloadedFile(download.filePath);
                             } else {
                               console.log('No filePath available for download:', download);
                             }

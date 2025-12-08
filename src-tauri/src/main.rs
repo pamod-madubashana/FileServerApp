@@ -1,7 +1,7 @@
 // Always show console window for debugging - removed conditional compilation
 #![windows_subsystem = "console"]
 
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 use tokio::io::AsyncWriteExt;
 use futures::StreamExt;
 use dirs;
@@ -26,6 +26,19 @@ fn log_warn(message: &str) {
 #[tauri::command]
 fn log_error(message: &str) {
     log::error!("{}", message);
+}
+
+// Command to open a file's folder in the system file explorer
+#[tauri::command]
+async fn open_file_in_folder(path: String, app_handle: tauri::AppHandle) -> Result<(), String> {
+    let folder = std::path::Path::new(&path)
+        .parent()
+        .ok_or("No parent folder")?
+        .to_string_lossy()
+        .to_string();
+
+    tauri::api::shell::open(&app_handle, &folder, None).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 // Download command that downloads a file from a URL and saves it to a specified path
@@ -134,7 +147,8 @@ fn main() {
       log_info,
       log_warn,
       log_error,
-      download_file
+      download_file,
+      open_file_in_folder
     ])
     .setup(|_app| {
       // Log startup messages after logger is initialized
