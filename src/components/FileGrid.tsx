@@ -123,6 +123,10 @@ export const FileGrid = ({
         
         // Listen for Tauri drag enter events
         unlistenDragEnter = await eventModule.listen('tauri://drag-enter', (event: Event<any>) => {
+          // Increment the drag counter
+          dragCounter.current++;
+          console.log('Tauri drag enter, counter:', dragCounter.current);
+          
           // Only set drag over state for actual file drags (not internal moves)
           // In Tauri, we can't access DataTransfer data, so we rely on our internal state
           if (!draggedItemRef.current) {
@@ -142,7 +146,10 @@ export const FileGrid = ({
         // Listen for Tauri drag drop events
         unlistenDragDrop = await eventModule.listen('tauri://drag-drop', (event: Event<any>) => {
           // Handle dropped files in Tauri
+          // Reset the drag counter and clear drag state
+          dragCounter.current = 0;
           setIsDragActive(false);
+          
           if (event && event.payload) {
             // The payload should contain the file paths
             console.log('Tauri drag drop event:', event.payload);
@@ -162,8 +169,14 @@ export const FileGrid = ({
 
         // Listen for Tauri drag leave events
         unlistenDragLeave = await eventModule.listen('tauri://drag-leave', (event: Event<any>) => {
-          // Clear drag over state when leaving
-          setIsDragActive(false);
+          // Always decrement the drag counter on drag leave
+          dragCounter.current = Math.max(0, dragCounter.current - 1);
+          console.log('Tauri drag leave, counter:', dragCounter.current);
+          
+          // Clear drag over state when counter is 0
+          if (dragCounter.current === 0) {
+            setIsDragActive(false);
+          }
         });
       } catch (error) {
         console.error('Failed to initialize Tauri drag listeners:', error);
@@ -647,6 +660,10 @@ export const FileGrid = ({
     console.log('Drag enter event');
     console.log('Data transfer types:', e.dataTransfer.types);
     
+    // Increment the drag counter
+    dragCounter.current++;
+    console.log('Drag counter incremented:', dragCounter.current);
+    
     // Check for internal drag data first - this indicates item moves, not file uploads
     // Check for both application/json and text/plain for compatibility
     const hasInternalData = e.dataTransfer.types.includes('application/json') || 
@@ -673,13 +690,19 @@ export const FileGrid = ({
     e.stopPropagation();
     
     console.log('Drag leave event');
+    console.log('Target:', e.target);
+    console.log('Current target:', e.currentTarget);
     
-    // Only hide the overlay if we're leaving the main container, not child elements
-    if (e.target === e.currentTarget) {
+    // Always decrement the drag counter on drag leave
+    dragCounter.current = Math.max(0, dragCounter.current - 1);
+    console.log('Drag counter decremented:', dragCounter.current);
+    
+    // Only hide the overlay if drag counter is 0
+    if (dragCounter.current === 0) {
       console.log('Setting drag inactive state');
       setIsDragActive(false);
     } else {
-      console.log('Not setting drag inactive - still over child elements');
+      console.log('Not setting drag inactive - drag counter > 0');
     }
   };
 
@@ -712,6 +735,8 @@ export const FileGrid = ({
   const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    // Reset the drag counter and clear drag state
+    dragCounter.current = 0;
     setIsDragActive(false);
     
     try {
