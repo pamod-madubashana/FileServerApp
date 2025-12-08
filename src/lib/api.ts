@@ -387,10 +387,21 @@ export const api = {
             throw new Error(`Failed to fetch user profile: ${response.statusText}`);
         }
 
-        return response.json();
-    },
-
-    async isUserOwner(): Promise<IsOwnerResponse> {
+        const data = await response.json();
+        
+        // Map snake_case fields to camelCase
+        const userProfile: UserProfile = {
+            username: data.username,
+            email: data.email,
+            telegram_user_id: data.telegram_user_id,
+            telegram_username: data.telegram_username,
+            telegram_first_name: data.telegram_first_name,
+            telegram_last_name: data.telegram_last_name,
+            telegram_profile_picture: data.telegram_profile_picture
+        };
+        
+        return userProfile;
+    },    async isUserOwner(): Promise<IsOwnerResponse> {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
@@ -403,11 +414,18 @@ export const api = {
             throw new Error(`Failed to check owner status: ${response.statusText}`);
         }
 
-        return response.json();
+        const data = await response.json();
+        
+        // Map snake_case fields to camelCase
+        const isOwnerResponse: IsOwnerResponse = {
+            is_owner: data.is_owner,
+            owner_telegram_id: data.owner_telegram_id
+        };
+        
+        return isOwnerResponse;
     },
 
-    async getUsers(): Promise<UsersResponse> {
-        const baseUrl = getApiBaseUrl();
+    async getUsers(): Promise<UsersResponse> {        const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
         // Prepare fetch options
@@ -425,9 +443,25 @@ export const api = {
             throw new Error(`Failed to fetch users: ${response.statusText}`);
         }
 
-        return response.json();
+        const data = await response.json();
+        
+        // Map snake_case fields to camelCase
+        const usersResponse: UsersResponse = {
+            users: data.users.map((user: any) => ({
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                telegramUserId: user.telegram_user_id,
+                telegramUsername: user.telegram_username,
+                permissions: user.permissions,
+                createdAt: user.created_at,
+                lastActive: user.last_active,
+                userType: user.user_type
+            }))
+        };
+        
+        return usersResponse;
     },
-
     async addUser(userData: AddUserRequest): Promise<User> {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
