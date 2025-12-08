@@ -161,14 +161,36 @@ export class DownloadManager {
     today.setHours(0, 0, 0, 0);
     
     const todayDownloads = Array.from(this.downloads.values()).filter(download => {
-      if (!download.endTime) return false;
+      // Include active downloads (those without endTime)
+      if (!download.endTime) {
+        // For active downloads, check if they were started today
+        if (download.startTime) {
+          const startDate = new Date(download.startTime);
+          startDate.setHours(0, 0, 0, 0);
+          return startDate.getTime() === today.getTime();
+        }
+        // If no startTime either, include them for now
+        return true;
+      }
+      
+      // For completed downloads, check if they ended today
       const downloadDate = new Date(download.endTime);
       downloadDate.setHours(0, 0, 0, 0);
       return downloadDate.getTime() === today.getTime();
     });
     
-    // Sort by endTime descending (most recent first)
+    // Sort by endTime descending (most recent first), with active downloads at the top
     todayDownloads.sort((a, b) => {
+      // Active downloads (no endTime) should be at the top
+      if (!a.endTime && b.endTime) return -1;
+      if (a.endTime && !b.endTime) return 1;
+      if (!a.endTime && !b.endTime) {
+        // Both active, sort by startTime
+        if (!a.startTime || !b.startTime) return 0;
+        return b.startTime.getTime() - a.startTime.getTime();
+      }
+      
+      // Both completed, sort by endTime
       if (!a.endTime || !b.endTime) return 0;
       return b.endTime.getTime() - a.endTime.getTime();
     });

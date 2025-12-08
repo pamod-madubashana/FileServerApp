@@ -135,6 +135,8 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     
     // Use our custom Tauri command to download the file
     console.log('[downloadFileTauri] Calling Tauri download command with:', { url, savePath: filePath, authToken });
+    
+    // Call the Tauri download command
     await invoke('download_file', { url, savePath: filePath, authToken });
     
     // Report completion
