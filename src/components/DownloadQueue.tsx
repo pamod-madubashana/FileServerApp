@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Download as DownloadIcon, X as XIcon, RotateCcw as RotateCcwIcon, ListOrdered } from "lucide-react";
+import { Download as DownloadIcon, X as XIcon, RotateCcw as RotateCcwIcon, ListOrdered, FolderOpen, Save } from "lucide-react";
 import { downloadManager, DownloadItem } from "@/lib/downloadManager";
 import { useNavigate } from "react-router-dom";
 
@@ -136,37 +136,79 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                 {recentDownloads.map((download) => (
                   <div key={download.id} className="p-3 hover:bg-muted/50 transition-all duration-200 hover:scale-[1.01] backdrop-blur-sm bg-background/30 rounded-lg border border-border/20 mb-1">
                     <div 
-                      className="flex justify-between items-start mb-1 cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Open file when clicking on completed downloads
-                        if (download.status === 'completed') {
-                          // Check if we're in Tauri environment
-                          const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
-                          console.log('Download item clicked:', { isTauri, filePath: download.filePath, download });
-                          
-                          if (isTauri) {
-                            // For Tauri, use the file path to open the folder containing the file
-                            if (download.filePath) {
-                              console.log('Opening file folder in Tauri:', download.filePath);
-                              openDownloadedFile(download.filePath);
-                            } else {
-                              console.log('No filePath available for download:', download);
-                            }
-                          } else {
-                            console.log('Not in Tauri environment, skipping file open');
-                          }
-                          // For browser, do nothing as we cannot directly open files
-                          // The user can access downloaded files through their browser's download manager
-                        }
-                      }}
+                      className="flex justify-between items-start mb-1"
                       onContextMenu={(e) => {
                         // Prevent default right-click context menu
                         e.preventDefault();
                         e.stopPropagation();
                       }}
                     >
-                      <div className="font-medium text-sm truncate">{download.filename}</div>
+                      <div 
+                        className="font-medium text-sm truncate cursor-pointer hover:underline flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Open file when clicking on completed downloads
+                          if (download.status === 'completed') {
+                            // Check if we're in Tauri environment
+                            const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+                            console.log('Download item clicked:', { isTauri, filePath: download.filePath, download });
+                            
+                            if (isTauri) {
+                              // For Tauri, use the file path to open the folder containing the file
+                              if (download.filePath) {
+                                console.log('Opening file folder in Tauri:', download.filePath);
+                                openDownloadedFile(download.filePath);
+                              } else {
+                                console.log('No filePath available for download:', download);
+                              }
+                            } else {
+                              console.log('Not in Tauri environment, skipping file open');
+                            }
+                            // For browser, do nothing as we cannot directly open files
+                            // The user can access downloaded files through their browser's download manager
+                          }
+                        }}
+                      >
+                        {download.filename}
+                      </div>
+                      {/* Folder icon - only show for Tauri app and completed downloads */}
+                      {download.status === 'completed' && typeof window !== 'undefined' && (window as any).__TAURI__ && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 p-0 ml-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Check if we're in Tauri environment
+                            const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+                            if (isTauri && download.filePath) {
+                              openDownloadedFile(download.filePath);
+                            }
+                          }}
+                        >
+                          <FolderOpen className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {/* Save icon - only show for browser and completed downloads */}
+                      {download.status === 'completed' && (typeof window === 'undefined' || !(window as any).__TAURI__) && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 p-0 ml-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // For browser, trigger download again to show save dialog
+                            if (download.url) {
+                              const link = document.createElement('a');
+                              link.href = download.url;
+                              link.download = download.filename;
+                              link.click();
+                            }
+                          }}
+                        >
+                          <Save className="h-3 w-3" />
+                        </Button>
+                      )}
                       <div className="flex gap-1">
                         {download.status === 'failed' && (
                           <Button 

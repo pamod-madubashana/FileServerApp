@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DownloadIcon, XIcon, RotateCcwIcon } from "lucide-react";
+import { DownloadIcon, XIcon, RotateCcwIcon, FolderOpen, Save } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { downloadManager, DownloadItem } from "@/lib/downloadManager";
 import { useDownloadManager } from "@/hooks/useDownloadManager";
@@ -110,10 +110,60 @@ const Downloads = () => {
                       className="p-4 border rounded-lg bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <div className="font-medium text-gray-900 dark:text-white truncate">
+                        <div 
+                          className="font-medium text-gray-900 dark:text-white truncate cursor-pointer hover:underline flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Open file when clicking on completed downloads in Tauri
+                            if (download.status === 'completed') {
+                              const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+                              if (isTauri && download.filePath) {
+                                openDownloadedFile(download.filePath);
+                              }
+                            }
+                          }}
+                        >
                           {download.filename}
                         </div>
                         <div className="flex gap-1">
+                          {/* Folder icon - only show for Tauri app and completed downloads */}
+                          {download.status === 'completed' && typeof window !== 'undefined' && (window as any).__TAURI__ && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Check if we're in Tauri environment
+                                const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+                                if (isTauri && download.filePath) {
+                                  openDownloadedFile(download.filePath);
+                                }
+                              }}
+                            >
+                              <FolderOpen className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {/* Save icon - only show for browser and completed downloads */}
+                          {download.status === 'completed' && (typeof window === 'undefined' || !(window as any).__TAURI__) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // For browser, trigger download again to show save dialog
+                                if (download.url) {
+                                  const link = document.createElement('a');
+                                  link.href = download.url;
+                                  link.download = download.filename;
+                                  link.click();
+                                }
+                              }}
+                            >
+                              <Save className="h-4 w-4" />
+                            </Button>
+                          )}
                           {download.status === 'failed' && (
                             <Button 
                               variant="ghost" 
