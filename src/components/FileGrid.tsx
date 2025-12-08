@@ -604,16 +604,8 @@ export const FileGrid = ({
       // Wait for all uploads to complete
       await Promise.all(uploadPromises);
       
-      // Reset states
-      setUploadingFiles(null);
-      setIsDirectoryUpload(false);
-      
-      // Refresh file list
-      if (onRefresh) {
-        onRefresh();
-      }
-      
-      // Show success message through UI feedback instead of alert
+      // Instead of immediately resetting state, let the progress widget handle completion
+      // The progress widget will call onComplete which will reset the state
       console.log('Files uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
@@ -1101,6 +1093,8 @@ export const FileGrid = ({
             if (onRefresh) {
               onRefresh();
             }
+            // Show success message through UI feedback
+            console.log('Upload process completed and widget closed');
           }}
           onCancel={() => {
             setUploadingFiles(null);
