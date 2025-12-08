@@ -8,6 +8,7 @@ import { ImageViewer } from "./ImageViewer";
 import { MediaPlayer } from "./MediaPlayer";
 import { Thumbnail } from "./Thumbnail";
 import { UploadProgressWidget } from "./UploadProgressWidget";
+import { FloatingUploadButton } from "./FloatingUploadButton"; // Add this import
 import { getApiBaseUrl } from "@/lib/api";
 import { getPlayerPreference } from "@/lib/playerSettings";
 import type { Event } from '@tauri-apps/api/event';
@@ -1296,6 +1297,12 @@ export const FileGrid = ({
           }
         />
       )}
+
+      {/* Floating Upload Button */}
+      <FloatingUploadButton
+        onUploadFiles={onUploadFiles}
+        onUploadFolder={onUploadFolder}
+      />
 
       {/* Image Viewer */}
       {imageViewer && (

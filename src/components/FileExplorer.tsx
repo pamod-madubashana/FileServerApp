@@ -722,6 +722,25 @@ export const FileExplorer = () => {
     }
   };
 
+  // Add these functions here, before the return statement
+  const handleUploadFiles = () => {
+    // Trigger file upload through FileGrid's ref or by exposing the function
+    const fileGridElement = document.querySelector('[data-drag-container]');
+    if (fileGridElement) {
+      const fileInput = fileGridElement.querySelector('input[type="file"]:not([webkitdirectory])') as HTMLInputElement;
+      fileInput?.click();
+    }
+  };
+
+  const handleUploadFolder = () => {
+    // Trigger folder upload through FileGrid's ref or by exposing the function
+    const fileGridElement = document.querySelector('[data-drag-container]');
+    if (fileGridElement) {
+      const directoryInput = fileGridElement.querySelector('input[type="file"][webkitdirectory]') as HTMLInputElement;
+      directoryInput?.click();
+    }
+  };
+
   const confirmRename = async (newName: string) => {
     if (!renamingItem) return;
 
@@ -921,6 +940,8 @@ export const FileExplorer = () => {
               currentPath={currentPath}
               currentApiPath={currentApiPath}
               onNewFolder={() => setNewFolderDialogOpen(true)}
+              onUploadFiles={handleUploadFiles} // Add this
+              onUploadFolder={handleUploadFolder} // Add this
               isLoading={isLoading}
               cutItem={clipboard?.operation === "cut" && !isClipboardPasted() ? clipboard.item : null}
               hasClipboard={hasClipboard}

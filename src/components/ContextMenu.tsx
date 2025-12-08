@@ -159,17 +159,6 @@ export const ContextMenu = ({
       },
       { divider: true, label: "", action: "" },
       {
-        icon: Upload,
-        label: "Upload Files",
-        action: "upload_files",
-      },
-      {
-        icon: Upload,
-        label: "Upload Folder",
-        action: "upload_folder",
-      },
-      { divider: true, label: "", action: "" },
-      {
         icon: RefreshCw,
         label: "Refresh",
         action: "refresh",
