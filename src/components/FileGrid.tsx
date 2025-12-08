@@ -100,6 +100,15 @@ export const FileGrid = ({
     draggedItemRef.current = draggedItem;
   }, [draggedItem]);
   
+  // Reset drag counter on component mount and unmount
+  useEffect(() => {
+    dragCounter.current = 0;
+    
+    return () => {
+      dragCounter.current = 0;
+    };
+  }, []);
+  
   // Reference for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
   const directoryInputRef = useRef<HTMLInputElement>(null);
@@ -123,8 +132,8 @@ export const FileGrid = ({
         
         // Listen for Tauri drag enter events
         unlistenDragEnter = await eventModule.listen('tauri://drag-enter', (event: Event<any>) => {
-          // Increment the drag counter
-          dragCounter.current++;
+          // Increment the drag counter, ensuring it doesn't go negative
+          dragCounter.current = Math.max(0, dragCounter.current + 1);
           console.log('Tauri drag enter, counter:', dragCounter.current);
           
           // Only set drag over state for actual file drags (not internal moves)
@@ -185,12 +194,15 @@ export const FileGrid = ({
 
     initTauriDragListeners();
 
-    // Cleanup function to remove event listeners
+    // Cleanup function to remove event listeners and reset drag counter
     return () => {
       if (unlistenDragEnter) unlistenDragEnter();
       if (unlistenDragOver) unlistenDragOver();
       if (unlistenDragDrop) unlistenDragDrop();
       if (unlistenDragLeave) unlistenDragLeave();
+      
+      // Reset drag counter when component unmounts
+      dragCounter.current = 0;
     };
   }, [isTauri]);
 
@@ -587,8 +599,6 @@ export const FileGrid = ({
         
         // For folder uploads, we need to construct the correct path
         let uploadPath = currentPathStr;
-        console.log(`Initial uploadPath: ${uploadPath}`);
-        
         // If we have a full path structure (e.g., "qwes/subfolder/file.txt"), we need to:
         // 1. Extract the folder structure relative to the dropped folder
         // 2. Append it to the current path
@@ -597,7 +607,7 @@ export const FileGrid = ({
           // For example, if fullPath is "qwes/subfolder/file.txt" and currentPathStr is "/Home/Documents"
           // The final path should be "/Home/Documents/qwes/subfolder" (without the filename)
           const pathParts = fullPath.split('/');
-          console.log(`Processing file fullPath: ${fullPath}, pathParts:`, pathParts);
+
           
           if (pathParts.length >= 1) {
             // For folder uploads, we want to preserve the complete structure of the dropped folder
@@ -621,18 +631,14 @@ export const FileGrid = ({
               const cleanCurrentPath = currentPathStr.replace(/\/$/, ''); // Remove trailing slash
               uploadPath = `${cleanCurrentPath}/${folderPathRelative}`;
             }
-            console.log(`Final uploadPath for file: ${uploadPath}`);
           }
         }        
-        console.log(`Uploading file ${file.name} to path: ${uploadPath}`);
         
         try {
           // Upload the file
           const result = await api.uploadFile(file, uploadPath);
-          console.log('Upload result:', result);
           return result;
         } catch (error) {
-          console.error(`Failed to upload file ${file.name}:`, error);
           throw error;
         }
       });
@@ -642,7 +648,7 @@ export const FileGrid = ({
       
       // Instead of immediately resetting state, let the progress widget handle completion
       // The progress widget will call onComplete which will reset the state
-      console.log('Files uploaded successfully!');
+
     } catch (error) {
       console.error('Upload error:', error);
       setUploadingFiles(null);
@@ -657,12 +663,9 @@ export const FileGrid = ({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Drag enter event');
-    console.log('Data transfer types:', e.dataTransfer.types);
     
-    // Increment the drag counter
-    dragCounter.current++;
-    console.log('Drag counter incremented:', dragCounter.current);
+    // Increment the drag counter, ensuring it doesn't go negative
+    dragCounter.current = Math.max(0, dragCounter.current + 1);
     
     // Check for internal drag data first - this indicates item moves, not file uploads
     // Check for both application/json and text/plain for compatibility
@@ -671,17 +674,14 @@ export const FileGrid = ({
     
     // If it's an internal drag, don't set drag active state
     if (hasInternalData) {
-      console.log('Internal drag detected on enter, not setting drag active state');
       return;
     }
     
     // Only set drag active for actual file drags (not internal moves)
     const hasFiles = e.dataTransfer.types.includes('Files');
     if (hasFiles) {
-      console.log('Setting drag active state for file drag');
       setIsDragActive(true);
     } else {
-      console.log('Not setting drag active - no files in drag');
     }
   };
 
@@ -689,20 +689,14 @@ export const FileGrid = ({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Drag leave event');
-    console.log('Target:', e.target);
-    console.log('Current target:', e.currentTarget);
     
     // Always decrement the drag counter on drag leave
     dragCounter.current = Math.max(0, dragCounter.current - 1);
-    console.log('Drag counter decremented:', dragCounter.current);
     
     // Only hide the overlay if drag counter is 0
     if (dragCounter.current === 0) {
-      console.log('Setting drag inactive state');
       setIsDragActive(false);
     } else {
-      console.log('Not setting drag inactive - drag counter > 0');
     }
   };
 
