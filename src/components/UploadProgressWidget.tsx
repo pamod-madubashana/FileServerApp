@@ -40,10 +40,11 @@ export const UploadProgressWidget = ({
     })
   );
   const [isComplete, setIsComplete] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false); // Start hidden
   const progressIntervals = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const completionTimer = useRef<NodeJS.Timeout | null>(null);
   const closeTimer = useRef<NodeJS.Timeout | null>(null);
+  const entranceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Update progress when files are provided
   useEffect(() => {
@@ -62,7 +63,7 @@ export const UploadProgressWidget = ({
       };
     }));
     setIsComplete(false);
-    setIsVisible(true);
+    setIsVisible(false); // Start hidden
     
     // Clear any existing intervals
     progressIntervals.current.forEach(interval => clearInterval(interval));
@@ -78,6 +79,16 @@ export const UploadProgressWidget = ({
       clearTimeout(closeTimer.current);
       closeTimer.current = null;
     }
+    
+    if (entranceTimer.current) {
+      clearTimeout(entranceTimer.current);
+      entranceTimer.current = null;
+    }
+    
+    // Delay the entrance animation slightly to ensure DOM is ready
+    entranceTimer.current = setTimeout(() => {
+      setIsVisible(true);
+    }, 10);
     
     // Start progress simulation for each file
     files.forEach((file, index) => {
@@ -121,6 +132,11 @@ export const UploadProgressWidget = ({
       if (closeTimer.current) {
         clearTimeout(closeTimer.current);
         closeTimer.current = null;
+      }
+      
+      if (entranceTimer.current) {
+        clearTimeout(entranceTimer.current);
+        entranceTimer.current = null;
       }
     };
   }, [files, isDirectoryUpload]);
