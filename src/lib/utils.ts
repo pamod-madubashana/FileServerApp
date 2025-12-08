@@ -14,7 +14,8 @@ let save: ((options: any) => Promise<string | null>) | null = null;
 let httpFetch: ((url: string, options?: any) => Promise<any>) | null = null;
 
 // Dynamically import Tauri modules only in Tauri environment
-const isTauri = typeof window !== 'undefined' && window.__TAURI__;
+const isTauri = typeof window !== 'undefined' && window.__TAURI__ !== undefined;
+console.log('[utils.ts] Tauri detection:', { isTauri, hasWindowTAURI: window.__TAURI__ !== undefined, TAURI: window.__TAURI__ });
 if (isTauri) {
   import('@tauri-apps/plugin-dialog').then(module => save = module.save);
   import('@tauri-apps/plugin-http').then(module => httpFetch = module.fetch);
@@ -35,9 +36,9 @@ export async function downloadFile(path: string, filename: string, onProgress?: 
     // Construct full URL
     const url = path.startsWith('http') ? path : `${window.location.origin}${path}`;
     
-    // Check if we're in a Tauri environment
-    const isTauriEnv = typeof window !== 'undefined' && window.__TAURI__;
-    console.log('Download environment check:', { isTauriEnv, userAgent: navigator.userAgent });
+    // Check if we're in a Tauri environment - more robust detection
+    const isTauriEnv = typeof window !== 'undefined' && window.__TAURI__ !== undefined;
+    console.log('Download environment check:', { isTauriEnv, hasTAURI: window.__TAURI__ !== undefined, userAgent: navigator.userAgent, path, url });
     
     if (isTauriEnv) {
       // Use Tauri APIs for downloading
@@ -71,6 +72,8 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
   if (!save || !invoke) {
     throw new Error('Tauri modules not loaded');
   }
+
+  console.log('[downloadFileTauri] Starting download:', { url, filename });
 
   // Get download folder from settings
   const downloadFolder = localStorage.getItem('downloadFolder') || '';
@@ -118,6 +121,7 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     if (isTauri) {
       try {
         const tauri_auth = localStorage.getItem('tauri_auth_token');
+        console.log('[downloadFileTauri] Retrieved auth token from localStorage:', tauri_auth);
         if (tauri_auth) {
           const authData = JSON.parse(tauri_auth);
           if (authData.auth_token) {
@@ -130,6 +134,7 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     }
     
     // Use our custom Tauri command to download the file
+    console.log('[downloadFileTauri] Calling Tauri download command with:', { url, savePath: filePath, authToken });
     await invoke('download_file', { url, savePath: filePath, authToken });
     
     // Report completion
@@ -154,14 +159,19 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
  * Downloads a file using browser APIs
  */
 async function downloadFileBrowser(url: string, filename: string, onProgress?: (progress: number) => void): Promise<string> {
+  console.log('[downloadFileBrowser] Starting download:', { url, filename });
+  
   // Add authentication headers for browser environment
   const headers: Record<string, string> = {};
   
   // Check if we're in Tauri and have an auth token
   const isTauri = !!(window as any).__TAURI__;
+  console.log('[downloadFileBrowser] Environment check:', { isTauri });
+  
   if (isTauri) {
     try {
       const tauri_auth = localStorage.getItem('tauri_auth_token');
+      console.log('[downloadFileBrowser] Tauri auth token:', tauri_auth);
       if (tauri_auth) {
         const authData = JSON.parse(tauri_auth);
         if (authData.auth_token) {
@@ -174,15 +184,13 @@ async function downloadFileBrowser(url: string, filename: string, onProgress?: (
   }
   
   // Fetch the file with progress tracking
-  // Only include credentials if we're in a Tauri environment to avoid CORS issues
+  // Include credentials for browser environment to send cookies
   const fetchOptions: RequestInit = {
-    headers
+    headers,
+    credentials: 'include' // Include cookies for authentication
   };
   
-  // Only include credentials in Tauri environment to avoid CORS issues with wildcard origins
-  if (isTauri) {
-    fetchOptions.credentials = 'include';
-  }
+  console.log('[downloadFileBrowser] Fetching with options:', { url, fetchOptions });
   
   const response = await fetch(url, fetchOptions);
   if (!response.ok) {

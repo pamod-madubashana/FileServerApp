@@ -699,14 +699,19 @@ export const FileExplorer = () => {
   const handleDownload = async (item: FileItem) => {
     try {
       const baseUrl = getApiBaseUrl();
+      console.log('[FileExplorer] handleDownload - baseUrl:', baseUrl);
+      
       // Construct the download URL - for the new path structure, we just need the file name
       // The backend will handle extracting the file name from paths like /Home/Images/filename.jpg
       const fileName = item.name;
-      const downloadUrl = baseUrl 
+      let downloadUrl = baseUrl 
         ? `${baseUrl}/dl/${fileName}` 
         : `/dl/${fileName}`;
       
+      console.log('[FileExplorer] handleDownload - constructed URL:', downloadUrl);
+      
       // Add to download manager for tracking - this will automatically start the download
+      // The download manager will handle adding auth tokens as needed
       const downloadId = downloadManager.addDownload(downloadUrl, item.name);
       
       // The download is now handled by the download manager's queue system

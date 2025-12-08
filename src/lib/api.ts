@@ -109,6 +109,8 @@ const SERVER_URL_KEY = "serverUrl";
 export const getApiBaseUrl = (): string => {
   // Check if there's a custom server URL in localStorage
   const customUrl = localStorage.getItem(SERVER_URL_KEY);
+  console.log('[getApiBaseUrl] Checking for custom URL:', customUrl);
+  
   if (customUrl) {
     return customUrl;
   }
@@ -117,14 +119,18 @@ export const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
     // Check if running in Tauri
     const isTauri = !!(window as any).__TAURI__;
+    console.log('[getApiBaseUrl] Tauri detection:', isTauri);
+    
     if (isTauri) {
       // In Tauri, always use localhost:8000 by default
+      console.log('[getApiBaseUrl] Returning Tauri default URL: http://localhost:8000');
       return 'http://localhost:8000';
     }
     
     // Assume backend is on port 8000 for web
     const url = new URL(window.location.origin);
     url.port = "8000";
+    console.log('[getApiBaseUrl] Returning web default URL:', url.origin);
     return url.origin;
   }
   
@@ -170,16 +176,17 @@ let httpReady: Promise<void> | null = null;
 if (typeof window !== 'undefined' && (window as any).__TAURI__) {
   isTauriEnv = true;
   logger.info('[API] Detected Tauri environment');
-  
-  // Dynamically import the HTTP plugin only in Tauri environment
-  httpReady = import('@tauri-apps/plugin-http').then((module) => {
-    http = module;
-    logger.info('[API] Tauri HTTP plugin loaded successfully');
-  }).catch((error) => {
-    logger.error('[API] Failed to load Tauri HTTP plugin:', error);
-    httpReady = null;
-  });
+  console.log('[API] Detected Tauri environment with window.__TAURI__:', !!(window as any).__TAURI__);
 }
+
+// Dynamically import the HTTP plugin only in Tauri environment
+httpReady = import('@tauri-apps/plugin-http').then((module) => {
+  http = module;
+  logger.info('[API] Tauri HTTP plugin loaded successfully');
+}).catch((error) => {
+  logger.error('[API] Failed to load Tauri HTTP plugin:', error);
+  httpReady = null;
+});
 
 // Utility function to get auth headers for requests
 const getAuthHeaders = (): Record<string, string> => {
