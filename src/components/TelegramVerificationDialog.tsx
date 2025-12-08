@@ -35,7 +35,7 @@ export const TelegramVerificationDialog = ({
         },
         credentials: 'include',
         body: JSON.stringify({
-          // We don't have user info here, but the backend can get it from the session
+          user_id: "None"
         }),
       }, 5000);
 
