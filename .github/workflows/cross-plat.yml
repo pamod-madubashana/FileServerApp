@@ -41,8 +41,7 @@ jobs:
         id: get_release_notes
         run: |
           msg="${{ github.event.head_commit.message }}"
-          # Extract everything after the first line (version line)
-          releaseNotes=$(echo "$msg" | tail -n +2)
+          releaseNotes="$(printf "%s\n" "$msg" | tail -n +2)"
           # Trim whitespace
           releaseNotes=$(echo "$releaseNotes" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           # Export as output
