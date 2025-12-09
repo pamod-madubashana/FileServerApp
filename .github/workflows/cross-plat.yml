@@ -40,16 +40,30 @@ jobs:
       - name: Extract release notes from commit message
         id: get_release_notes
         run: |
-          msg="${{ github.event.head_commit.message }}"
-          # Escape quotes to avoid bash errors
-          msg="${msg//\"/\\\"}"
-          releaseNotes="$(printf "%s\n" "$msg" | tail -n +2)"
-          # Trim whitespace
-          releaseNotes=$(echo "$releaseNotes" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-          # Export as output
-          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$releaseNotes" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          python - <<'PY'
+          import json, os
+
+          ev_path = os.environ.get('GITHUB_EVENT_PATH')
+          if not ev_path:
+              raise SystemExit('GITHUB_EVENT_PATH not set')
+
+          with open(ev_path, 'r', encoding='utf-8') as f:
+              ev = json.load(f)
+
+          msg = ev.get('head_commit', {}).get('message') or ''
+          # everything after the first line:
+          lines = msg.splitlines()
+          release = '\n'.join(lines[1:]).strip()
+
+          out_path = os.environ.get('GITHUB_OUTPUT')
+          if not out_path:
+              raise SystemExit('GITHUB_OUTPUT not set')
+
+          with open(out_path, 'a', encoding='utf-8') as out:
+              out.write('release_notes<<EOF\n')
+              out.write(release + '\n')
+              out.write('EOF\n')
+          PY
         shell: bash
 
       - name: Setup Node.js
