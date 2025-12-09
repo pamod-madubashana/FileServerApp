@@ -41,6 +41,8 @@ jobs:
         id: get_release_notes
         run: |
           msg="${{ github.event.head_commit.message }}"
+          # Escape quotes to avoid bash errors
+          msg="${msg//\"/\\\"}"
           releaseNotes="$(printf "%s\n" "$msg" | tail -n +2)"
           # Trim whitespace
           releaseNotes=$(echo "$releaseNotes" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
