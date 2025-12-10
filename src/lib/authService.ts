@@ -1,6 +1,28 @@
 import { logger } from './logger';
 import { getApiBaseUrl } from './api';
 
+// Type definitions
+interface AuthHeaders {
+  [key: string]: string;
+}
+
+interface UserProfile {
+  username: string;
+  email?: string;
+  telegramUserId?: number;
+  telegramUsername?: string;
+  telegramFirstName?: string;
+  telegramLastName?: string;
+  telegramProfilePicture?: string;
+}
+
+interface AuthCheckResponse {
+  authenticated: boolean;
+  username?: string;
+  user_picture?: string;
+  is_admin?: boolean;
+}
+
 /**
  * Authentication Service
  * Centralized authentication management for the application
@@ -12,7 +34,7 @@ const isTauri = !!(window as any).__TAURI__;
 /**
  * Get authentication headers for requests
  */
-export function getAuthHeaders(): Record<string, string> {
+export function getAuthHeaders(): AuthHeaders {
   const headers: Record<string, string> = {};
   
   if (isTauri) {
@@ -44,13 +66,18 @@ export async function isAuthenticated(): Promise<boolean> {
     const baseUrl = getApiBaseUrl();
     const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
     
-    const response = await fetch(`${apiUrl}/user/profile`, {
+    const response = await fetch(`${apiUrl}/auth/check`, {
       method: 'GET',
       credentials: isTauri ? undefined : 'include',
       headers: getAuthHeaders(),
     });
     
-    return response.ok;
+    if (!response.ok) {
+      return false;
+    }
+    
+    const data: AuthCheckResponse = await response.json();
+    return data.authenticated === true;
   } catch (error) {
     logger.error('Authentication check failed:', error);
     return false;
@@ -60,7 +87,7 @@ export async function isAuthenticated(): Promise<boolean> {
 /**
  * Get current user profile
  */
-export async function getCurrentUser() {
+export async function getCurrentUser(): Promise<UserProfile> {
   try {
     const baseUrl = getApiBaseUrl();
     const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
@@ -79,15 +106,12 @@ export async function getCurrentUser() {
     
     // Map snake_case fields to camelCase
     const userProfile = {
-      id: data.id,
       username: data.username,
       email: data.email,
       telegramUserId: data.telegram_user_id,
       telegramUsername: data.telegram_username,
-      permissions: data.permissions,
-      createdAt: data.created_at,
-      lastActive: data.last_active,
-      userType: data.user_type,
+      telegramFirstName: data.telegram_first_name,
+      telegramLastName: data.telegram_last_name,
       telegramProfilePicture: data.telegram_profile_picture
     };
     
@@ -132,33 +156,18 @@ export async function logout(): Promise<void> {
  * Refresh authentication token (if needed)
  */
 export async function refreshToken(): Promise<boolean> {
+  // Since there's no refresh endpoint in the backend, we'll just check if the user is still authenticated
   try {
-    const baseUrl = getApiBaseUrl();
-    const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
-    
-    const response = await fetch(`${apiUrl}/auth/refresh`, {
-      method: 'POST',
-      credentials: isTauri ? undefined : 'include',
-      headers: getAuthHeaders(),
-    });
-    
-    if (!response.ok) {
-      logger.warn('Token refresh failed:', response.statusText);
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      // If not authenticated, clear any stored tokens
+      if (isTauri) {
+        localStorage.removeItem('tauri_auth_token');
+      }
       return false;
     }
     
-    // Handle token refresh response
-    const data = await response.json();
-    
-    if (isTauri && data.auth_token) {
-      // Store new token for Tauri environment
-      localStorage.setItem('tauri_auth_token', JSON.stringify({
-        auth_token: data.auth_token,
-        expires_at: data.expires_at
-      }));
-    }
-    
-    logger.info('Token refreshed successfully');
+    logger.info('Authentication is still valid');
     return true;
   } catch (error) {
     logger.error('Token refresh failed:', error);

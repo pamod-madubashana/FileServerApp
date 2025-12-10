@@ -91,7 +91,8 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
               localStorage.setItem('tauri_auth_token', JSON.stringify({ 
                 authenticated: true, 
                 username: data.username,
-                auth_token: data.auth_token || null, // Include auth token if available
+                user_picture: data.user_picture || null,
+                is_admin: data.is_admin || false,
                 timestamp: new Date().toISOString()
               }));
             }
