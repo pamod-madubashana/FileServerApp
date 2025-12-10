@@ -45,44 +45,31 @@ function queueThumbnailLoad(
       return;
     }
     
-    // Fetch the thumbnail
-    const isTauri = !!(window as any).__TAURI__;
-    const fetchOptions: RequestInit = { credentials: 'include' }; // Include cookies for session auth
-    
-    // For Tauri environment, we need to handle auth differently
-    if (isTauri) {
-      try {
-        const tauriAuth = localStorage.getItem('tauri_auth_token');
-        if (tauriAuth) {
-          const authData = JSON.parse(tauriAuth);
-          if (authData.auth_token) {
-            // For Tauri, we'll add the auth token as a query parameter in the URL
-            // and not send credentials (as they don't work in Tauri the same way)
-            fetchOptions.credentials = undefined; // Remove credentials for Tauri
-          }
-        }
-      } catch (e) {
-        console.error("Failed to parse Tauri auth token", e);
-      }
-    }
-    
-    fetch(url, fetchOptions)
-      .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
-        return response.blob();
-      })
-      .then(blob => {
-        const dataUrl = URL.createObjectURL(blob);
-        thumbnailCache.set(thumbnailId, dataUrl);
-        onLoad(dataUrl);
-      })
-      .catch(() => {
-        onError();
-      })
-      .finally(() => {
-        activeLoads--;
-        processQueue();
-      });
+    // Fetch the thumbnail using our authenticated API client
+    import('@/lib/api').then(({ fetchWithTimeout }) => {
+      fetchWithTimeout(url, { method: 'GET' }, 5000)
+        .then(response => {
+          if (!response.ok) throw new Error('Network response was not ok');
+          return response.blob();
+        })
+        .then(blob => {
+          const dataUrl = URL.createObjectURL(blob);
+          thumbnailCache.set(thumbnailId, dataUrl);
+          onLoad(dataUrl);
+        })
+        .catch(() => {
+          onError();
+        })
+        .finally(() => {
+          activeLoads--;
+          processQueue();
+        });
+    }).catch((error) => {
+      console.error('Failed to import API client:', error);
+      onError();
+      activeLoads--;
+      processQueue();
+    });
   };
   
   loadingQueue.push(job);
