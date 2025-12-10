@@ -683,7 +683,6 @@ export const api = {
 
     async createFolder(folderName: string, currentPath: string): Promise<{ message: string }> {
         const baseUrl = getApiBaseUrl();
-        // For the default case, we need to append /api to the base URL
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
         // Check if we're running in Tauri
