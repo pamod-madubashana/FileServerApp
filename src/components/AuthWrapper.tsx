@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import logger from "@/lib/logger";
+import authService from "@/lib/authService";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -26,14 +27,12 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
     }
     
     const checkAuth = async () => {
-      // Check if we're running in Tauri
-      const isTauri = !!(window as any).__TAURI__;
-      logger.info("Running in Tauri environment", isTauri);
+      logger.info("Running in Tauri environment", authService.isTauri);
       
       try {
         
         // In Tauri, first check localStorage for auth token
-        if (isTauri) {
+        if (authService.isTauri) {
           const tauri_auth = localStorage.getItem('tauri_auth_token');
           if (tauri_auth) {
             try {
@@ -56,31 +55,15 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
         
         logger.info("Checking authentication", { url: `${apiUrl}/auth/check`, baseUrl });
         
-        // Prepare fetch options
+        // Prepare fetch options using authService
         const fetchOptions: RequestInit = {
           method: 'GET',
-          credentials: 'include',
+          credentials: authService.isTauri ? undefined : 'include',
           cache: 'no-cache',
-        };
-        
-        // Add auth token for Tauri environment
-        if (isTauri) {
-          const tauri_auth = localStorage.getItem('tauri_auth_token');
-          if (tauri_auth) {
-            try {
-              const authData = JSON.parse(tauri_auth);
-              if (authData.auth_token) {
-                fetchOptions.headers = {
-                  ...fetchOptions.headers,
-                  'X-Auth-Token': authData.auth_token
-                };
-                logger.info("Adding auth token to request headers");
-              }
-            } catch (e) {
-              logger.error("Failed to extract auth token from localStorage", e);
-            }
+          headers: {
+            ...authService.getAuthHeaders()
           }
-        }
+        };
         
         const response = await fetchWithTimeout(`${apiUrl}/auth/check`, fetchOptions, 3000);
 
@@ -96,7 +79,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
           if (!data.authenticated) {
             logger.info("Not authenticated, redirecting to login");
             // Clear Tauri auth token if it exists
-            if (isTauri) {
+            if (authService.isTauri) {
               localStorage.removeItem('tauri_auth_token');
             }
             navigate("/login");
@@ -104,7 +87,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
           } else {
             logger.info("User is authenticated, showing content");
             // Update Tauri auth token
-            if (isTauri) {
+            if (authService.isTauri) {
               localStorage.setItem('tauri_auth_token', JSON.stringify({ 
                 authenticated: true, 
                 username: data.username,
@@ -118,7 +101,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
           // Redirect to login but indicate there might be a backend issue
           setIsAuthenticated(false);
           // Clear Tauri auth token on failure
-          if (isTauri) {
+          if (authService.isTauri) {
             localStorage.removeItem('tauri_auth_token');
           }
           setBackendError(response.status !== 401 && response.status !== 403);
@@ -126,13 +109,11 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
           return;
         }
       } catch (error) {
-        // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
         logger.error("Auth check failed with error", error);
         // Redirect to login and indicate there's a backend connectivity issue
         setIsAuthenticated(false);
         // Clear Tauri auth token on error
-        if (isTauri) {
+        if (authService.isTauri) {
           localStorage.removeItem('tauri_auth_token');
         }
         setBackendError(true);

@@ -15,6 +15,7 @@ import { AuthWrapper } from "@/components/AuthWrapper";
 import logger from "@/lib/logger";
 // Import the new backend connection hook
 import { useBackendConnection } from "@/hooks/useViteConnection";
+import authService from "@/lib/authService";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,20 @@ const App = () => {
   
   // Use the backend connection hook to monitor connection status
   useBackendConnection();
+  
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const isAuthenticated = await authService.isAuthenticated();
+        logger.info("Authentication status:", isAuthenticated);
+      } catch (error) {
+        logger.error("Failed to check authentication status:", error);
+      }
+    };
+    
+    checkAuth();
+  }, []);
   
   useEffect(() => {
     // Check system preference

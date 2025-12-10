@@ -1,5 +1,6 @@
 // API base URL - will use proxy in development
 import logger from '@/lib/logger';
+import authService from './authService';
 
 export interface ApiFile {
     id: string;
@@ -217,16 +218,22 @@ const getAuthHeaders = (): Record<string, string> => {
 };
 
 // Utility function to add auth headers to fetch options
-const addAuthHeaders = (options: RequestInit): RequestInit => {
-  const authHeaders = getAuthHeaders();
+function addAuthHeaders(options: RequestInit = {}): RequestInit {
+  const headers = new Headers(options.headers || {});
+  
+  // Get authentication headers from authService
+  const authHeaders = authService.getAuthHeaders();
+  
+  // Merge authentication headers
+  Object.entries(authHeaders).forEach(([key, value]) => {
+    headers.set(key, value);
+  });
+  
   return {
     ...options,
-    headers: {
-      ...authHeaders,
-      ...(options.headers as Record<string, string> || {})
-    }
+    headers,
   };
-};
+}
 
 // Utility function to implement fetch with timeout
 export const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout: number = 3000): Promise<Response> => {
@@ -427,6 +434,11 @@ export const api = {
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
+        
+        // Check authentication before making request
+        if (!(await authService.isAuthenticated())) {
+          throw new Error('User not authenticated');
+        }
         
         const response = await fetchWithTimeout(`${apiUrl}/user/is-owner`, {
             method: 'GET',

@@ -8,6 +8,7 @@ import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import { FcGoogle } from "react-icons/fc";
 import { BackendUrlUpdater } from "@/components/BackendUrlUpdater";
 import logger from "@/lib/logger";
+import authService from "@/lib/authService";
 
 // Declare google.accounts for TypeScript
 declare global {
@@ -51,15 +52,13 @@ const Login = () => {
       
       logger.info("Attempting Google login with baseUrl", { baseUrl, apiUrl: `${apiUrl}/auth/google` });
       
-      // Check if we're running in Tauri
-      const isTauri = !!(window as any).__TAURI__;
-      
       const res = await fetchWithTimeout(`${apiUrl}/auth/google`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...authService.getAuthHeaders()
         },
-        credentials: isTauri ? undefined : "include",
+        credentials: authService.isTauri ? undefined : "include",
         body: JSON.stringify({ token: response.credential }),
       }, 5000);
 
@@ -141,17 +140,14 @@ const Login = () => {
       
       logger.info("Attempting login with baseUrl", { baseUrl, apiUrl: `${apiUrl}/auth/login` });
       
-      // Check if we're running in Tauri
-      const isTauri = !!(window as any).__TAURI__;
-      logger.info("Running in Tauri environment", isTauri);
-      
-      // Prepare fetch options
+      // Prepare fetch options using authService
       const fetchOptions: RequestInit = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...authService.getAuthHeaders()
         },
-        credentials: isTauri ? undefined : "include",
+        credentials: authService.isTauri ? undefined : "include",
         body: JSON.stringify({ username, password }),
       };
       
@@ -166,7 +162,7 @@ const Login = () => {
         logger.info("Login response data", responseData);
         
         // For Tauri, we might need to manually handle cookies
-        if (isTauri) {
+        if (authService.isTauri) {
           logger.info("In Tauri environment, storing auth state locally");
           localStorage.setItem('tauri_auth_token', JSON.stringify({ 
             authenticated: true, 

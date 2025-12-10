@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import logger from "@/lib/logger";
 import { api } from "@/lib/api";
+import authService from "@/lib/authService";
 
 interface NavigationSidebarProps {
   className?: string;
@@ -148,7 +149,7 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
 
   const handleLogout = async () => {
     try {
-      await api.logout();
+      await authService.logout();
       // Redirect to login page after successful logout
       navigate("/login");
     } catch (error) {
