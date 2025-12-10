@@ -440,10 +440,16 @@ export const api = {
           throw new Error('User not authenticated');
         }
         
-        const response = await fetchWithTimeout(`${apiUrl}/user/is-owner`, {
+        // Prepare fetch options
+        const fetchOptions: RequestInit = {
             method: 'GET',
             credentials: isTauri ? undefined : 'include',
-        }, 3000);
+        };
+        
+        // Add auth headers to all requests
+        const mergedOptions = addAuthHeaders(fetchOptions);
+        
+        const response = await fetchWithTimeout(`${apiUrl}/user/is-owner`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to check owner status: ${response.statusText}`);
