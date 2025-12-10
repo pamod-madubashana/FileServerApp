@@ -208,6 +208,15 @@ const Downloads = () => {
                             {new Date(download.endTime).toLocaleTimeString()}
                           </span>
                         )}
+                        {/* Display speed and ETA for active downloads */}
+                        {download.status === 'downloading' && download.speed !== undefined && download.speed > 0 && (
+                          <span className="ml-auto">
+                            {formatSpeed(download.speed)}
+                            {download.eta !== undefined && download.eta > 0 && (
+                              <span className="ml-1">({formatETA(download.eta)})</span>
+                            )}
+                          </span>
+                        )}
                       </div>
                       
                       {(download.status === 'downloading' || download.status === 'completed') && (
@@ -235,3 +244,28 @@ const Downloads = () => {
 };
 
 export default Downloads;
+
+// Add helper functions for formatting speed and ETA
+function formatSpeed(bytesPerSecond: number): string {
+  if (bytesPerSecond < 1024) {
+    return `${Math.round(bytesPerSecond)} B/s`;
+  } else if (bytesPerSecond < 1024 * 1024) {
+    return `${Math.round(bytesPerSecond / 1024)} KB/s`;
+  } else {
+    return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
+  }
+}
+
+function formatETA(seconds: number): string {
+  if (seconds < 60) {
+    return `${Math.round(seconds)}s`;
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.round(seconds % 60);
+    return `${minutes}m${remainingSeconds > 0 ? `${remainingSeconds}s` : ''}`;
+  } else {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h${minutes > 0 ? `${minutes}m` : ''}`;
+  }
+}

@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { DownloadIcon, CheckIcon, XIcon } from 'lucide-react';
 import { downloadFile } from '../lib/utils';
-import { downloadManager } from '../lib/downloadManager';
+import { downloadManager, DownloadItem } from '../lib/downloadManager';
 
 interface AdvancedDownloadButtonProps {
   path: string;
@@ -20,6 +20,7 @@ const AdvancedDownloadButton: React.FC<AdvancedDownloadButtonProps> = ({
 }) => {
   const [status, setStatus] = useState<'idle' | 'downloading' | 'completed' | 'error'>('idle');
   const [progress, setProgress] = useState(0);
+  const [downloadInfo, setDownloadInfo] = useState<Pick<DownloadItem, 'speed' | 'eta'>>({});
   const [error, setError] = React.useState<string | null>(null);
 
   const handleDownload = async () => {
@@ -27,6 +28,7 @@ const AdvancedDownloadButton: React.FC<AdvancedDownloadButtonProps> = ({
     
     setStatus('downloading');
     setProgress(0);
+    setDownloadInfo({});
     setError(null);
     
     try {
@@ -41,6 +43,14 @@ const AdvancedDownloadButton: React.FC<AdvancedDownloadButtonProps> = ({
         const download = downloads.find(d => d.id === downloadId);
         if (download) {
           setProgress(download.progress);
+          
+          // Update speed and ETA information
+          if (download.status === 'downloading' && (download.speed || download.eta)) {
+            setDownloadInfo({
+              speed: download.speed,
+              eta: download.eta
+            });
+          }
           
           // Update status based on download state
           if (download.status === 'completed') {
@@ -68,6 +78,35 @@ const AdvancedDownloadButton: React.FC<AdvancedDownloadButtonProps> = ({
       setTimeout(() => {
         setStatus('idle');
       }, 3000);
+    }
+  };
+
+  // Helper functions for formatting speed and ETA
+  const formatSpeed = (bytesPerSecond?: number): string => {
+    if (!bytesPerSecond || bytesPerSecond <= 0) return '';
+    
+    if (bytesPerSecond < 1024) {
+      return `${Math.round(bytesPerSecond)} B/s`;
+    } else if (bytesPerSecond < 1024 * 1024) {
+      return `${Math.round(bytesPerSecond / 1024)} KB/s`;
+    } else {
+      return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
+    }
+  };
+
+  const formatETA = (seconds?: number): string => {
+    if (!seconds || seconds <= 0) return '';
+    
+    if (seconds < 60) {
+      return `${Math.round(seconds)}s`;
+    } else if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.round(seconds % 60);
+      return `${minutes}m${remainingSeconds > 0 ? `${remainingSeconds}s` : ''}`;
+    } else {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return `${hours}h${minutes > 0 ? `${minutes}m` : ''}`;
     }
   };
 
@@ -115,7 +154,15 @@ const AdvancedDownloadButton: React.FC<AdvancedDownloadButtonProps> = ({
       </Button>
       
       {status === 'downloading' && (
-        <Progress value={progress} className="w-full" />
+        <div className="w-full space-y-1">
+          <Progress value={progress} className="w-full" />
+          {(downloadInfo.speed || downloadInfo.eta) && (
+            <div className="text-xs text-muted-foreground flex justify-between">
+              {downloadInfo.speed ? <span>{formatSpeed(downloadInfo.speed)}</span> : <span></span>}
+              {downloadInfo.eta ? <span>{formatETA(downloadInfo.eta)}</span> : <span></span>}
+            </div>
+          )}
+        </div>
       )}
       
       {error && (

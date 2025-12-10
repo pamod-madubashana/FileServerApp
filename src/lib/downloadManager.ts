@@ -12,7 +12,14 @@ export interface DownloadItem {
   error?: string;
   startTime?: Date;
   endTime?: Date;
-  filePath?: string; // Add file path for opening downloaded files
+  filePath?: string;
+  // Add new fields for speed and ETA
+  speed?: number; // bytes per second
+  eta?: number; // seconds remaining
+  lastUpdate?: Date; // timestamp of last progress update
+  lastDownloaded?: number; // downloaded bytes at last update
+  // Add cancellation support
+  cancellationToken?: AbortController;
 }
 
 export class DownloadManager {
@@ -71,7 +78,12 @@ export class DownloadManager {
     if (!download) return;
     
     if (download.status === 'downloading') {
-      // Mark as cancelled - the actual cancellation would need to be handled in the download function
+      // Trigger cancellation if we have a cancellationToken
+      if (download.cancellationToken) {
+        download.cancellationToken.abort();
+      }
+      
+      // Mark as cancelled
       download.status = 'cancelled';
       download.endTime = new Date();
       this.activeDownloads.delete(id);
@@ -116,12 +128,73 @@ export class DownloadManager {
     try {
       logger.info('[DownloadManager] Starting download', { id, url: download.url });
       
+      // Initialize speed tracking fields
+      download.lastUpdate = new Date();
+      download.lastDownloaded = 0;
+      download.speed = 0;
+      download.eta = undefined;
+      
+      // Create cancellation token for this download
+      const cancellationToken = new AbortController();
+      download.cancellationToken = cancellationToken;
+      
       // Download with progress tracking
-      const filePath = await downloadFile(download.url, download.filename, (progress) => {
+      const filePath = await downloadFile(download.url, download.filename, (progress, details) => {
+        // Check if download was cancelled
+        if (cancellationToken.signal.aborted) {
+          return;
+        }
+        
         // Update progress
         download.progress = progress;
+        
+        // Update speed and ETA from detailed information if available
+        if (details) {
+          if (details.speed !== undefined) {
+            download.speed = details.speed;
+          }
+          if (details.eta !== undefined) {
+            download.eta = details.eta;
+          }
+          if (details.total !== undefined) {
+            download.size = details.total;
+          }
+          if (details.downloaded !== undefined) {
+            download.downloaded = details.downloaded;
+          }
+        } else {
+          // Fallback to calculating speed and ETA if no detailed information provided
+          const now = new Date();
+          const timeElapsed = (now.getTime() - (download.lastUpdate?.getTime() || now.getTime())) / 1000; // seconds
+          const bytesDownloaded = (progress / 100) * (download.size || 0);
+          const bytesSinceLastUpdate = bytesDownloaded - (download.lastDownloaded || 0);
+          
+          // Calculate speed (bytes per second)
+          if (timeElapsed > 0) {
+            download.speed = bytesSinceLastUpdate / timeElapsed;
+            
+            // Calculate ETA (seconds remaining) if we know the total size
+            if (download.size && download.speed > 0) {
+              const bytesRemaining = download.size - bytesDownloaded;
+              download.eta = bytesRemaining / download.speed;
+            }
+          }
+          
+          // Update tracking fields
+          download.lastUpdate = now;
+          download.lastDownloaded = bytesDownloaded;
+        }
+        
         this.notifyListeners();
-      });
+      }, 3, cancellationToken);
+      
+      // Check if download was cancelled before completion
+      if (cancellationToken.signal.aborted) {
+        download.status = 'cancelled';
+        download.endTime = new Date();
+        logger.info('[DownloadManager] Download cancelled before completion', { id });
+        return;
+      }
       
       // Update status
       download.status = 'completed';
@@ -138,6 +211,14 @@ export class DownloadManager {
       
       logger.info('[DownloadManager] Download completed', { id });
     } catch (error) {
+      // Check if this is a cancellation error
+      if (error instanceof Error && error.name === 'AbortError') {
+        download.status = 'cancelled';
+        download.endTime = new Date();
+        logger.info('[DownloadManager] Download cancelled', { id });
+        return;
+      }
+      
       logger.error('[DownloadManager] Download failed', { id, error });
       
       download.status = 'failed';

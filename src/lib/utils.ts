@@ -31,7 +31,13 @@ if (isTauri) {
  * @param retries - Number of retry attempts (default: 3)
  * @returns Promise that resolves when the download is complete
  */
-export async function downloadFile(path: string, filename: string, onProgress?: (progress: number) => void, retries: number = 3): Promise<string | void> {
+export async function downloadFile(
+  path: string, 
+  filename: string, 
+  onProgress?: (progress: number, details?: { speed?: number; eta?: number; downloaded?: number; total?: number }) => void, 
+  retries: number = 3,
+  cancellationToken?: AbortController
+): Promise<string | void> {
   try {
     // Construct full URL
     const url = path.startsWith('http') ? path : `${window.location.origin}${path}`;
@@ -43,11 +49,11 @@ export async function downloadFile(path: string, filename: string, onProgress?: 
     if (isTauriEnv) {
       // Use Tauri APIs for downloading
       console.log('Using Tauri download API');
-      return await downloadFileTauri(url, filename, onProgress);
+      return await downloadFileTauri(url, filename, onProgress, cancellationToken);
     } else {
       // Use browser APIs for downloading
       console.log('Using browser download API');
-      return await downloadFileBrowser(url, filename, onProgress);
+      return await downloadFileBrowser(url, filename, onProgress, cancellationToken);
     }
   } catch (error) {
     console.error('Error downloading file:', error);
@@ -57,7 +63,7 @@ export async function downloadFile(path: string, filename: string, onProgress?: 
       console.log(`Retrying download... (${retries} attempts left)`);
       // Exponential backoff
       await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
-      return await downloadFile(path, filename, onProgress, retries - 1);
+      return await downloadFile(path, filename, onProgress, retries - 1, cancellationToken);
     }
     
     throw new Error(`Failed to download file after retries: ${error instanceof Error ? error.message : String(error)}`);
@@ -67,7 +73,12 @@ export async function downloadFile(path: string, filename: string, onProgress?: 
 /**
  * Downloads a file using Tauri APIs
  */
-async function downloadFileTauri(url: string, filename: string, onProgress?: (progress: number) => void): Promise<string> {
+async function downloadFileTauri(
+  url: string, 
+  filename: string, 
+  onProgress?: (progress: number, details?: { speed?: number; eta?: number; downloaded?: number; total?: number }) => void,
+  cancellationToken?: AbortController
+): Promise<string> {
   // Ensure Tauri modules are loaded
   if (!save || !invoke) {
     throw new Error('Tauri modules not loaded');
@@ -107,10 +118,23 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
 
   // Set up progress listener if callback provided
   let unlisten: (() => void) | null = null;
+  let unlistenDetailed: (() => void) | null = null;
+  
   if (onProgress) {
-    // Listen for download progress events
+    // Listen for regular download progress events
     unlisten = await (window as any).__TAURI__.event.listen('download_progress', (event: any) => {
       onProgress(event.payload);
+    });
+    
+    // Listen for detailed download progress events with speed and ETA
+    unlistenDetailed = await (window as any).__TAURI__.event.listen('download_progress_detailed', (event: any) => {
+      // Pass detailed information to the callback
+      onProgress(event.payload.percentage, {
+        speed: event.payload.speed,
+        eta: event.payload.eta,
+        downloaded: event.payload.downloaded,
+        total: event.payload.total
+      });
     });
   }
 
@@ -139,6 +163,11 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     // Call the Tauri download command
     await invoke('download_file', { url, savePath: filePath, authToken });
     
+    // Check if download was cancelled
+    if (cancellationToken?.signal.aborted) {
+      throw new Error('Download cancelled');
+    }
+    
     // Report completion
     if (onProgress) {
       onProgress(100);
@@ -154,13 +183,21 @@ async function downloadFileTauri(url: string, filename: string, onProgress?: (pr
     if (unlisten) {
       unlisten();
     }
+    if (unlistenDetailed) {
+      unlistenDetailed();
+    }
   }
 }
 
 /**
  * Downloads a file using browser APIs
  */
-async function downloadFileBrowser(url: string, filename: string, onProgress?: (progress: number) => void): Promise<string> {
+async function downloadFileBrowser(
+  url: string, 
+  filename: string, 
+  onProgress?: (progress: number, details?: { speed?: number; eta?: number; downloaded?: number; total?: number }) => void,
+  cancellationToken?: AbortController
+): Promise<string> {
   console.log('[downloadFileBrowser] Starting download:', { url, filename });
   
   // Add authentication headers for browser environment
@@ -189,7 +226,8 @@ async function downloadFileBrowser(url: string, filename: string, onProgress?: (
   // Include credentials for browser environment to send cookies
   const fetchOptions: RequestInit = {
     headers,
-    credentials: isTauri ? undefined : 'include' // Include cookies for authentication
+    credentials: isTauri ? undefined : 'include', // Include cookies for authentication
+    signal: cancellationToken?.signal // Add cancellation signal
   };
   
   console.log('[downloadFileBrowser] Fetching with options:', { url, fetchOptions });
@@ -213,8 +251,18 @@ async function downloadFileBrowser(url: string, filename: string, onProgress?: (
   const chunks: Uint8Array[] = [];
   let receivedLength = 0;
   
+  // Track timing for speed calculation
+  const startTime = Date.now();
+  let lastUpdateTime = startTime;
+  let lastReceivedLength = 0;
+  
   // Read the stream
   while (true) {
+    // Check if download was cancelled
+    if (cancellationToken?.signal.aborted) {
+      throw new Error('Download cancelled');
+    }
+    
     const { done, value } = await reader.read();
     
     if (done) {
@@ -224,11 +272,51 @@ async function downloadFileBrowser(url: string, filename: string, onProgress?: (
     chunks.push(value);
     receivedLength += value.length;
     
+    // Calculate speed and ETA periodically (every 500ms)
+    const now = Date.now();
+    if (now - lastUpdateTime >= 500) {
+      const timeElapsed = (now - lastUpdateTime) / 1000; // seconds
+      const bytesSinceLastUpdate = receivedLength - lastReceivedLength;
+      
+      if (timeElapsed > 0) {
+        const speed = bytesSinceLastUpdate / timeElapsed; // bytes per second
+        
+        // Calculate ETA if we know the total size
+        let eta: number | undefined;
+        if (total > 0 && speed > 0) {
+          const bytesRemaining = total - receivedLength;
+          eta = bytesRemaining / speed;
+        }
+        
+        // Report progress with detailed information
+        if (onProgress) {
+          const progress = total > 0 ? Math.floor((receivedLength / total) * 100) : 0;
+          onProgress(progress, {
+            speed,
+            eta,
+            downloaded: receivedLength,
+            total
+          });
+        }
+      }
+      
+      lastUpdateTime = now;
+      lastReceivedLength = receivedLength;
+    }
+    
     // Report progress if callback provided and we know the total size
     if (onProgress && total > 0) {
       const progress = Math.floor((receivedLength / total) * 100);
-      onProgress(progress);
+      // Only call onProgress without details if we haven't called it with details recently
+      if (now - lastUpdateTime >= 500) {
+        onProgress(progress);
+      }
     }
+  }
+  
+  // Check if download was cancelled after the loop
+  if (cancellationToken?.signal.aborted) {
+    throw new Error('Download cancelled');
   }
   
   // Combine all chunks into a single Uint8Array

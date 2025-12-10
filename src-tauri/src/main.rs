@@ -40,8 +40,10 @@ fn open_file_in_folder(path: String, app: tauri::AppHandle) -> Result<(), String
     Ok(())
 }
 
-// Download command that downloads a file from a URL and saves it to a specified path
-#[tauri::command]
+// We'll need to add a way to cancel downloads in the Rust code
+// For now, let's modify the download function to be more responsive to cancellation
+// by checking for cancellation more frequently
+
 async fn download_file(url: &str, save_path: &str, auth_token: Option<String>, app_handle: tauri::AppHandle) -> Result<(), String> {
     log::info!("Starting download from {} to {}", url, save_path);
     
@@ -67,18 +69,55 @@ async fn download_file(url: &str, save_path: &str, auth_token: Option<String>, a
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
     
-    // Send GET request with headers
-    let request = client.get(&final_url).headers(headers);
-    let response = request.send().await.map_err(|e| format!("Failed to send request: {}", e))?;
+    // Send HEAD request to get file size first
+    let head_response = client.head(&final_url).headers(headers.clone()).send().await
+        .map_err(|e| format!("Failed to send HEAD request: {}", e))?;
     
-    // Check if request was successful
-    if !response.status().is_success() {
-        return Err(format!("HTTP request failed with status: {}", response.status()));
+    // Check if HEAD request was successful
+    if !head_response.status().is_success() {
+        log::warn!("HEAD request failed with status: {}, proceeding with GET request", head_response.status());
     }
     
-    // Get total size if available
-    let total_size = response.content_length().unwrap_or(0);
-    log::info!("Total file size: {} bytes", total_size);
+    // Get total size if available from HEAD request
+    let mut total_size = head_response.content_length().unwrap_or(0);
+    log::info!("File size from HEAD request: {} bytes", total_size);
+    
+    // If we didn't get size from HEAD, send GET request to get it
+    let (response, needs_get_request) = if total_size == 0 {
+        log::info!("No content length from HEAD, sending GET request to determine size");
+        let get_response = client.get(&final_url).headers(headers.clone()).send().await
+            .map_err(|e| format!("Failed to send GET request: {}", e))?;
+            
+        if !get_response.status().is_success() {
+            return Err(format!("HTTP request failed with status: {}", get_response.status()));
+        }
+        
+        total_size = get_response.content_length().unwrap_or(0);
+        log::info!("File size from GET request: {} bytes", total_size);
+        (get_response, false) // We already have the response
+    } else {
+        // Send GET request for actual download
+        let get_response = client.get(&final_url).headers(headers.clone()).send().await
+            .map_err(|e| format!("Failed to send GET request: {}", e))?;
+            
+        if !get_response.status().is_success() {
+            return Err(format!("HTTP request failed with status: {}", get_response.status()));
+        }
+        (get_response, true) // We need to use this response
+    };
+    
+    // If we didn't already get the response from the GET request above, send another GET request
+    let response = if needs_get_request {
+        response
+    } else {
+        // Send GET request for actual download
+        client.get(&final_url).headers(headers.clone()).send().await
+            .map_err(|e| format!("Failed to send GET request: {}", e))?
+    };
+    
+    // Get total size if available (in case it changed)
+    total_size = response.content_length().unwrap_or(total_size);
+    log::info!("Final file size: {} bytes", total_size);
     
     // Handle relative paths by resolving them against the user's download directory
     let resolved_path = if Path::new(&save_path).is_absolute() {
@@ -104,12 +143,51 @@ async fn download_file(url: &str, save_path: &str, auth_token: Option<String>, a
     let mut downloaded: u64 = 0;
     let mut last_progress: u64 = 0;
     
+    // Track timing for speed calculation
+    let start_time = std::time::Instant::now();
+    let mut last_update_time = start_time;
+    let mut last_downloaded = 0u64;
+    
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| format!("Failed to read chunk: {}", e))?;
         file.write_all(&chunk).await.map_err(|e| format!("Failed to write to file: {}", e))?;
         downloaded += chunk.len() as u64;
         
-        // Emit progress event more frequently for better UX
+        // Calculate speed and ETA periodically (every 500ms)
+        let now = std::time::Instant::now();
+        if now.duration_since(last_update_time).as_millis() >= 500 {
+            let time_elapsed = now.duration_since(last_update_time).as_secs_f64();
+            let bytes_since_last = downloaded - last_downloaded;
+            
+            if time_elapsed > 0.0 {
+                let speed_bps = (bytes_since_last as f64 / time_elapsed) as u64; // bytes per second
+                
+                // Calculate ETA if we know total size
+                let eta_seconds = if total_size > 0 && speed_bps > 0 {
+                    let remaining = total_size - downloaded;
+                    Some(remaining / speed_bps)
+                } else {
+                    None
+                };
+                
+                // Emit detailed progress event with speed and ETA
+                let progress_data = serde_json::json!({
+                    "percentage": if total_size > 0 { (downloaded as f64 / total_size as f64 * 100.0) as u64 } else { 0 },
+                    "downloaded": downloaded,
+                    "total": total_size,
+                    "speed": speed_bps,
+                    "eta": eta_seconds
+                });
+                
+                app_handle.emit("download_progress_detailed", progress_data)
+                    .map_err(|e| format!("Failed to emit detailed progress: {}", e))?;
+            }
+            
+            last_update_time = now;
+            last_downloaded = downloaded;
+        }
+        
+        // Emit regular progress event more frequently for better UX
         if total_size > 0 {
             let progress = (downloaded as f64 / total_size as f64 * 100.0) as u64;
             
