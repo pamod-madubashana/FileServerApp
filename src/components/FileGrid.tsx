@@ -237,36 +237,62 @@ export const FileGrid = ({
     });
   };
 
-  const handleItemClick = (item: FileItem) => {
+  const handleItemClick = async (item: FileItem) => {
     if (item.type === "folder") {
       onNavigate(item.name);
     } else if (item.fileType === "photo" && item.file_unique_id) {
       // Open image in viewer with file name instead of unique ID
       const baseUrl = getApiBaseUrl();
-      let imageUrl = baseUrl 
+      const imageUrl = baseUrl 
         ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
         : `/dl/${encodeURIComponent(item.name)}`;
       
-      // For Tauri environment, the X-Auth-Token header is automatically added by the fetch implementation
-      // No need to add auth token as query parameter
-      
-      setImageViewer({ url: imageUrl, fileName: item.name });
+      // Pre-fetch the image using our authenticated API client and create an object URL
+      try {
+        const { fetchWithTimeout } = await import('@/lib/api');
+        const response = await fetchWithTimeout(imageUrl, { method: 'GET' }, 10000);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        setImageViewer({ url: objectUrl, fileName: item.name });
+      } catch (error) {
+        console.error('Failed to load image:', error);
+        // Fallback to direct URL (may still fail with 401)
+        setImageViewer({ url: imageUrl, fileName: item.name });
+      }
     } else if ((item.fileType === "video" || item.fileType === "audio" || item.fileType === "voice") && item.file_unique_id) {
       // Always use built-in player (remove external player option)
       console.log("Opening media in built-in player");
       const baseUrl = getApiBaseUrl();
-      let mediaUrl = baseUrl 
+      const mediaUrl = baseUrl 
         ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
         : `/dl/${encodeURIComponent(item.name)}`;
       
-      // For Tauri environment, the X-Auth-Token header is automatically added by the fetch implementation
-      // No need to add auth token as query parameter
-      
-      setMediaPlayer({ 
-        url: mediaUrl, 
-        fileName: item.name, 
-        fileType: item.fileType as "video" | "audio" | "voice" 
-      });
+      // Pre-fetch the media using our authenticated API client and create an object URL
+      try {
+        const { fetchWithTimeout } = await import('@/lib/api');
+        const response = await fetchWithTimeout(mediaUrl, { method: 'GET' }, 10000);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch media: ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        setMediaPlayer({ 
+          url: objectUrl, 
+          fileName: item.name, 
+          fileType: item.fileType as "video" | "audio" | "voice" 
+        });
+      } catch (error) {
+        console.error('Failed to load media:', error);
+        // Fallback to direct URL (may still fail with 401)
+        setMediaPlayer({ 
+          url: mediaUrl, 
+          fileName: item.name, 
+          fileType: item.fileType as "video" | "audio" | "voice" 
+        });
+      }
     }
   };
 
@@ -1325,7 +1351,13 @@ export const FileGrid = ({
         <ImageViewer
           imageUrl={imageViewer.url}
           fileName={imageViewer.fileName}
-          onClose={() => setImageViewer(null)}
+          onClose={() => {
+            // Revoke the object URL to free memory
+            if (imageViewer.url.startsWith('blob:')) {
+              URL.revokeObjectURL(imageViewer.url);
+            }
+            setImageViewer(null);
+          }}
         />
       )}
 
@@ -1335,7 +1367,13 @@ export const FileGrid = ({
           mediaUrl={mediaPlayer.url}
           fileName={mediaPlayer.fileName}
           fileType={mediaPlayer.fileType}
-          onClose={() => setMediaPlayer(null)}
+          onClose={() => {
+            // Revoke the object URL to free memory
+            if (mediaPlayer.url.startsWith('blob:')) {
+              URL.revokeObjectURL(mediaPlayer.url);
+            }
+            setMediaPlayer(null);
+          }}
         />
       )}
 
