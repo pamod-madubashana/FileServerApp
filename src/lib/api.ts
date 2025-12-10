@@ -189,34 +189,6 @@ httpReady = import('@tauri-apps/plugin-http').then((module) => {
   httpReady = null;
 });
 
-// Utility function to get auth headers for requests
-const getAuthHeaders = (): Record<string, string> => {
-  const headers: Record<string, string> = {};
-  
-  // Check if we're in Tauri and have an auth token
-  const isTauri = !!(window as any).__TAURI__;
-  if (isTauri) {
-    try {
-      const tauri_auth = localStorage.getItem('tauri_auth_token');
-      if (tauri_auth) {
-        const authData = JSON.parse(tauri_auth);
-        if (authData.auth_token) {
-          headers['X-Auth-Token'] = authData.auth_token;
-          logger.info('[API] Adding auth token to request', { token: authData.auth_token.substring(0, 10) + '...' });
-        } else {
-          logger.warn('[API] tauri_auth_token exists but no auth_token field');
-        }
-      } else {
-        logger.info('[API] No tauri_auth_token in localStorage');
-      }
-    } catch (e) {
-      logger.error('[API] Failed to get auth token from localStorage:', e);
-    }
-  }
-  
-  return headers;
-};
-
 // Utility function to add auth headers to fetch options
 function addAuthHeaders(options: RequestInit = {}): RequestInit {
   const headers = new Headers(options.headers || {});
@@ -229,9 +201,15 @@ function addAuthHeaders(options: RequestInit = {}): RequestInit {
     headers.set(key, value);
   });
   
+  // Convert Headers object to plain object for Tauri compatibility
+  const headersObj: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    headersObj[key] = value;
+  });
+  
   return {
     ...options,
-    headers,
+    headers: headersObj,
   };
 }
 
@@ -240,20 +218,16 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
   // Add auth headers to all requests
   const mergedOptions = addAuthHeaders(options);
   
-  // Ensure credentials are properly handled
-  if (options.credentials) {
-    mergedOptions.credentials = options.credentials;
-  }
-  
   // Check if we're running in Tauri
   const isTauri = !!(window as any).__TAURI__;
   
   // For Tauri environment, we don't want to send credentials as they don't work the same way
-  if (isTauri && mergedOptions.credentials === 'include') {
-    mergedOptions.credentials = undefined;
+  let tauriCredentials = (mergedOptions as any).credentials;
+  if (isTauri && tauriCredentials === 'include') {
+    tauriCredentials = undefined;
   }
 
-  logger.info('[API] fetchWithTimeout called with:', { url, options, timeout });
+  logger.info('[API] fetchWithTimeout called with:', { url, options, mergedOptions, timeout });
 
   // Use Tauri HTTP plugin if available (in Tauri environment)
   if (isTauriEnv) {
@@ -272,7 +246,7 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
           method: mergedOptions.method || 'GET',
           headers: mergedOptions.headers,
           body: mergedOptions.body instanceof FormData ? mergedOptions.body : (typeof mergedOptions.body === 'string' ? mergedOptions.body : (mergedOptions.body ? JSON.stringify(mergedOptions.body) : undefined)),
-          credentials: isTauriEnv && mergedOptions.credentials === 'include' ? undefined : (mergedOptions.credentials === 'include' ? 'include' : 'omit'),
+          credentials: isTauriEnv && tauriCredentials === 'include' ? undefined : (tauriCredentials === 'include' ? 'include' : 'omit'),
         });
         
         logger.info('[API] Tauri HTTP response status:', response.status);
@@ -434,11 +408,6 @@ export const api = {
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
-        
-        // Check authentication before making request
-        if (!(await authService.isAuthenticated())) {
-          throw new Error('User not authenticated');
-        }
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
