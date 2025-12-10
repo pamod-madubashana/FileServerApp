@@ -116,6 +116,9 @@ async function downloadFileTauri(
     console.log('User selected filePath:', filePath);
   }
 
+  // Generate a unique download ID for tracking
+  const downloadId = `download_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   // Set up progress listener if callback provided
   let unlisten: (() => void) | null = null;
   let unlistenDetailed: (() => void) | null = null;
@@ -158,13 +161,19 @@ async function downloadFileTauri(
     }
     
     // Use our custom Tauri command to download the file
-    console.log('[downloadFileTauri] Calling Tauri download command with:', { url, savePath: filePath, authToken });
+    console.log('[downloadFileTauri] Calling Tauri download command with:', { url, savePath: filePath, authToken, downloadId });
     
-    // Call the Tauri download command
-    await invoke('download_file', { url, savePath: filePath, authToken });
+    // Call the Tauri download command with the download ID
+    await invoke('download_file', { url, savePath: filePath, authToken, downloadId });
     
     // Check if download was cancelled
     if (cancellationToken?.signal.aborted) {
+      // Cancel the download in the Rust backend
+      try {
+        await invoke('cancel_download', { downloadId });
+      } catch (e) {
+        console.warn('Failed to cancel download in backend:', e);
+      }
       throw new Error('Download cancelled');
     }
     
@@ -180,11 +189,21 @@ async function downloadFileTauri(
     console.error('Download failed:', error);
     throw new Error(`Download failed: ${error}`);
   } finally {
+    // Clean up event listeners
     if (unlisten) {
       unlisten();
     }
     if (unlistenDetailed) {
       unlistenDetailed();
+    }
+    
+    // If the download was cancelled, make sure to cancel it in the backend
+    if (cancellationToken?.signal.aborted) {
+      try {
+        await invoke('cancel_download', { downloadId });
+      } catch (e) {
+        console.warn('Failed to cancel download in backend:', e);
+      }
     }
   }
 }

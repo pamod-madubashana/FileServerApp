@@ -40,12 +40,58 @@ fn open_file_in_folder(path: String, app: tauri::AppHandle) -> Result<(), String
     Ok(())
 }
 
-// We'll need to add a way to cancel downloads in the Rust code
-// For now, let's modify the download function to be more responsive to cancellation
-// by checking for cancellation more frequently
+// Add a module to track active downloads
+mod download_tracker {
+    use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
+    use tokio::sync::oneshot;
+    
+    // Struct to hold information about an active download
+    pub struct ActiveDownload {
+        pub cancel_tx: oneshot::Sender<()>,
+    }
+    
+    // Global map to track active downloads by ID
+    lazy_static::lazy_static! {
+        static ref ACTIVE_DOWNLOADS: Arc<Mutex<HashMap<String, ActiveDownload>>> = 
+            Arc::new(Mutex::new(HashMap::new()));
+    }
+    
+    // Add a new active download
+    pub fn add_download(download_id: String, cancel_tx: oneshot::Sender<()>) {
+        let mut downloads = ACTIVE_DOWNLOADS.lock().unwrap();
+        downloads.insert(download_id, ActiveDownload { cancel_tx });
+    }
+    
+    // Cancel a download by ID
+    pub fn cancel_download(download_id: &str) -> bool {
+        let mut downloads = ACTIVE_DOWNLOADS.lock().unwrap();
+        if let Some(download) = downloads.remove(download_id) {
+            // Send cancellation signal
+            let _ = download.cancel_tx.send(());
+            true
+        } else {
+            false
+        }
+    }
+    
+    // Remove a download from tracking (when it completes or fails)
+    pub fn remove_download(download_id: &str) {
+        let mut downloads = ACTIVE_DOWNLOADS.lock().unwrap();
+        downloads.remove(download_id);
+    }
+}
 
-async fn download_file(url: &str, save_path: &str, auth_token: Option<String>, app_handle: tauri::AppHandle) -> Result<(), String> {
-    log::info!("Starting download from {} to {}", url, save_path);
+// Download command that downloads a file from a URL and saves it to a specified path
+#[tauri::command]
+async fn download_file(url: &str, save_path: &str, auth_token: Option<String>, download_id: String, app_handle: tauri::AppHandle) -> Result<(), String> {
+    log::info!("Starting download from {} to {} with ID {}", url, save_path, download_id);
+    
+    // Create a channel for cancellation
+    let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
+    
+    // Register this download for cancellation tracking
+    download_tracker::add_download(download_id.clone(), cancel_tx);
     
     // Parse URL to check if we need to add auth token
     let parsed_url = url::Url::parse(url).map_err(|e| format!("Invalid URL: {}", e))?;
@@ -148,59 +194,110 @@ async fn download_file(url: &str, save_path: &str, auth_token: Option<String>, a
     let mut last_update_time = start_time;
     let mut last_downloaded = 0u64;
     
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| format!("Failed to read chunk: {}", e))?;
-        file.write_all(&chunk).await.map_err(|e| format!("Failed to write to file: {}", e))?;
-        downloaded += chunk.len() as u64;
-        
-        // Calculate speed and ETA periodically (every 500ms)
-        let now = std::time::Instant::now();
-        if now.duration_since(last_update_time).as_millis() >= 500 {
-            let time_elapsed = now.duration_since(last_update_time).as_secs_f64();
-            let bytes_since_last = downloaded - last_downloaded;
-            
-            if time_elapsed > 0.0 {
-                let speed_bps = (bytes_since_last as f64 / time_elapsed) as u64; // bytes per second
-                
-                // Calculate ETA if we know total size
-                let eta_seconds = if total_size > 0 && speed_bps > 0 {
-                    let remaining = total_size - downloaded;
-                    Some(remaining / speed_bps)
-                } else {
-                    None
-                };
-                
-                // Emit detailed progress event with speed and ETA
-                let progress_data = serde_json::json!({
-                    "percentage": if total_size > 0 { (downloaded as f64 / total_size as f64 * 100.0) as u64 } else { 0 },
-                    "downloaded": downloaded,
-                    "total": total_size,
-                    "speed": speed_bps,
-                    "eta": eta_seconds
-                });
-                
-                app_handle.emit("download_progress_detailed", progress_data)
-                    .map_err(|e| format!("Failed to emit detailed progress: {}", e))?;
+    // Main download loop
+    loop {
+        // Check for cancellation
+        match cancel_rx.try_recv() {
+            Ok(()) => {
+                log::info!("Download {} cancelled", download_id);
+                download_tracker::remove_download(&download_id);
+                return Err("Download cancelled".to_string());
             }
-            
-            last_update_time = now;
-            last_downloaded = downloaded;
+            Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {
+                // Channel closed, but no cancellation signal received
+                // Continue with download
+            }
+            Err(tokio::sync::oneshot::error::TryRecvError::Empty) => {
+                // No message yet, continue with download
+            }
         }
         
-        // Emit regular progress event more frequently for better UX
-        if total_size > 0 {
-            let progress = (downloaded as f64 / total_size as f64 * 100.0) as u64;
-            
-            // Only emit progress updates at 1% intervals to reduce event overhead
-            if progress >= last_progress + 1 || progress == 100 {
-                app_handle.emit("download_progress", progress).map_err(|e| format!("Failed to emit progress: {}", e))?;
-                last_progress = progress;
+        // Try to read next chunk with timeout to allow for cancellation checks
+        tokio::select! {
+            // Try to read the next chunk
+            result = stream.next() => {
+                match result {
+                    Some(Ok(chunk)) => {
+                        // Write chunk to file
+                        file.write_all(&chunk).await.map_err(|e| format!("Failed to write to file: {}", e))?;
+                        downloaded += chunk.len() as u64;
+                        
+                        // Calculate speed and ETA periodically (every 500ms)
+                        let now = std::time::Instant::now();
+                        if now.duration_since(last_update_time).as_millis() >= 500 {
+                            let time_elapsed = now.duration_since(last_update_time).as_secs_f64();
+                            let bytes_since_last = downloaded - last_downloaded;
+                            
+                            if time_elapsed > 0.0 {
+                                let speed_bps = (bytes_since_last as f64 / time_elapsed) as u64; // bytes per second
+                                
+                                // Calculate ETA if we know total size
+                                let eta_seconds = if total_size > 0 && speed_bps > 0 {
+                                    let remaining = total_size - downloaded;
+                                    Some(remaining / speed_bps)
+                                } else {
+                                    None
+                                };
+                                
+                                // Emit detailed progress event with speed and ETA
+                                let progress_data = serde_json::json!({
+                                    "percentage": if total_size > 0 { (downloaded as f64 / total_size as f64 * 100.0) as u64 } else { 0 },
+                                    "downloaded": downloaded,
+                                    "total": total_size,
+                                    "speed": speed_bps,
+                                    "eta": eta_seconds
+                                });
+                                
+                                app_handle.emit("download_progress_detailed", progress_data)
+                                    .map_err(|e| format!("Failed to emit detailed progress: {}", e))?;
+                            }
+                            
+                            last_update_time = now;
+                            last_downloaded = downloaded;
+                        }
+                        
+                        // Emit regular progress event more frequently for better UX
+                        if total_size > 0 {
+                            let progress = (downloaded as f64 / total_size as f64 * 100.0) as u64;
+                            
+                            // Only emit progress updates at 1% intervals to reduce event overhead
+                            if progress >= last_progress + 1 || progress == 100 {
+                                app_handle.emit("download_progress", progress).map_err(|e| format!("Failed to emit progress: {}", e))?;
+                                last_progress = progress;
+                            }
+                        }
+                    }
+                    Some(Err(e)) => {
+                        // Error reading chunk
+                        download_tracker::remove_download(&download_id);
+                        return Err(format!("Failed to read chunk: {}", e));
+                    }
+                    None => {
+                        // Download completed
+                        break;
+                    }
+                }
+            }
+            // Timeout to allow for cancellation checks (100ms)
+            _ = tokio::time::sleep(std::time::Duration::from_millis(100)) => {
+                // Continue loop to check for cancellation
             }
         }
     }
     
-    log::info!("Download completed successfully");
+    // Remove download from tracking
+    download_tracker::remove_download(&download_id);
+    
+    log::info!("Download {} completed successfully", download_id);
     Ok(())
+}
+
+// Command to cancel a download
+#[tauri::command]
+async fn cancel_download(download_id: String) -> Result<bool, String> {
+    log::info!("Cancelling download with ID {}", download_id);
+    let cancelled = download_tracker::cancel_download(&download_id);
+    Ok(cancelled)
 }
 
 fn main() {
@@ -222,6 +319,7 @@ fn main() {
       log_warn,
       log_error,
       download_file,
+      cancel_download,
       open_file_in_folder
     ])
     .setup(|_app| {
