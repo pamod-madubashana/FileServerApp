@@ -247,23 +247,8 @@ export const FileGrid = ({
         ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
         : `/dl/${encodeURIComponent(item.name)}`;
       
-      // For Tauri environment, add auth token as query parameter
-      const isTauri = !!(window as any).__TAURI__;
-      if (isTauri) {
-        try {
-          const tauriAuth = localStorage.getItem('tauri_auth_token');
-          if (tauriAuth) {
-            const authData = JSON.parse(tauriAuth);
-            if (authData.auth_token) {
-              // Add auth token as query parameter
-              const separator = imageUrl.includes('?') ? '&' : '?';
-              imageUrl = `${imageUrl}${separator}auth_token=${authData.auth_token}`;
-            }
-          }
-        } catch (e) {
-          console.error("Failed to add auth token to image URL", e);
-        }
-      }
+      // For Tauri environment, the X-Auth-Token header is automatically added by the fetch implementation
+      // No need to add auth token as query parameter
       
       setImageViewer({ url: imageUrl, fileName: item.name });
     } else if ((item.fileType === "video" || item.fileType === "audio" || item.fileType === "voice") && item.file_unique_id) {
@@ -274,23 +259,8 @@ export const FileGrid = ({
         ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
         : `/dl/${encodeURIComponent(item.name)}`;
       
-      // For Tauri environment, add auth token as query parameter
-      const isTauri = !!(window as any).__TAURI__;
-      if (isTauri) {
-        try {
-          const tauriAuth = localStorage.getItem('tauri_auth_token');
-          if (tauriAuth) {
-            const authData = JSON.parse(tauriAuth);
-            if (authData.auth_token) {
-              // Add auth token as query parameter
-              const separator = mediaUrl.includes('?') ? '&' : '?';
-              mediaUrl = `${mediaUrl}${separator}auth_token=${authData.auth_token}`;
-            }
-          }
-        } catch (e) {
-          console.error("Failed to add auth token to media URL", e);
-        }
-      }
+      // For Tauri environment, the X-Auth-Token header is automatically added by the fetch implementation
+      // No need to add auth token as query parameter
       
       setMediaPlayer({ 
         url: mediaUrl, 

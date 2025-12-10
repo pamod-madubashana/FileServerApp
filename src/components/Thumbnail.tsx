@@ -125,23 +125,8 @@ export const Thumbnail = ({ item, size = 'lg' }: ThumbnailProps) => {
       ? `${baseUrl}/api/file/${item.thumbnail}/thumbnail` 
       : `/api/file/${item.thumbnail}/thumbnail`;
 
-    // For Tauri environment, add auth token as query parameter
-    const isTauri = !!(window as any).__TAURI__;
-    if (isTauri) {
-      try {
-        const tauriAuth = localStorage.getItem('tauri_auth_token');
-        if (tauriAuth) {
-          const authData = JSON.parse(tauriAuth);
-          if (authData.auth_token) {
-            // Add auth token as query parameter
-            const separator = thumbnailUrl.includes('?') ? '&' : '?';
-            thumbnailUrl = `${thumbnailUrl}${separator}auth_token=${authData.auth_token}`;
-          }
-        }
-      } catch (e) {
-        console.error("Failed to add auth token to thumbnail URL", e);
-      }
-    }
+    // For Tauri environment, the X-Auth-Token header is automatically added by the fetch implementation
+    // No need to add auth token as query parameter
     
     // Queue the thumbnail load
     queueThumbnailLoad(
