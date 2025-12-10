@@ -189,7 +189,7 @@ async function downloadFileBrowser(url: string, filename: string, onProgress?: (
   // Include credentials for browser environment to send cookies
   const fetchOptions: RequestInit = {
     headers,
-    credentials: 'include' // Include cookies for authentication
+    credentials: isTauri ? undefined : 'include' // Include cookies for authentication
   };
   
   console.log('[downloadFileBrowser] Fetching with options:', { url, fetchOptions });

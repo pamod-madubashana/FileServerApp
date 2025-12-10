@@ -237,6 +237,14 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
   if (options.credentials) {
     mergedOptions.credentials = options.credentials;
   }
+  
+  // Check if we're running in Tauri
+  const isTauri = !!(window as any).__TAURI__;
+  
+  // For Tauri environment, we don't want to send credentials as they don't work the same way
+  if (isTauri && mergedOptions.credentials === 'include') {
+    mergedOptions.credentials = undefined;
+  }
 
   logger.info('[API] fetchWithTimeout called with:', { url, options, timeout });
 
@@ -257,7 +265,7 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
           method: mergedOptions.method || 'GET',
           headers: mergedOptions.headers,
           body: mergedOptions.body instanceof FormData ? mergedOptions.body : (typeof mergedOptions.body === 'string' ? mergedOptions.body : (mergedOptions.body ? JSON.stringify(mergedOptions.body) : undefined)),
-          credentials: mergedOptions.credentials === 'include' ? 'include' : 'omit',
+          credentials: isTauriEnv && mergedOptions.credentials === 'include' ? undefined : (mergedOptions.credentials === 'include' ? 'include' : 'omit'),
         });
         
         logger.info('[API] Tauri HTTP response status:', response.status);
@@ -301,9 +309,12 @@ export const api = {
         // For the default case, we need to append /api to the base URL
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
-            credentials: 'include', // Include cookies for session-based auth
+            credentials: isTauri ? undefined : 'include', // Include cookies for session-based auth
         };
         
         // Add auth headers to all requests
@@ -323,9 +334,12 @@ export const api = {
         // For the default case, we need to append /api to the base URL
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
         };
         
         // Add auth headers to all requests
@@ -345,10 +359,13 @@ export const api = {
         // For the default case, we need to append /api to the base URL
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'POST',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
         };
         
         // Add auth headers to all requests
@@ -372,10 +389,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'GET',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
         };
         
         // Add auth headers to all requests
@@ -405,9 +425,12 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         const response = await fetchWithTimeout(`${apiUrl}/user/is-owner`, {
             method: 'GET',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
         }, 3000);
 
         if (!response.ok) {
@@ -425,13 +448,17 @@ export const api = {
         return isOwnerResponse;
     },
 
-    async getUsers(): Promise<UsersResponse> {        const baseUrl = getApiBaseUrl();
+    async getUsers(): Promise<UsersResponse> {
+        const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'GET',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
         };
         
         // Add auth headers to all requests
@@ -466,10 +493,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'POST',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -492,10 +522,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'PUT',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -518,10 +551,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'DELETE',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
         };
         
         // Add auth headers to all requests
@@ -538,13 +574,16 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
             body: JSON.stringify(passwordData),
         };
         
@@ -565,10 +604,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'GET',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
         };
         
         // Add auth headers to all requests
@@ -587,10 +629,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'PUT',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -618,10 +663,13 @@ export const api = {
         formData.append('file', file);
         formData.append('path', path);
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'POST',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
             body: formData,
         };
         
@@ -651,10 +699,13 @@ export const api = {
         // For the default case, we need to append /api to the base URL
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'POST',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -678,10 +729,13 @@ export const api = {
         // For the default case, we need to append /api to the base URL
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
+        // Check if we're running in Tauri
+        const isTauri = !!(window as any).__TAURI__;
+        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'POST',
-            credentials: 'include',
+            credentials: isTauri ? undefined : 'include',
             headers: {
                 'Content-Type': 'application/json',
             },

@@ -51,12 +51,15 @@ const Login = () => {
       
       logger.info("Attempting Google login with baseUrl", { baseUrl, apiUrl: `${apiUrl}/auth/google` });
       
+      // Check if we're running in Tauri
+      const isTauri = !!(window as any).__TAURI__;
+      
       const res = await fetchWithTimeout(`${apiUrl}/auth/google`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
+        credentials: isTauri ? undefined : "include",
         body: JSON.stringify({ token: response.credential }),
       }, 5000);
 
@@ -148,7 +151,7 @@ const Login = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
+        credentials: isTauri ? undefined : "include",
         body: JSON.stringify({ username, password }),
       };
       
