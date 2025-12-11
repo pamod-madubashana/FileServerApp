@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { updateApiBaseUrl, getApiBaseUrl } from "@/lib/api";
+import { updateApiBaseUrl, getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import logger from "@/lib/logger";
 
 interface BackendUrlUpdaterProps {
@@ -48,18 +48,14 @@ export const BackendUrlUpdater = ({ onErrorUpdate, onSuccess }: BackendUrlUpdate
     try {
       logger.info("Testing connection to backend", { backendUrl });
       // Test connection to the backend
-      const testUrl = backendUrl.endsWith('/api') ? `${backendUrl}/health` : `${backendUrl}/api/health`;
+      // Normalize the URL to ensure it doesn't end with a slash before appending the path
+      const normalizedUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+      const testUrl = normalizedUrl.endsWith('/api') ? `${normalizedUrl}/health` : `${normalizedUrl}/api/health`;
       
-      // Try to fetch a health endpoint or fallback to a simple OPTIONS request
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
-      const response = await fetch(testUrl, {
-        method: 'GET', // Changed from OPTIONS to GET for better compatibility
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
+      // Try to fetch a health endpoint
+      const response = await fetchWithTimeout(testUrl, {
+        method: 'GET',
+      }, 5000); // 5 second timeout
       
       if (response.ok) {
         logger.info("Backend connection test successful");
@@ -70,9 +66,9 @@ export const BackendUrlUpdater = ({ onErrorUpdate, onSuccess }: BackendUrlUpdate
       }
     } catch (error) {
       logger.error("Backend connection test failed", error);
-      // clearTimeout(timeoutId); // Make sure to clear the timeout
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
+        // Check if it's a timeout error from fetchWithTimeout
+        if (error.name === 'AbortError' || error.message.includes('timeout')) {
           setTestResult({ success: false, message: "Connection timed out" });
         } else {
           setTestResult({ success: false, message: `Connection failed: ${error.message}` });
