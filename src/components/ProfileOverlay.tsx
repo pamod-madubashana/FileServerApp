@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Bot } from "lucide-react";
+import { X, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { api, getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
+import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import logger from "@/lib/logger";
+import { openUrl } from "@/lib/tauri-fs";
 
 interface UserProfile {
   username: string;
@@ -17,17 +18,18 @@ interface UserProfile {
   telegram_profile_picture?: string;
 }
 
-interface ProfileOverlayProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface VerificationData {
+  botUsername: string;
+  link: string;
+  code: string;
 }
 
-export const ProfileOverlay = ({ isOpen, onClose }: ProfileOverlayProps) => {
+export const ProfileOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
-  const [verificationData, setVerificationData] = useState<{ botUsername: string; link: string; code: string } | null>(null);
+  const [verificationData, setVerificationData] = useState<VerificationData | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -36,10 +38,22 @@ export const ProfileOverlay = ({ isOpen, onClose }: ProfileOverlayProps) => {
   }, [isOpen]);
 
   const fetchUserProfile = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const profileData = await api.fetchUserProfile();
-      setUserProfile(profileData);
+      const baseUrl = getApiBaseUrl();
+      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      
+      const response = await fetchWithTimeout(`${apiUrl}/user/profile`, {
+        method: 'GET',
+        credentials: 'include',
+      }, 5000);
+
+      if (response.ok) {
+        const profileData = await response.json();
+        setUserProfile(profileData);
+      } else {
+        throw new Error("Failed to fetch user profile");
+      }
     } catch (error) {
       logger.error("Failed to fetch user profile", error);
       // Try fallback method
@@ -115,7 +129,7 @@ export const ProfileOverlay = ({ isOpen, onClose }: ProfileOverlayProps) => {
 
   const handleVerificationConfirm = () => {
     if (verificationData) {
-      window.open(verificationData.link, '_blank');
+      openUrl(verificationData.link);
       setShowVerificationDialog(false);
     }
   };

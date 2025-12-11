@@ -1,61 +1,90 @@
 ﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { api, getApiBaseUrl, fetchWithTimeout, UserProfile } from "@/lib/api";
+import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import logger from "@/lib/logger";
+import { openUrl } from "@/lib/tauri-fs";
 
-export default function Profile() {
+interface UserProfile {
+  username: string;
+  email?: string;
+  telegram_user_id?: number;
+  telegram_username?: string;
+  telegram_first_name?: string;
+  telegram_last_name?: string;
+  telegram_profile_picture?: string;
+}
+
+interface VerificationData {
+  botUsername: string;
+  link: string;
+  code: string;
+}
+
+export const Profile = () => {
+  const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [verificationLink, setVerificationLink] = useState<string | null>(null);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
-  const [verificationData, setVerificationData] = useState<{ botUsername: string; link: string; code: string } | null>(null);
-  const navigate = useNavigate();
+  const [verificationData, setVerificationData] = useState<VerificationData | null>(null);
 
   useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
-  const fetchUserProfile = async () => {
-    try {
-      const profileData = await api.fetchUserProfile();
-      setUserProfile(profileData);
-    } catch (error) {
-      logger.error("Failed to fetch user profile", error);
-      // Try fallback method
+    const fetchUserProfile = async () => {
+      setIsLoading(true);
       try {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
         
-        const authResponse = await fetchWithTimeout(`${apiUrl}/auth/check`, {
+        const response = await fetchWithTimeout(`${apiUrl}/user/profile`, {
           method: 'GET',
           credentials: 'include',
         }, 5000);
 
-        if (authResponse.ok) {
-          const authData = await authResponse.json();
-          if (authData.authenticated) {
-            setUserProfile({
-              username: authData.username,
-              email: authData.user_email,
-              telegram_user_id: undefined,
-              telegram_username: undefined,
-              telegram_first_name: undefined,
-              telegram_last_name: undefined,
-              telegram_profile_picture: undefined
-            });
-          }
+        if (response.ok) {
+          const profileData = await response.json();
+          setUserProfile(profileData);
+        } else {
+          throw new Error("Failed to fetch user profile");
         }
-      } catch (fallbackError) {
-        logger.error("Fallback method also failed", fallbackError);
+      } catch (error) {
+        logger.error("Failed to fetch user profile", error);
+        // Try fallback method
+        try {
+          const baseUrl = getApiBaseUrl();
+          const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+          
+          const authResponse = await fetchWithTimeout(`${apiUrl}/auth/check`, {
+            method: 'GET',
+            credentials: 'include',
+          }, 5000);
+
+          if (authResponse.ok) {
+            const authData = await authResponse.json();
+            if (authData.authenticated) {
+              setUserProfile({
+                username: authData.username,
+                email: authData.user_email,
+                telegram_user_id: undefined,
+                telegram_username: undefined,
+                telegram_first_name: undefined,
+                telegram_last_name: undefined,
+                telegram_profile_picture: undefined
+              });
+            }
+          }
+        } catch (fallbackError) {
+          logger.error("Fallback method also failed", fallbackError);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const handleVerifyTelegram = async () => {
     if (!userProfile) return;
@@ -98,7 +127,7 @@ export default function Profile() {
 
   const handleVerificationConfirm = () => {
     if (verificationData) {
-      window.open(verificationData.link, '_blank');
+      openUrl(verificationData.link);
       setShowVerificationDialog(false);
     }
   };
