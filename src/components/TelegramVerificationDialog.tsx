@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
+import { openUrl } from "@/lib/tauri-fs";
 
 interface TelegramVerificationDialogProps {
   open: boolean;
@@ -59,7 +60,7 @@ export const TelegramVerificationDialog = ({
 
   const handleVerificationConfirm = () => {
     if (verificationData) {
-      window.open(verificationData.link, '_blank');
+      openUrl(verificationData.link);
       onOpenChange(false);
       if (onVerificationComplete) {
         onVerificationComplete();

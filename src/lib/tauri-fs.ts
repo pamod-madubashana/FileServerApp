@@ -16,6 +16,27 @@ export interface ScannedFile {
 }
 
 /**
+ * Open a URL in the default browser (Tauri environment) or new tab (browser)
+ * @param url The URL to open
+ */
+export const openUrl = async (url: string) => {
+  if (isTauriEnvironment()) {
+    try {
+      // Dynamically import the shell plugin only when needed
+      const shell = await import('@tauri-apps/plugin-shell');
+      await shell.open(url);
+    } catch (error) {
+      logger.error('Failed to open URL in Tauri', error as Error);
+      // Fallback to window.open if Tauri shell fails
+      window.open(url, '_blank');
+    }
+  } else {
+    // Browser environment
+    window.open(url, '_blank');
+  }
+};
+
+/**
  * Recursively scan a directory and return all files with their relative paths
  * @param dirPath The directory path to scan
  * @param basePath The base path to calculate relative paths from
@@ -113,6 +134,7 @@ export const pickAndScanDirectory = async (): Promise<ScannedFile[] | null> => {
 
 export default {
   isTauriEnvironment,
+  openUrl,
   scanDirectory,
   pickAndScanDirectory
 };
