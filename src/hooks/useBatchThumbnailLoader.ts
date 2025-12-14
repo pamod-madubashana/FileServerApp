@@ -66,8 +66,8 @@ export function useBatchThumbnailLoader(items: FileItem[], batchSize: number = 5
             const baseUrl = typeof window !== 'undefined' ? 
               (window as any).api_base_url || '' : '';
             let thumbnailUrl = baseUrl 
-              ? `${baseUrl}/api/file/${thumbnailId}/thumbnail` 
-              : `/api/file/${thumbnailId}/thumbnail`;
+              ? `${baseUrl}/file/${thumbnailId}/thumbnail` 
+              : `/file/${thumbnailId}/thumbnail`;
               
             // For Tauri environment, the X-Auth-Token header is automatically added by the fetch implementation
             // No need to add auth token as query parameter

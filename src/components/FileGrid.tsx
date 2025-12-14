@@ -1,630 +1,165 @@
 import { useState, useEffect, useRef } from "react";
-import { FileItem } from "@/components/types";
-import { TraversedFile } from "@/lib/folderTraversal"; // Add this import
-import { Folder, FileText, Image as ImageIcon, FileArchive } from "lucide-react";
-import { ContextMenu } from "./ContextMenu";
-import { RenameInput } from "./RenameInput";
-import { ImageViewer } from "./ImageViewer";
-import { MediaPlayer } from "./MediaPlayer";
-import { Thumbnail } from "./Thumbnail";
-import { UploadProgressWidget } from "./UploadProgressWidget";
-import { FloatingUploadButton } from "./FloatingUploadButton"; // Add this import
-import { TelegramVerificationDialog } from "./TelegramVerificationDialog";
-import { IndexChatDialog } from "./IndexChatDialog"; // Add this import
-import { getApiBaseUrl } from "@/lib/api";
-import { getPlayerPreference } from "@/lib/playerSettings";
-import type { Event } from '@tauri-apps/api/event';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Folder, 
+  FileText, 
+  Image, 
+  Video, 
+  Music, 
+  Mic, 
+  MoreHorizontal, 
+  Download, 
+  Eye,
+  Copy,
+  Scissors,
+  Pencil,
+  Share2,
+  Trash2,
+  Info,
+  RefreshCw,
+  FolderOpen,
+  Clipboard,
+  AlertCircle
+} from 'lucide-react';
+import { FileItem } from '@/types';
+import ContextMenu from './ContextMenu';
+import ImageViewer from './ImageViewer';
+import MediaPlayer from './MediaPlayer';
+import DropZone from './DropZone';
+import UploadProgressWidget from './UploadProgressWidget';
+import TelegramVerificationDialog from './TelegramVerificationDialog';
+import IndexChatDialog from './IndexChatDialog';
+import CustomErrorDialog from './CustomErrorDialog'; // Import the custom error dialog
+import { api } from '@/lib/api';
+import { useFileOperations } from '@/hooks/useFileOperations';
+import logger from '@/lib/logger';
+import { toast } from 'sonner';
+
 interface FileGridProps {
-  items: FileItem[];
-  viewMode: "grid" | "list";
-  onNavigate: (folderName: string) => void;
-  itemCount: number;
-  onCopy: (item: FileItem) => void;
-  onCut: (item: FileItem) => void;
-  onPaste?: () => void;
-  onDelete: (item: FileItem, index: number) => void;
-  onRename: (item: FileItem, index: number) => void;
-  onMove: (item: FileItem, targetFolder: FileItem) => void; // This is correct now
-  onDownload: (item: FileItem) => Promise<void>;
-  renamingItem: { item: FileItem; index: number } | null;
-  onRenameConfirm: (newName: string) => void;
-  onRenameCancel: () => void;
-  currentFolder: string;
-  currentPath?: string[]; // Add full path information
-  currentApiPath?: string; // Add API path information
-  onNewFolder?: () => void;
-  onUploadFiles?: () => void; // Add upload files callback
-  onUploadFolder?: () => void; // Add upload folder callback
-  isLoading?: boolean;
-  cutItem?: FileItem | null; // Add prop to track cut item
-  hasClipboard?: () => boolean; // Add prop to track if there's clipboard content
-  isClipboardPasted?: boolean; // Add prop to track if clipboard item has been pasted
-  onFileUploaded?: (file: FileItem) => void; // Callback for when a file is uploaded
-  onItemsChange?: (items: FileItem[]) => void; // Callback for when items change
-  onRefresh?: () => void; // Callback to refresh the file list
+  files: FileItem[];
+  viewMode: 'grid' | 'list';
+  onItemClick: (item: FileItem) => void;
+  onItemDoubleClick: (item: FileItem) => void;
+  onContextMenu: (e: React.MouseEvent, item: FileItem, index: number) => void;
+  onItemsChange: () => void;
+  onRefresh: () => void;
+  currentPath: string[];
+  currentApiPath: string;
 }
 
-interface ContextMenuState {
-  x: number;
-  y: number;
-  itemType: "file" | "folder" | "empty";
-  itemName: string;
-  item: FileItem;
-  index: number;
-}
-
-export const FileGrid = ({
-  items,
+const FileGrid: React.FC<FileGridProps> = ({
+  files,
   viewMode,
-  onNavigate,
-  itemCount,
-  onCopy,
-  onCut,
-  onPaste,
-  onDelete,
-  onRename,
-  onMove,
-  onDownload,
-  renamingItem,
-  onRenameConfirm,
-  onRenameCancel,
-  currentFolder,
-  onNewFolder,
-  onUploadFiles, // Add this
-  onUploadFolder, // Add this
-  isLoading,
-  cutItem,
-  hasClipboard,
-  isClipboardPasted,
-  onFileUploaded,
+  onItemClick,
+  onItemDoubleClick,
+  onContextMenu,
   onItemsChange,
   onRefresh,
   currentPath,
   currentApiPath,
-}: FileGridProps) => {
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+}) => {
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    itemType: 'file' | 'folder' | 'empty';
+    item?: FileItem;
+    index?: number;
+  } | null>(null);
+
   const [draggedItem, setDraggedItem] = useState<FileItem | null>(null);
-  const [imageViewer, setImageViewer] = useState<{ url: string; fileName: string } | null>(null);
+  const [dropTarget, setDropTarget] = useState<FileItem | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [imageViewer, setImageViewer] = useState<{
+    url: string;
+    fileName: string;
+  } | null>(null);
   const [mediaPlayer, setMediaPlayer] = useState<{
     url: string;
     fileName: string;
-    fileType: "video" | "audio" | "voice";
+    fileType: 'image' | 'video' | 'audio' | 'voice';
   } | null>(null);
-  const [isDragActive, setIsDragActive] = useState(false); // Add drag active state
-  const [dropTarget, setDropTarget] = useState<FileItem | null>(null); // Track drop target
-  const [uploadingFiles, setUploadingFiles] = useState<File[] | null>(null); // Track uploading files
-  const [isDirectoryUpload, setIsDirectoryUpload] = useState(false); // Track if this is a directory upload
-  const [showTelegramVerificationDialog, setShowTelegramVerificationDialog] = useState(false); // Track Telegram verification dialog visibility
-  const [showIndexChatDialog, setShowIndexChatDialog] = useState(false); // Track index chat dialog visibility
-  const dragCounter = useRef(0); // Track drag enter/leave events
-  const draggedItemRef = useRef<FileItem | null>(null); // Ref for dragged item to access in Tauri events    // Update the ref whenever draggedItem changes
-  useEffect(() => {
-    draggedItemRef.current = draggedItem;
-  }, [draggedItem]);
-  
-  // Reset drag counter on component mount and unmount
-  useEffect(() => {
-    dragCounter.current = 0;
-    
-    return () => {
-      dragCounter.current = 0;
-    };
-  }, []);
-  
-  // Reference for the hidden file input
+  const [uploadingFiles, setUploadingFiles] = useState<File[] | null>(null);
+  const [isDirectoryUpload, setIsDirectoryUpload] = useState(false);
+  const [showTelegramVerificationDialog, setShowTelegramVerificationDialog] = useState(false);
+  const [showIndexChatDialog, setShowIndexChatDialog] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    errorType: 'upload' | 'download' | 'network' | 'server' | 'auth' | 'unknown';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    errorType: 'unknown'
+  });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const directoryInputRef = useRef<HTMLInputElement>(null);
 
-  // Check if we're running in Tauri
-  const isTauri = !!(window as any).__TAURI__;
+  const { createFolder, deleteItem, renameItem, moveItem, downloadItem } = useFileOperations();
 
-  // Add Tauri event listeners for drag and drop
-  useEffect(() => {
-    if (!isTauri) return;
-
-    let unlistenDragEnter: (() => void) | null = null;
-    let unlistenDragOver: (() => void) | null = null;
-    let unlistenDragDrop: (() => void) | null = null;
-    let unlistenDragLeave: (() => void) | null = null;
-
-    const initTauriDragListeners = async () => {
-      try {
-        // Dynamically import the event module only in Tauri environment
-        const eventModule = await import('@tauri-apps/api/event');
-        
-        // Listen for Tauri drag enter events
-        unlistenDragEnter = await eventModule.listen('tauri://drag-enter', (event: Event<any>) => {
-          // Increment the drag counter, ensuring it doesn't go negative
-          dragCounter.current = Math.max(0, dragCounter.current + 1);
-          
-          // Only set drag over state for actual file drags (not internal moves)
-          // In Tauri, we can't access DataTransfer data, so we rely on our internal state
-          if (!draggedItemRef.current) {
-            setIsDragActive(true);
-          }
-        });
-
-        // Listen for Tauri drag over events
-        unlistenDragOver = await eventModule.listen('tauri://drag-over', (event: Event<any>) => {
-          // Keep drag over state for actual file drags (not internal moves)
-          // In Tauri, we can't access DataTransfer data, so we rely on our internal state
-          if (!draggedItemRef.current) {
-            setIsDragActive(true);
-          }
-        });
-
-        // Listen for Tauri drag drop events
-        unlistenDragDrop = await eventModule.listen('tauri://drag-drop', (event: Event<any>) => {
-          // Handle dropped files in Tauri
-          // Reset the drag counter and clear drag state
-          dragCounter.current = 0;
-          setIsDragActive(false);
-          
-          if (event && event.payload) {
-            // The payload should contain the file paths
-            // Check if this is an internal move by checking if we have a dragged item
-            // In Tauri, we can't access DataTransfer data, so we rely on our internal state
-            if (draggedItemRef.current) {
-              // Don't process as file upload, let the item drop handlers handle it
-              return;
-            }
-            
-            // If no internal drag, process as file upload
-            // Note: This is a simplified version - in a real implementation, 
-            // we would need to handle the file paths from the payload
-          }
-        });
-
-        // Listen for Tauri drag leave events
-        unlistenDragLeave = await eventModule.listen('tauri://drag-leave', (event: Event<any>) => {
-          // Always decrement the drag counter on drag leave
-          dragCounter.current = Math.max(0, dragCounter.current - 1);
-          
-          // Clear drag over state when counter is 0
-          if (dragCounter.current === 0) {
-            setIsDragActive(false);
-          }
-        });
-      } catch (error) {
-        console.error('Failed to initialize Tauri drag listeners:', error);
-      }
-    };
-
-    initTauriDragListeners();
-
-    // Cleanup function to remove event listeners and reset drag counter
-    return () => {
-      if (unlistenDragEnter) unlistenDragEnter();
-      if (unlistenDragOver) unlistenDragOver();
-      if (unlistenDragDrop) unlistenDragDrop();
-      if (unlistenDragLeave) unlistenDragLeave();
-      
-      // Reset drag counter when component unmounts
-      dragCounter.current = 0;
-    };
-  }, [isTauri]);
-
-  // Disable Tauri's file drop functionality if possible
-  useEffect(() => {
-    if (!isTauri) return;
-
-    const disableFileDrop = async () => {
-      try {
-        // Try to access the Tauri window API to disable file drop
-        // In Tauri v2, we don't need to explicitly get the current window
-        // The file drop is now handled at the Rust level
-        console.log('Tauri file drop workaround applied');
-      } catch (error) {
-        console.error('Failed to apply file drop workaround:', error);
-      }
-    };
-
-    disableFileDrop();
-  }, [isTauri]);
-
-  const handleContextMenu = (e: React.MouseEvent, item: FileItem, index: number) => {
+  const handleFileDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation(); // Prevent event from bubbling to parent container
-    // Additional prevention of default context menu
-    e.nativeEvent.preventDefault();
-    setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
-      itemType: item.type,
-      itemName: item.name,
-      item,
-      index,
-    });
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsDragActive(true);
   };
 
-  const handleItemClick = async (item: FileItem) => {
-    if (item.type === "folder") {
-      onNavigate(item.name);
-    } else if (item.fileType === "photo" && item.file_unique_id) {
-      // Open image in viewer with file name instead of unique ID
-      const baseUrl = getApiBaseUrl();
-      const imageUrl = baseUrl 
-        ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
-        : `/dl/${encodeURIComponent(item.name)}`;
-      
-      // Pre-fetch the image using our authenticated API client and create an object URL
-      try {
-        const { fetchWithTimeout } = await import('@/lib/api');
-        const response = await fetchWithTimeout(imageUrl, { method: 'GET' }, 10000);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch image: ${response.statusText}`);
-        }
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        setImageViewer({ url: objectUrl, fileName: item.name });
-      } catch (error) {
-        console.error('Failed to load image:', error);
-        // Fallback to direct URL (may still fail with 401)
-        setImageViewer({ url: imageUrl, fileName: item.name });
-      }
-    } else if ((item.fileType === "video" || item.fileType === "audio" || item.fileType === "voice") && item.file_unique_id) {
-      // Always use built-in player (remove external player option)
-      console.log("Opening media in built-in player");
-      const baseUrl = getApiBaseUrl();
-      const mediaUrl = baseUrl 
-        ? `${baseUrl}/dl/${encodeURIComponent(item.name)}` 
-        : `/dl/${encodeURIComponent(item.name)}`;
-      
-      // Pre-fetch the media using our authenticated API client and create an object URL
-      try {
-        const { fetchWithTimeout } = await import('@/lib/api');
-        const response = await fetchWithTimeout(mediaUrl, { method: 'GET' }, 10000);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch media: ${response.statusText}`);
-        }
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        setMediaPlayer({ 
-          url: objectUrl, 
-          fileName: item.name, 
-          fileType: item.fileType as "video" | "audio" | "voice" 
-        });
-      } catch (error) {
-        console.error('Failed to load media:', error);
-        // Fallback to direct URL (may still fail with 401)
-        setMediaPlayer({ 
-          url: mediaUrl, 
-          fileName: item.name, 
-          fileType: item.fileType as "video" | "audio" | "voice" 
-        });
-      }
-    }
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
   };
 
-  const handleDragStart = (e: React.DragEvent, item: FileItem) => {
-    setDraggedItem(item);
-    e.dataTransfer.effectAllowed = "move";
-    // Set both application/json and text/plain data to ensure compatibility
-    e.dataTransfer.setData("application/json", JSON.stringify(item));
-    e.dataTransfer.setData("text/plain", JSON.stringify(item));
-    
-    // In Tauri, we might need to explicitly set the drag image
-    if (isTauri) {
-      const img = new Image();
-      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-      e.dataTransfer.setDragImage(img, 0, 0);
-    }
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
   };
 
-  const handleDragEnd = () => {
-    setDraggedItem(null);
-  };
+  const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
 
-  // Add file upload handler that accepts both FileList and TraversedFile[]
-  const handleFileUpload = async (files: FileList | TraversedFile[]) => {
     try {
-      // Use the API path if available, otherwise construct it
-      // Ensure root path is always "/Home" instead of "/"
-      let currentPathStr = currentApiPath || `/${currentFolder}`;
-      if (currentPathStr === '/') {
-        currentPathStr = '/Home';
-      }
-      console.log('Current folder:', currentFolder);
-      console.log('Current path array:', currentPath);
-      console.log('Current API path:', currentApiPath);
-      console.log('Using path for upload:', currentPathStr);
-      
-      // Validate inputs
-      if (!files || (Array.isArray(files) && files.length === 0) || (files instanceof FileList && files.length === 0)) {
-        throw new Error('No files selected for upload');
-      }
-      
-      // Convert files to array for easier handling
-      const filesArray = [];
-      if (files instanceof FileList) {
-        // Convert FileList to array and check for webkitRelativePath
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          // Check if this is a directory upload with webkitRelativePath
-          if ('webkitRelativePath' in file && (file as any).webkitRelativePath) {
-            // Extract just the file name from the webkitRelativePath
-            const fullPath = (file as any).webkitRelativePath;
-            const fileName = fullPath.split('/').pop() || file.name;
-            
-            // Create a new File object with a clean name
-            const cleanFile = new File([file], fileName, {
-              type: file.type,
-              lastModified: file.lastModified,
+      const items = e.dataTransfer.items;
+      const traversedFiles: TraversedFile[] = [];
+
+      for (const item of Array.from(items)) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            traversedFiles.push({
+              file,
+              fullPath: file.name,
             });
-            
-            // Create TraversedFile object with fullPath from webkitRelativePath
-            filesArray.push({
-              file: cleanFile,
-              name: fileName,
-              fullPath: fullPath,
-              size: file.size,
-              type: file.type,
-              lastModified: file.lastModified
-            });
-          } else {
-            // Regular file object
-            filesArray.push(file);
           }
-        }
-      } else {
-        // Already an array
-        filesArray.push(...files);
-      }
-      
-      // Log all files for debugging
-      console.log('All files received:', filesArray.map(f => {
-        // Handle both File objects and TraversedFile objects
-        if ('file' in f && f.file instanceof File) {
-          // TraversedFile object
-          return {
-            name: f.file.name,
-            size: f.file.size,
-            type: f.file.type,
-            fullPath: f.fullPath,
-            lastModified: f.file.lastModified,
-            webkitRelativePath: 'webkitRelativePath' in f.file ? (f.file as any).webkitRelativePath : 'N/A'
-          };
-        } else if (f instanceof File) {
-          // Regular File object
-          return {
-            name: f.name,
-            size: f.size,
-            type: f.type,
-            fullPath: 'N/A',
-            lastModified: f.lastModified,
-            webkitRelativePath: 'webkitRelativePath' in f ? (f as any).webkitRelativePath : 'N/A'
-          };
-        } else {
-          // Unknown object type
-          return {
-            name: 'unknown',
-            size: 0,
-            type: 'unknown',
-            fullPath: 'unknown',
-            lastModified: 0,
-            webkitRelativePath: 'N/A'
-          };
-        }
-      }));
-      
-      // Filter out clearly problematic files
-      const validFiles = filesArray.filter(fileObj => {
-        // Handle both File objects and TraversedFile objects
-        let file: File;
-        let fullPath: string | undefined;
-        
-        if ('file' in fileObj && fileObj.file instanceof File) {
-          // TraversedFile object
-          file = fileObj.file;
-          fullPath = fileObj.fullPath;
-        } else if (fileObj instanceof File) {
-          // Regular File object
-          file = fileObj;
-          // Check for webkitRelativePath in regular File objects too
-          if ('webkitRelativePath' in fileObj && (fileObj as any).webkitRelativePath) {
-            fullPath = (fileObj as any).webkitRelativePath;
-          }
-        } else {
-          // Unknown object type
-          console.warn('Skipping unknown file object type');
-          return false;
-        }
-        
-        // Skip files with no name
-        if (!file.name) {
-          console.warn('Skipping file with no name');
-          return false;
-        }
-        
-        // Skip system files that are definitely not user files
-        if (file.name === 'Thumbs.db' || file.name === 'desktop.ini') {
-          console.warn('Skipping system file:', file.name);
-          return false;
-        }
-        
-        // For traversed files (from folder drop), we should keep them even if they have size 0
-        // because they came from our folder traversal logic and have proper fullPaths
-        if (fullPath && fullPath !== file.name) {
-          // This is a traversed file with a path structure, keep it
-          console.log('Keeping traversed file:', file.name, 'with fullPath:', fullPath);
-          return true;
-        }
-        
-        // Keep files that have either:
-        // 1. Content (size > 0)
-        // 2. A type (indicating it's a real file)
-        if (file.size > 0 || file.type) {
-          return true;
-        }
-        
-        // For files with size 0 and no type, we need to be more careful
-        // If it has a meaningful path structure (contains slashes), it's likely from folder traversal
-        if (fullPath && fullPath.includes('/') && fullPath !== file.name) {
-          return true;
-        }
-        
-        // According to project specification "Preserve Zero-Size Directory Placeholders During Filtering":
-        // Do not skip entries solely based on size 0 and empty type. Directory placeholders appear this way;
-        // they must be allowed to pass through so recursive traversal can process their contents.
-        console.log('Preserving potential directory placeholder:', file.name);
-        return true;
-      });
-      
-      // Log valid files for debugging
-      console.log('Valid files after filtering:', validFiles.map(f => {
-        // Handle both File objects and TraversedFile objects
-        if ('file' in f && f.file instanceof File) {
-          // TraversedFile object
-          return {
-            name: f.file.name,
-            size: f.file.size,
-            type: f.file.type,
-            fullPath: f.fullPath,
-            lastModified: f.file.lastModified,
-            webkitRelativePath: 'webkitRelativePath' in f.file ? (f.file as any).webkitRelativePath : 'N/A'
-          };
-        } else if (f instanceof File) {
-          // Regular File object
-          return {
-            name: f.name,
-            size: f.size,
-            type: f.type,
-            fullPath: 'webkitRelativePath' in f && (f as any).webkitRelativePath ? (f as any).webkitRelativePath : 'N/A',
-            lastModified: f.lastModified,
-            webkitRelativePath: 'webkitRelativePath' in f ? (f as any).webkitRelativePath : 'N/A'
-          };
-        } else {
-          // Unknown object type
-          return {
-            name: 'unknown',
-            size: 0,
-            type: 'unknown',
-            fullPath: 'unknown',
-            lastModified: 0,
-            webkitRelativePath: 'N/A'
-          };
-        }
-      }));
-      
-      if (validFiles.length === 0) {
-        throw new Error('No valid files to upload after filtering');
-      }
-      
-      // Set uploading files state to show the progress widget
-      const filesToUpload = validFiles.map(f => {
-        if ('file' in f && f.file instanceof File) {
-          return f.file;
-        } else if (f instanceof File) {
-          return f;
-        }
-        return null;
-      }).filter(Boolean) as File[];
-      
-      setUploadingFiles(filesToUpload);
-      
-      // Import the API client
-      const { api } = await import('@/lib/api');
-      
-      // Collect all unique top-level folder names that need to be created
-      const topLevelFoldersToCreate = new Set<string>();
-      
-      // Collect all unique folder paths that need to be created
-      const folderPathsToCreate = new Set<string>();
-      
-      // Process each file to determine all folder paths in the hierarchy
-      validFiles.forEach(fileObj => {
-        let fullPath: string | undefined;
-        
-        if ('file' in fileObj && fileObj.file instanceof File) {
-          fullPath = fileObj.fullPath;
-        } else if (fileObj instanceof File) {
-          // Check for webkitRelativePath in regular File objects too
-          if ('webkitRelativePath' in fileObj && (fileObj as any).webkitRelativePath) {
-            fullPath = (fileObj as any).webkitRelativePath;
-          }
-        }
-        
-        // If we have a full path structure (e.g., "qwes/subfolder/file.txt"), we need to:
-        // 1. Extract all folder paths in the hierarchy
-        // 2. Add them to our set of folders to create
-        if (fullPath && fullPath.includes('/')) {
-          const pathParts = fullPath.split('/');
-          console.log(`Processing fullPath: ${fullPath}, pathParts:`, pathParts);
-          
-          // Skip if the path is just "Home" or empty
-          if (pathParts.length === 1 && (pathParts[0] === 'Home' || pathParts[0] === '')) {
-            console.log(`Skipping invalid path: ${fullPath}`);
-            return;
-          }
-          
-          if (pathParts.length >= 1) {
-            // Create all intermediate folder paths
-            // For a path like "folder1/subfolder1/subfolder2/file.txt"
-            // We need to create folder paths: 
-            // - currentPathStr/folder1
-            // - currentPathStr/folder1/subfolder1
-            // - currentPathStr/folder1/subfolder1/subfolder2
-            
-            let cumulativePath = "";
-            for (let i = 0; i < pathParts.length - 1; i++) { // -1 because we don't want the filename
-              if (i === 0) {
-                cumulativePath = pathParts[i];
-              } else {
-                cumulativePath = `${cumulativePath}/${pathParts[i]}`;
-              }
-              
-              folderPathsToCreate.add(cumulativePath);
-              console.log(`Adding folder path to create: ${cumulativePath}`);
-            }
-          }
-        }
-      });
-      
-      // Create all required folder paths using the recursive create_folder_path API
-      console.log('Creating folder paths:', Array.from(folderPathsToCreate));
-      for (const folderPath of folderPathsToCreate) {
-        try {
-          console.log(`Creating folder path '${folderPath}' in base path '${currentPathStr}'`);
-          // Construct the full path by combining current path with the relative folder path
-          let fullPathToCreate;
-          if (currentPathStr === '/') {
-            // If we're at root, the full path is "/Home/folderPath"
-            fullPathToCreate = `/Home/${folderPath}`;
-          } else if (currentPathStr === '/Home') {
-            // If we're in /Home, just append the folderPath
-            fullPathToCreate = `/Home/${folderPath}`;
-          } else {
-            // If we're in a subdirectory like /Home/Documents, combine the paths correctly
-            // Ensure currentPathStr doesn't end with slash
-            const cleanCurrentPath = currentPathStr.replace(/\/$/, ''); // Remove trailing slash
-            fullPathToCreate = `${cleanCurrentPath}/${folderPath}`;
-          }
-          
-          console.log(`Calling createFolderPath with full path: ${fullPathToCreate}`);
-          await api.createFolderPath(fullPathToCreate);
-          console.log(`Successfully created folder path: ${fullPathToCreate}`);
-        } catch (error) {
-          console.warn(`Error creating folder path ${folderPath}:`, error);
         }
       }
+
+      if (traversedFiles.length > 0) {
+        handleFileUpload(traversedFiles);
+      }
+    } catch (error) {
+      console.error('Failed to handle file drop:', error);
+    }
+  };
+
+  const handleFileUpload = async (traversedFiles: TraversedFile[]) => {
+    try {
+      // Set uploading state
+      setUploadingFiles(traversedFiles.map(tf => tf.file));
       
-      // Upload each file with correct path structure
-      const uploadPromises = validFiles.map(async (fileObj) => {
-        let file: File;
-        let fullPath: string | undefined;
+      // Get current path as string
+      const currentPathStr = currentApiPath || (currentPath.length > 0 ? `/${currentPath.join('/')}` : '/');
+      
+      // Create upload promises for each file
+      const uploadPromises = traversedFiles.map(async (traversedFile) => {
+        const { file, fullPath } = traversedFile;
         
-        if ('file' in fileObj && fileObj.file instanceof File) {
-          // TraversedFile object
-          file = fileObj.file;
-          fullPath = fileObj.fullPath;
-        } else if (fileObj instanceof File) {
-          // Regular File object
-          file = fileObj;
-          // Check for webkitRelativePath in regular File objects too
-          if ('webkitRelativePath' in fileObj && (fileObj as any).webkitRelativePath) {
-            fullPath = (fileObj as any).webkitRelativePath;
-          }
-        } else {
+        if (!(file instanceof File)) {
           throw new Error('Invalid file object');
         }
         
@@ -637,6 +172,7 @@ export const FileGrid = ({
           // This preserves the folder structure from the dropped folder
           // For example, if fullPath is "qwes/subfolder/file.txt" and currentPathStr is "/Home/Documents"
           // The final path should be "/Home/Documents/qwes/subfolder" (without the filename)
+          
           const pathParts = fullPath.split('/');
 
           
@@ -684,8 +220,8 @@ export const FileGrid = ({
       console.error('Upload error:', error);
       setUploadingFiles(null);
       setIsDirectoryUpload(false);
-      // Show error message through UI feedback instead of alert
-      // Check if this is the specific Telegram verification error
+      
+      // Show custom error dialog instead of alerts
       if (error.message && error.message.includes('TELEGRAM_NOT_VERIFIED')) {
         // Show custom Telegram verification dialog
         setShowTelegramVerificationDialog(true);
@@ -693,384 +229,60 @@ export const FileGrid = ({
         // Show custom Index Chat dialog
         setShowIndexChatDialog(true);
       } else {
-        // Show error message through UI feedback instead of alert
-        console.error(`Upload failed: ${error.message || 'Unknown error'}`);
+        // Show custom error dialog for other upload errors
+        setErrorDialog({
+          isOpen: true,
+          title: 'Upload Failed',
+          message: error.message || 'Failed to upload files. Please try again.',
+          errorType: 'upload'
+        });
       }
-    }  };
-  // Handle drag enter event
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Increment the drag counter, ensuring it doesn't go negative
-    dragCounter.current = Math.max(0, dragCounter.current + 1);
-    
-    // Check for internal drag data first - this indicates item moves, not file uploads
-    // Check for both application/json and text/plain for compatibility
-    const hasInternalData = e.dataTransfer.types.includes('application/json') || 
-                           e.dataTransfer.types.includes('text/plain');
-    
-    // If it's an internal drag, don't set drag active state
-    if (hasInternalData) {
-      return;
-    }
-    
-    // Only set drag active for actual file drags (not internal moves)
-    const hasFiles = e.dataTransfer.types.includes('Files');
-    if (hasFiles) {
-      setIsDragActive(true);
     }
   };
 
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Always decrement the drag counter on drag leave
-    dragCounter.current = Math.max(0, dragCounter.current - 1);
-    
-    // Only hide the overlay if drag counter is 0
-    if (dragCounter.current === 0) {
-      setIsDragActive(false);
-    }
-  };
-
-  const handleFileDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Check for internal drag data first - this indicates item moves, not file uploads
-    // Check for both application/json and text/plain for compatibility
-    const hasInternalData = e.dataTransfer.types.includes('application/json') || 
-                           e.dataTransfer.types.includes('text/plain');
-    
-    // If it's an internal drag, don't set drop effect
-    if (hasInternalData) {
-      return;
-    }
-    
-    // Only set drop effect for actual file drags (not internal moves)
-    const hasFiles = e.dataTransfer.types.includes('Files');
-    if (hasFiles) {
-      e.dataTransfer.dropEffect = 'copy';
-    }
-  };
-
-  // Handle file drop with modern folder traversal
-  const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Reset the drag counter and clear drag state
-    dragCounter.current = 0;
-    setIsDragActive(false);
-    
+  const handleDownload = async (item: FileItem) => {
     try {
-      // Check for internal drag data first - this indicates item moves, not file uploads
-      // Check for both application/json and text/plain for compatibility
-      const hasInternalData = e.dataTransfer.types.includes('application/json') || 
-                             e.dataTransfer.types.includes('text/plain');
-      
-      // If it's an internal drag, don't treat as file upload regardless of other data types
-      if (hasInternalData) {
-        // This is an internal item drag, let the item drop handlers handle it
-        // If no item drop handler caught it, it means it was dropped in an invalid location
-        // In this case, we should just clear the drag state
-        setDraggedItem(null);
-        return;
-      }
-      
-      // Check for actual file data from OS (only if no internal data)
-      const hasFiles = e.dataTransfer.types.includes('Files');
-      
-      // If it's a file drag from OS, handle as file upload
-      if (hasFiles) {
-        // Process items synchronously within the event handler
-        // Due to browser security restrictions, we must access DataTransfer items immediately
-        
-        // Try modern FileSystemHandle API first (synchronously)
-        const modernFiles = await processItemsWithModernAPI(e.dataTransfer.items);
-        if (modernFiles && modernFiles.length > 0) {
-          handleFileUpload(modernFiles);
-          return;
-        }
-        
-        // Try legacy Entry API (synchronously)
-        const legacyFiles = await processItemsWithLegacyAPI(e.dataTransfer.items);
-        if (legacyFiles && legacyFiles.length > 0) {
-          handleFileUpload(legacyFiles);
-          return;
-        }
-        
-        // Fallback to direct file access
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          const files = e.dataTransfer.files;
-          
-          // Convert to array and process
-          const fileListArray = Array.from(files);
-          
-          // Create TraversedFile objects for each file
-          const traversedFiles: TraversedFile[] = fileListArray.map(file => ({
-            file,
-            name: file.name,
-            fullPath: file.name,
-            size: file.size,
-            type: file.type,
-            lastModified: file.lastModified
-          }));
-          
-          // Handle the upload
-          handleFileUpload(traversedFiles);
-          return;
-        }
-        
-        // If we get here, we couldn't process any files
-        alert('Unable to process the dropped files. Please try dragging files directly from your file manager.');
-        return;
+      const url = await downloadItem(item);
+      if (url) {
+        window.open(url, '_blank');
       }
     } catch (error) {
-      alert('Failed to handle file drop. Please try again.');
+      console.error('Download error:', error);
+      toast.error('Failed to download file. Please try again.');
     }
   };
-  
-  // Process items with modern FileSystemHandle API
-  const processItemsWithModernAPI = async (items: DataTransferItemList): Promise<TraversedFile[] | null> => {
-    const allFiles: TraversedFile[] = [];
-    let hasHandles = false;
-    
-    // This must be done synchronously within the event handler
-    for (const item of Array.from(items)) {
-      if (item.getAsFileSystemHandle) {
-        try {
-          // This is the critical part - we must call getAsFileSystemHandle synchronously
-          const handlePromise = item.getAsFileSystemHandle();
-          const handle = await handlePromise;
-          hasHandles = true;
-          
-          if (handle) {
-            // Import the helper functions
-            const { isFileSystemFileHandle, isFileSystemDirectoryHandle, traverseDirectoryWithHandle } = await import('@/lib/folderTraversal');
-            
-            if (isFileSystemFileHandle(handle)) {
-              try {
-                const file = await handle.getFile();
-                allFiles.push({
-                  file,
-                  name: file.name,
-                  fullPath: file.name,
-                  size: file.size,
-                  type: file.type,
-                  lastModified: file.lastModified
-                });
-              } catch (error) {
-              }
-            } else if (isFileSystemDirectoryHandle(handle)) {
-              try {
-                // For directories, traverse recursively
-                const files = await traverseDirectoryWithHandle(handle, handle.name);
-                allFiles.push(...files);
-              } catch (error) {
-              }
-            }
-          }
-        } catch (error) {
-        }
-      }
+
+  const handleDoubleClick = (item: FileItem) => {
+    if (item.type === 'folder') {
+      onItemDoubleClick(item);
     }
-    
-    return hasHandles ? allFiles : null;
-  };
-  
-  // Process items with legacy Entry API
-  const processItemsWithLegacyAPI = async (items: DataTransferItemList): Promise<TraversedFile[] | null> => {
-    const allFiles: TraversedFile[] = [];
-    let hasEntries = false;
-    
-    // This must be done synchronously within the event handler
-    for (const item of Array.from(items)) {
-      if ('webkitGetAsEntry' in item) {
-        try {
-          // This is the critical part - we must call webkitGetAsEntry synchronously
-          const entry = (item as any).webkitGetAsEntry();
-          hasEntries = true;
-          
-          if (entry) {
-            if (entry.isFile) {
-              try {
-                const file = await new Promise<File>((resolve, reject) => {
-                  entry.file(resolve, reject);
-                });
-                
-                const fullPath = entry.fullPath && entry.fullPath.length > 1 
-                  ? entry.fullPath.substring(1) // Remove leading slash
-                  : entry.name;
-                  
-                allFiles.push({
-                  file,
-                  name: file.name,
-                  fullPath,
-                  size: file.size,
-                  type: file.type,
-                  lastModified: file.lastModified
-                });
-              } catch (error) {
-                console.warn(`Failed to get file from entry:`, error);
-              }
-            } else if (entry.isDirectory) {
-              try {
-                // Import the traversal function
-                const { traverseDirectoryWithEntry } = await import('@/lib/folderTraversal');
-                // For directories, traverse recursively
-                const basePath = entry.fullPath && entry.fullPath.length > 1 
-                  ? entry.fullPath.substring(1) // Remove leading slash
-                  : entry.name;
-                const files = await traverseDirectoryWithEntry(entry, basePath);
-                allFiles.push(...files);
-              } catch (error) {
-                console.warn(`Failed to traverse directory:`, error);
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('Error getting Entry:', error);
-        }
-      }
-    }
-    
-    return hasEntries ? allFiles : null;
-  };
-  
-  // Traverse directory using FileSystemDirectoryHandle (Modern API)
-  const traverseDirectoryWithHandle = async (
-    handle: any,
-    basePath: string = ''
-  ): Promise<TraversedFile[]> => {
-    const files: TraversedFile[] = [];
-    
-    try {
-      // Using entries() to iterate through directory contents
-      for await (const [name, entry] of handle.entries()) {
-        const fullPath = basePath ? `${basePath}/${name}` : name;
-        
-        if (entry.kind === 'file') {
-          try {
-            const file = await entry.getFile();
-            files.push({
-              file,
-              name: file.name,
-              fullPath,
-              size: file.size,
-              type: file.type,
-              lastModified: file.lastModified
-            });
-          } catch (error) {
-            console.warn(`Failed to get file ${fullPath}:`, error);
-          }
-        } else if (entry.kind === 'directory') {
-          try {
-            const subFiles = await traverseDirectoryWithHandle(entry, fullPath);
-            files.push(...subFiles);
-          } catch (error) {
-            console.warn(`Failed to traverse directory ${fullPath}:`, error);
-          }
-        }
-      }
-    } catch (error) {
-      console.warn(`Failed to read directory entries for ${handle.name}:`, error);
-    }
-    
-    return files;
-  };
-  
-  // Traverse directory using DirectoryEntry (Legacy API)
-  const traverseDirectoryWithEntry = async (
-    entry: any,
-    basePath: string = ''
-  ): Promise<TraversedFile[]> => {
-    const files: TraversedFile[] = [];
-
-    try {
-      const reader = entry.createReader();
-      const entries: any[] = await new Promise((resolve, reject) => {
-        reader.readEntries(resolve, reject);
-      });
-
-      for (const childEntry of entries) {
-        const fullPath = basePath ? `${basePath}/${(childEntry as any).name}` : (childEntry as any).name;
-
-        if ((childEntry as any).isFile) {
-          try {
-            const file = await new Promise<File>((resolve, reject) => {
-              (childEntry as any).file(resolve, reject);
-            });
-
-            const finalFullPath = basePath ? `${basePath}/${(childEntry as any).name}` : (childEntry as any).name;
-
-            files.push({
-              file,
-              name: file.name,
-              fullPath: finalFullPath,
-              size: file.size,
-              type: file.type,
-              lastModified: file.lastModified
-            });
-          } catch (error) {
-          }
-        } else if ((childEntry as any).isDirectory) {
-          try {
-            const subFiles = await traverseDirectoryWithEntry(childEntry, fullPath);
-            files.push(...subFiles);
-          } catch (error) {
-          }
-        }
-      }
-    } catch (error) {
-    }
-
-    return files;
   };
 
-  // Handle drag over event for items
-  const handleItemDragOver = (e: React.DragEvent, targetItem: FileItem) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDropTarget(targetItem);
-  };
-
-  // Handle drop event on items
-  const handleItemDrop = (e: React.DragEvent, targetItem: FileItem) => {
+  const handleContextMenu = (e: React.MouseEvent, item: FileItem, index: number) => {
     e.preventDefault();
     e.stopPropagation();
-
-    try {
-      if (!draggedItem || targetItem.type !== "folder" || draggedItem.name === targetItem.name) {
-        // Clear drag state even if we can't move the item
-        setDraggedItem(null);
-        return;
-      }
-
-      // Pass the target item (folder) to onMove instead of just the name
-      onMove(draggedItem, targetItem);
-      setDraggedItem(null);
-    } catch (error) {
-      // Clear drag state on error
-      setDraggedItem(null);
-      alert('Failed to move item. Please try again.');
-    }
+    onContextMenu(e, item, index);
   };
 
   const getFileIcon = (item: FileItem) => {
-    // For folders, use the Folder icon directly
-    if (item.type === "folder") {
-      // Use smaller icons for list view
-      const folderIconSize = viewMode === 'list' ? 'w-5 h-5' : 'w-20 h-20';
-      return <Folder className={`${folderIconSize} text-primary`} />;
+    if (item.type === 'folder') {
+      return <Folder className="w-10 h-10 text-primary" />;
     }
-    
-    // Use the new Thumbnail component for better error handling
-    return <Thumbnail item={item} size={viewMode === 'list' ? 'sm' : 'lg'} />;
+    if (item.fileType === 'photo') {
+      return <Image className="w-10 h-10 text-primary" />;
+    }
+    if (item.fileType === 'video') {
+      return <Video className="w-10 h-10 text-primary" />;
+    }
+    if (item.fileType === 'audio') {
+      return <Music className="w-10 h-10 text-primary" />;
+    }
+    if (item.fileType === 'voice') {
+      return <Mic className="w-10 h-10 text-primary" />;
+    }
+    return <FileText className="w-10 h-10 text-primary" />;
   };
 
-  // Format file size in a human-readable format
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     
@@ -1081,28 +293,9 @@ export const FileGrid = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Add functions to trigger file/directory uploads
-  const triggerFileUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const triggerDirectoryUpload = () => {
-    directoryInputRef.current?.click();
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 flex flex-col bg-background select-none" data-drag-container
+    <div 
+      className="flex-1 overflow-auto relative"
       onDragOver={handleFileDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -1150,248 +343,148 @@ export const FileGrid = ({
           onComplete={() => {
             setUploadingFiles(null);
             setIsDirectoryUpload(false);
-            // Refresh the file list if a refresh function is provided
-            if (onRefresh) {
-              onRefresh();
-            }
-            // Show success message through UI feedback
-            console.log('Upload process completed and widget closed');
-          }}
-          onCancel={() => {
-            setUploadingFiles(null);
-            setIsDirectoryUpload(false);
+            // Refresh the file list after upload completes
+            onRefresh();
           }}
         />
       )}
       
-      <div
-        className={`flex-1 overflow-y-auto p-4 ${isDragActive ? 'bg-blue-50 border-2 border-dashed border-blue-500 rounded-lg' : ''}`}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          // Additional prevention of default context menu
-          e.nativeEvent.preventDefault();
-          // Show context menu for empty area
-          setContextMenu({
-            x: e.clientX,
-            y: e.clientY,
-            itemType: "empty",
-            itemName: "",
-            item: { name: "", type: "folder", icon: "" } as FileItem,
-            index: -1,
-          });
+      {/* Custom Error Dialog */}
+      <CustomErrorDialog
+        isOpen={errorDialog.isOpen}
+        onClose={() => setErrorDialog(prev => ({ ...prev, isOpen: false }))}
+        title={errorDialog.title}
+        message={errorDialog.message}
+        errorType={errorDialog.errorType}
+        onRetry={() => {
+          // Optionally implement retry logic here
+          setErrorDialog(prev => ({ ...prev, isOpen: false }));
         }}
-      >
-        {/* Upload indicator when dragging files over */}
-        {isDragActive && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg z-50 pointer-events-none border-2 border-dashed border-primary">
-            <div className="text-center p-6 bg-background rounded-lg shadow-lg pointer-events-auto border border-border">
-              <div className="text-2xl mb-2">📁</div>
-              <p className="text-lg font-semibold text-foreground">Drop files here to upload</p>
-              <p className="text-muted-foreground">Upload to {currentFolder}</p>
-            </div>
-          </div>
-        )}
-        
-        {viewMode === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-            {items.map((item, index) => {
-              const isRenaming = renamingItem?.index === index;
-              const isDragging = draggedItem?.name === item.name;
-              const isCut = cutItem?.name === item.name && cutItem?.id === item.id; // Check if this item is cut
-
-              return (
-                <div
-                  key={index}
-                  draggable={!isRenaming}
-                  onDragStart={(e) => handleDragStart(e, item)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={item.type === "folder" ? (e) => handleItemDragOver(e, item) : undefined}
-                  onDrop={item.type === "folder" ? (e) => handleItemDrop(e, item) : undefined}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // Additional prevention of default context menu
-                    e.nativeEvent.preventDefault();
-                    !isRenaming && handleContextMenu(e, item, index);
-                  }}
-                  className={`flex flex-col items-center p-3 rounded-xl transition-all duration-200 hover:scale-[1.03] hover:shadow-lg active:scale-[0.98] ${isDragging ? "opacity-50 scale-95" : ""}
-                    ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
-                    ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
-                      ? "scale-105 transition-all duration-200"
-                      : ""
-                    }`}
-                >
-                  <button
-                    onClick={() => !isRenaming && handleItemClick(item)}
-                    className="flex flex-col items-center w-full hover:bg-accent rounded-lg p-2 transition-all duration-200 group hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <div className="mb-2">{getFileIcon(item)}</div>
-                    {isRenaming ? (
-                      <RenameInput
-                        initialName={item.name}
-                        onSave={onRenameConfirm}
-                        onCancel={onRenameCancel}
-                      />
-                    ) : (
-                      <span className="text-xs text-center break-words w-full text-foreground group-hover:text-accent-foreground">
-                        {item.name}
-                      </span>
-                    )}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex flex-col">
-            {/* Table header */}
-            <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-muted-foreground border-b border-border bg-muted/50">
-              <div className="col-span-5">Name</div>
-              <div className="col-span-3">Modified Date</div>
-              <div className="col-span-2">Type</div>
-              <div className="col-span-2 text-right">Size</div>
-            </div>
-            <div className="space-y-0.5">
-              {items.map((item, index) => {
-                const isRenaming = renamingItem?.index === index;
-                const isDragging = draggedItem?.name === item.name;
-                const isCut = cutItem?.name === item.name && cutItem?.id === item.id; // Check if this item is cut
-
-                return (
-                  <div
-                    key={index}
-                    draggable={!isRenaming}
-                    onDragStart={(e) => handleDragStart(e, item)}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={item.type === "folder" ? (e) => handleItemDragOver(e, item) : undefined}
-                    onDrop={item.type === "folder" ? (e) => handleItemDrop(e, item) : undefined}
-                    onContextMenu={(e) => !isRenaming && handleContextMenu(e, item, index)}
-                    className={`transition-all duration-200 hover:shadow-md active:scale-[0.98] ${isDragging ? "opacity-50" : ""} 
-                      ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
-                      ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
-                      ? "scale-105 transition-all duration-200"
-                      : ""
-                      }`}
-                  >
-                    <button
-                      onClick={() => !isRenaming && handleItemClick(item)}
-                      className="col-span-12 w-full grid grid-cols-12 gap-4 p-1.5 rounded transition-all duration-200 group hover:bg-accent/50 active:scale-[0.995]"
-                    >
-                      <div className="col-span-5 flex items-center gap-3">
-                        <div className="flex-shrink-0 w-5 h-5">{getFileIcon(item)}</div>
-                        {isRenaming ? (
-                          <div className="flex-1">
-                            <RenameInput
-                              initialName={item.name}
-                              onSave={onRenameConfirm}
-                              onCancel={onRenameCancel}
-                            />
-                          </div>
-                        ) : (
-                          <span className="text-sm text-foreground group-hover:text-accent-foreground truncate">
-                            {item.name}
-                          </span>
-                        )}
-                      </div>
-                      <div className="col-span-3 flex items-center text-xs text-muted-foreground">
-                        {item.modified ? new Date(item.modified).toLocaleDateString() : ''}
-                      </div>
-                      <div className="col-span-2 flex items-center text-xs text-muted-foreground capitalize">
-                        {item.type === 'folder' ? 'Folder' : (item.fileType || 'File')}
-                      </div>
-                      <div className="col-span-2 flex items-center justify-end text-xs text-muted-foreground">
-                        {item.type === 'folder' ? '' : (item.size ? formatFileSize(item.size) : '')}
-                      </div>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
+      />
+      
+      {/* Telegram Verification Dialog */}
+      <TelegramVerificationDialog
+        isOpen={showTelegramVerificationDialog}
+        onClose={() => setShowTelegramVerificationDialog(false)}
+      />
+      
+      {/* Index Chat Dialog */}
+      <IndexChatDialog
+        isOpen={showIndexChatDialog}
+        onClose={() => setShowIndexChatDialog(false)}
+      />
+      
       {/* Context Menu */}
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
           itemType={contextMenu.itemType}
-          itemName={contextMenu.itemName}
-          onCopy={() => contextMenu.item && onCopy(contextMenu.item)}
-          onCut={() => contextMenu.item && onCut(contextMenu.item)}
-          onPaste={onPaste}
-          onDelete={() => contextMenu.item && onDelete(contextMenu.item, contextMenu.index)}
-          onRename={() => contextMenu.item && onRename(contextMenu.item, contextMenu.index)}
-          onNewFolder={onNewFolder}
-          onDownload={() => contextMenu.item && onDownload(contextMenu.item)}
-          onUploadFiles={triggerFileUpload} // Use the trigger function
-          onUploadFolder={triggerDirectoryUpload} // Use the trigger function
           onClose={() => setContextMenu(null)}
-          hasClipboard={hasClipboard}
-          isClipboardPasted={isClipboardPasted}
-          disableDelete={
-            // Disable delete for specific default folders in Home
-            currentPath.length === 1 && 
-            currentPath[0] === "Home" && 
-            ["Images", "Documents", "Audio", "Voice Messages", "Videos"].includes(contextMenu.itemName)
-          }
+          onNewFolder={() => {
+            // Handle new folder creation
+            const newFolderName = prompt('Enter folder name:');
+            if (newFolderName) {
+              createFolder(newFolderName);
+            }
+          }}
+          onDownload={contextMenu.item ? () => handleDownload(contextMenu.item!) : undefined}
+          onUploadFiles={() => fileInputRef.current?.click()}
+          onUploadFolder={() => directoryInputRef.current?.click()}
+          disableDelete={contextMenu.item ? 
+            (contextMenu.item.name === "Images" || 
+             contextMenu.item.name === "Documents" || 
+             contextMenu.item.name === "Videos" || 
+             contextMenu.item.name === "Audio" || 
+             contextMenu.item.name === "Voice Messages") && 
+            currentPath.length === 1 : false}
         />
       )}
-
-      {/* Floating Upload Button */}
-      <FloatingUploadButton
-        onUploadFiles={onUploadFiles}
-        onUploadFolder={onUploadFolder}
-      />
-
+      
       {/* Image Viewer */}
       {imageViewer && (
         <ImageViewer
-          imageUrl={imageViewer.url}
+          url={imageViewer.url}
           fileName={imageViewer.fileName}
-          onClose={() => {
-            // Revoke the object URL to free memory
-            if (imageViewer.url.startsWith('blob:')) {
-              URL.revokeObjectURL(imageViewer.url);
-            }
-            setImageViewer(null);
-          }}
+          onClose={() => setImageViewer(null)}
         />
       )}
-
+      
       {/* Media Player */}
       {mediaPlayer && (
         <MediaPlayer
-          mediaUrl={mediaPlayer.url}
+          url={mediaPlayer.url}
           fileName={mediaPlayer.fileName}
           fileType={mediaPlayer.fileType}
-          onClose={() => {
-            // Revoke the object URL to free memory
-            if (mediaPlayer.url.startsWith('blob:')) {
-              URL.revokeObjectURL(mediaPlayer.url);
-            }
-            setMediaPlayer(null);
-          }}
+          onClose={() => setMediaPlayer(null)}
         />
       )}
-
-      {/* Telegram Verification Dialog */}
-      <TelegramVerificationDialog
-        open={showTelegramVerificationDialog}
-        onOpenChange={setShowTelegramVerificationDialog}
-      />
-
-      {/* Index Chat Dialog */}
-      <IndexChatDialog
-        open={showIndexChatDialog}
-        onOpenChange={setShowIndexChatDialog}
-        onIndexChatSet={() => {
-          // Refresh or retry upload if needed
-          console.log("Index chat ID has been set");
-        }}
-      />
+      
+      {/* Drop Zone Overlay */}
+      {isDragActive && (
+        <DropZone 
+          isActive={isDragActive}
+          onDrop={handleFileDrop}
+        />
+      )}
+      
+      {/* File Grid/List Content */}
+      <div className={`p-4 ${viewMode === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4' : 'space-y-2'}`}>
+        {files.map((item, index) => (
+          <motion.div
+            key={index}
+            className={`relative ${viewMode === 'grid' ? 'flex flex-col items-center p-3 rounded-xl transition-all duration-200 hover:scale-[1.03] hover:shadow-lg active:scale-[0.98]' : 'flex items-center justify-between p-2 rounded-lg transition-all duration-200 hover:bg-accent hover:shadow-lg active:scale-[0.98]'}`}
+            draggable={item.type !== 'folder'}
+            onDragStart={(e) => {
+              e.dataTransfer.setData('text/plain', JSON.stringify(item));
+              setDraggedItem(item);
+            }}
+            onDragEnd={() => setDraggedItem(null)}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.dataTransfer.dropEffect = 'move';
+              setDropTarget(item);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (draggedItem && item.type === 'folder' && draggedItem.name !== item.name) {
+                moveItem(draggedItem, item);
+              }
+              setDraggedItem(null);
+              setDropTarget(null);
+            }}
+            onDoubleClick={() => handleDoubleClick(item)}
+            onContextMenu={(e) => handleContextMenu(e, item, index)}
+          >
+            <button
+              className={`flex flex-col items-center w-full hover:bg-accent rounded-lg p-2 transition-all duration-200 group hover:scale-[1.02] active:scale-[0.98]`}
+              onClick={() => onItemClick(item)}
+            >
+              <div className="mb-2">{getFileIcon(item)}</div>
+              <span className="text-sm text-center break-words w-full text-foreground group-hover:text-accent-foreground">
+                {item.name}
+              </span>
+            </button>
+            {viewMode === 'list' && (
+              <div className="flex items-center justify-between w-full">
+                <span className="text-xs text-muted-foreground">
+                  {item.modified ? new Date(item.modified).toLocaleDateString() : ''}
+                </span>
+                <span className="text-xs text-muted-foreground capitalize">
+                  {item.type === 'folder' ? 'Folder' : (item.fileType || 'File')}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {item.type === 'folder' ? '' : (item.size ? formatFileSize(item.size) : '')}
+                </span>
+              </div>
+            )}
+          </motion.div>
+        ))}
+      </div>
     </div>
   );
 };
+
+export default FileGrid;
