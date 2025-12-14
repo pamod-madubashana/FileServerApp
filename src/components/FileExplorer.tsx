@@ -195,6 +195,14 @@ export const FileExplorer = () => {
     logger.info("FileExplorer component mounted", { currentPath, location: window.location.pathname });
   }, []);
 
+  // Refresh files when component mounts and user is at Home path
+  useEffect(() => {
+    if (currentPath.length === 1 && currentPath[0] === "Home") {
+      // Trigger a refresh to ensure default folders are visible
+      refetch();
+    }
+  }, []); // Empty dependency array means this runs once on mount
+
   // Check current route and show appropriate content on mount
   useEffect(() => {
     if (location.pathname === '/profile') {
