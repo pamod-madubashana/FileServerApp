@@ -5,7 +5,7 @@ import { FileItem } from "@/components/types";
  * Hook for loading thumbnails in batches to improve performance
  */
 export function useBatchThumbnailLoader(items: FileItem[], batchSize: number = 5) {
-  const [loadedThumbnails, setLoadedThumbnails] = useState<Record<string, boolean>>({});
+  const [loadedThumbnails, setLoadedThumbnails] = useState<Record<string, string>>({});
   const [loadingStates, setLoadingStates] = useState<Record<string, 'loading' | 'loaded' | 'error'>>({});
   
   // Reset states when items change
@@ -41,39 +41,40 @@ export function useBatchThumbnailLoader(items: FileItem[], batchSize: number = 5
 
       // Load all thumbnails in the batch in parallel
       await Promise.all(
-        batch.map(item => {
-          return new Promise<void>((resolve) => {
-            if (!item.thumbnail) {
-              resolve();
-              return;
-            }
+        batch.map(async (item) => {
+          if (!item.thumbnail) {
+            return;
+          }
 
-            const img = new Image();
-            const thumbnailId = item.thumbnail;
+          const thumbnailId = item.thumbnail;
+          
+          try {
+            // Import the API client dynamically
+            const { fetchWithTimeout, getApiBaseUrl } = await import('@/lib/api');
             
-            img.onload = () => {
-              setLoadedThumbnails(prev => ({ ...prev, [thumbnailId]: true }));
-              setLoadingStates(prev => ({ ...prev, [thumbnailId]: 'loaded' }));
-              resolve();
-            };
-            
-            img.onerror = () => {
-              setLoadingStates(prev => ({ ...prev, [thumbnailId]: 'error' }));
-              resolve();
-            };
-            
-            // Construct the thumbnail URL
-            const baseUrl = typeof window !== 'undefined' ? 
-              (window as any).api_base_url || '' : '';
-            let thumbnailUrl = baseUrl 
-              ? `${baseUrl}/file/${thumbnailId}/thumbnail` 
-              : `/file/${thumbnailId}/thumbnail`;
+            // Construct the thumbnail URL using the API base URL
+            const baseUrl = getApiBaseUrl();
+            const thumbnailUrl = baseUrl 
+              ? `${baseUrl}/files/thumbnail/${thumbnailId}` 
+              : `/files/thumbnail/${thumbnailId}`;
               
-            // For Tauri environment, the X-Auth-Token header is automatically added by the fetch implementation
-            // No need to add auth token as query parameter
+            // Fetch the thumbnail using our authenticated API client
+            const response = await fetchWithTimeout(thumbnailUrl, { method: 'GET' }, 5000);
             
-            img.src = thumbnailUrl;
-          });
+            if (!response.ok) {
+              throw new Error(`Failed to fetch thumbnail: ${response.statusText}`);
+            }
+            
+            // Convert response to blob and create object URL
+            const blob = await response.blob();
+            const dataUrl = URL.createObjectURL(blob);
+            
+            setLoadedThumbnails(prev => ({ ...prev, [thumbnailId]: dataUrl }));
+            setLoadingStates(prev => ({ ...prev, [thumbnailId]: 'loaded' }));
+          } catch (error) {
+            console.error('Error loading thumbnail:', error);
+            setLoadingStates(prev => ({ ...prev, [thumbnailId]: 'error' }));
+          }
         })
       );
     }

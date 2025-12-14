@@ -109,8 +109,8 @@ export const Thumbnail = ({ item, size = 'lg' }: ThumbnailProps) => {
     // Construct the full thumbnail URL using the API base URL
     const baseUrl = getApiBaseUrl();
     let thumbnailUrl = baseUrl 
-      ? `${baseUrl}/file/${item.thumbnail}/thumbnail` 
-      : `/file/${item.thumbnail}/thumbnail`;
+      ? `${baseUrl}/files/thumbnail/${item.thumbnail}` 
+      : `/files/thumbnail/${item.thumbnail}`;
 
     // For Tauri environment, the X-Auth-Token header is automatically added by the fetch implementation
     // No need to add auth token as query parameter
