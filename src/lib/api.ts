@@ -218,7 +218,7 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
   const mergedOptions = addAuthHeaders(options);
   
   // Check if we're running in Tauri
-  const isTauri = !!(window as any).__TAURI__;
+  const isTauri = authService.isTauri();
   
   // For Tauri environment, we don't want to send credentials as they don't work the same way
   let tauriCredentials = (mergedOptions as any).credentials;
@@ -289,7 +289,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -314,7 +314,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -339,7 +339,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -369,7 +369,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -405,7 +405,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -438,7 +438,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -479,7 +479,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -508,7 +508,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -537,7 +537,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -560,7 +560,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -590,7 +590,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -615,7 +615,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -649,7 +649,7 @@ export const api = {
         formData.append('path', path);
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -684,7 +684,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -714,7 +714,7 @@ export const api = {
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
-        const isTauri = !!(window as any).__TAURI__;
+        const isTauri = authService.isTauri();
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {

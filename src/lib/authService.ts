@@ -28,8 +28,12 @@ interface AuthCheckResponse {
  * Centralized authentication management for the application
  */
 
-// Check if we're running in Tauri
-const isTauri = !!(window as any).__TAURI__;
+/**
+ * Check if we're running in Tauri
+ */
+export function isTauri(): boolean {
+  return typeof window !== 'undefined' && !!(window as any).__TAURI__;
+}
 
 /**
  * Get authentication headers for requests
@@ -37,7 +41,7 @@ const isTauri = !!(window as any).__TAURI__;
 export function getAuthHeaders(): AuthHeaders {
   const headers: Record<string, string> = {};
   
-  if (isTauri) {
+  if (isTauri()) {
     // For Tauri environment, use auth token from localStorage
     try {
       const tauriAuth = localStorage.getItem('tauri_auth_token');
@@ -68,7 +72,7 @@ export async function isAuthenticated(): Promise<boolean> {
     
     const response = await fetch(`${apiUrl}/auth/check`, {
       method: 'GET',
-      credentials: isTauri ? undefined : 'include',
+      credentials: isTauri() ? undefined : 'include',
       headers: getAuthHeaders(),
     });
     
@@ -94,7 +98,7 @@ export async function getCurrentUser(): Promise<UserProfile> {
     
     const response = await fetch(`${apiUrl}/user/profile`, {
       method: 'GET',
-      credentials: isTauri ? undefined : 'include',
+      credentials: isTauri() ? undefined : 'include',
       headers: getAuthHeaders(),
     });
     
@@ -132,7 +136,7 @@ export async function logout(): Promise<void> {
     
     const response = await fetch(`${apiUrl}/auth/logout`, {
       method: 'POST',
-      credentials: isTauri ? undefined : 'include',
+      credentials: isTauri() ? undefined : 'include',
       headers: getAuthHeaders(),
     });
     
@@ -141,7 +145,7 @@ export async function logout(): Promise<void> {
     }
     
     // Clear local storage items
-    if (isTauri) {
+    if (isTauri()) {
       localStorage.removeItem('tauri_auth_token');
     }
     
@@ -161,7 +165,7 @@ export async function refreshToken(): Promise<boolean> {
     const authenticated = await isAuthenticated();
     if (!authenticated) {
       // If not authenticated, clear any stored tokens
-      if (isTauri) {
+      if (isTauri()) {
         localStorage.removeItem('tauri_auth_token');
       }
       return false;
@@ -179,7 +183,7 @@ export async function refreshToken(): Promise<boolean> {
  * Check if token needs refresh
  */
 export function isTokenExpired(): boolean {
-  if (isTauri) {
+  if (isTauri()) {
     try {
       const tauriAuth = localStorage.getItem('tauri_auth_token');
       if (tauriAuth) {

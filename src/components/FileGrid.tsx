@@ -13,6 +13,8 @@ import { TelegramVerificationDialog } from "./TelegramVerificationDialog";
 import { IndexChatDialog } from "./IndexChatDialog"; // Add this import
 import { getApiBaseUrl } from "@/lib/api";
 import { getPlayerPreference } from "@/lib/playerSettings";
+import { useBatchThumbnailLoader } from "@/hooks/useBatchThumbnailLoader"; // Add this import
+import authService from "@/lib/authService";
 import type { Event } from '@tauri-apps/api/event';
 interface FileGridProps {
   items: FileItem[];
@@ -102,6 +104,12 @@ export const FileGrid = ({
     draggedItemRef.current = draggedItem;
   }, [draggedItem]);
   
+  // Check if we're running in Tauri
+  const isTauri = authService.isTauri();
+  
+  // Use the batch thumbnail loader hook
+  const { loadedThumbnails, loadingStates, retryLoad } = useBatchThumbnailLoader(items);
+  
   // Reset drag counter on component mount and unmount
   useEffect(() => {
     dragCounter.current = 0;
@@ -114,9 +122,6 @@ export const FileGrid = ({
   // Reference for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
   const directoryInputRef = useRef<HTMLInputElement>(null);
-
-  // Check if we're running in Tauri
-  const isTauri = !!(window as any).__TAURI__;
 
   // Add Tauri event listeners for drag and drop
   useEffect(() => {
@@ -1066,8 +1071,11 @@ export const FileGrid = ({
       return <Folder className={`${folderIconSize} text-primary`} />;
     }
     
-    // Use the new Thumbnail component for better error handling
-    return <Thumbnail item={item} size={viewMode === 'list' ? 'sm' : 'lg'} />;
+    // Use the new Thumbnail component with pre-loaded data for better performance
+    const thumbnailData = item.thumbnail ? loadedThumbnails[item.thumbnail] : undefined;
+    const loadingState = item.thumbnail ? loadingStates[item.thumbnail] : undefined;
+    
+    return <Thumbnail item={item} size={viewMode === 'list' ? 'sm' : 'lg'} thumbnailSrc={thumbnailData} loadingState={loadingState} />;
   };
 
   // Format file size in a human-readable format

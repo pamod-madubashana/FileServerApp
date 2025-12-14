@@ -6,6 +6,8 @@ import { getApiBaseUrl } from "@/lib/api";
 interface ThumbnailProps {
   item: FileItem;
   size?: 'sm' | 'md' | 'lg'; // Size variants for different views
+  thumbnailSrc?: string; // Pre-loaded thumbnail data from batch loader
+  loadingState?: 'loading' | 'loaded' | 'error'; // Loading state from batch loader
 }
 
 // Simple cache to store loaded thumbnails
@@ -76,7 +78,7 @@ function queueThumbnailLoad(
   processQueue();
 }
 
-export const Thumbnail = ({ item, size = 'lg' }: ThumbnailProps) => {
+export const Thumbnail = ({ item, size = 'lg', thumbnailSrc: propThumbnailSrc, loadingState: propLoadingState }: ThumbnailProps) => {
   // Define size classes based on the size prop
   const sizeClasses = {
     sm: 'w-5 h-5',
@@ -102,9 +104,19 @@ export const Thumbnail = ({ item, size = 'lg' }: ThumbnailProps) => {
     };
   }, [item.thumbnail]);
 
-  // Load thumbnail with queuing
+  // Use pre-loaded thumbnail data if provided
   useEffect(() => {
-    if (!item.thumbnail || thumbnailError) return;
+    if (propThumbnailSrc !== undefined) {
+      setThumbnailSrc(propThumbnailSrc);
+      setThumbnailLoading(false);
+      setThumbnailError(propLoadingState === 'error');
+    }
+  }, [propThumbnailSrc, propLoadingState]);
+
+  // Load thumbnail with queuing (fallback when not pre-loaded)
+  useEffect(() => {
+    // If we already have pre-loaded data, don't load again
+    if (propThumbnailSrc !== undefined || !item.thumbnail || thumbnailError) return;
     
     // Construct the full thumbnail URL using the API base URL
     const baseUrl = getApiBaseUrl();
@@ -136,7 +148,7 @@ export const Thumbnail = ({ item, size = 'lg' }: ThumbnailProps) => {
     return () => {
       // Cleanup function
     };
-  }, [item.thumbnail, thumbnailError]);
+  }, [item.thumbnail, thumbnailError, propThumbnailSrc]);
 
   // If it's a folder, show folder icon
   if (item.type === "folder") {
