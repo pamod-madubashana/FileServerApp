@@ -279,40 +279,20 @@ export const FileExplorer = () => {
     };
   }, []);
 
-  // Define virtual folders
-  const virtualFolders: FileItem[] = [
-    { name: "Images", type: "folder", icon: "📁", fileType: "photo" },
-    { name: "Documents", type: "folder", icon: "📁", fileType: "document" },
-    { name: "Videos", type: "folder", icon: "📁", fileType: "video" },
-    { name: "Audio", type: "folder", icon: "📁", fileType: "audio" },
-    { name: "Voice Messages", type: "folder", icon: "📁", fileType: "voice" },
-  ];
-
   // Current folder name (last part of currentPath)
   const currentFolder = currentPath[currentPath.length - 1] || "Home";
 
-  // Check if current folder is a virtual folder
-  const isVirtualFolder = virtualFolders.some(f => f.name === currentFolder);
-
   // Convert currentPath to API path format
-  // For virtual folders, we need to construct the proper path like /Home/Images
-  // But for the actual API calls, we need to construct the proper path
-  const currentApiPath = isVirtualFolder
-    ? `/${currentPath.join('/')}`  // This will create paths like /Home/Images
-    : currentPath.length === 1 && currentPath[0] === "Home"
+  const currentApiPath = currentPath.length === 1 && currentPath[0] === "Home"
       ? "/Home"
-      : `/${currentPath.join('/')}`;  // For user folders, use the full path like /Home/Images/test
+      : `/${currentPath.join('/')}`;
   const { files, isLoading, isError, error, refetch } = useFiles(currentApiPath);
   const { clipboard, copyItem, cutItem, clearClipboard, hasClipboard, isClipboardPasted, pasteItem, moveItem } = useFileOperations();
 
   // Filter files based on current path and search query
   const getFilteredItems = (): FileItem[] => {
-    // If we're in Home and no filter is selected, show virtual folders, user-created folders, and files in root
+    // If we're in Home and no filter is selected, show user-created folders and files in root
     if (currentFolder === "Home" && selectedFilter === "all") {
-      const filteredFolders = virtualFolders.filter((folder) =>
-        folder.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
       // Add user-created folders (those with type 'folder')
       const userFolders = files.filter((f) => f.type === "folder");
       const filteredUserFolders = userFolders.filter((folder) =>
@@ -320,13 +300,13 @@ export const FileExplorer = () => {
       );
 
       // Add files that are directly in the root directory (Home)
-      const rootFiles = files.filter((f) => f.type !== "folder" && f.file_path === "/");
+      const rootFiles = files.filter((f) => f.type !== "folder" && f.file_path === "/Home");
       const filteredRootFiles = rootFiles.filter((file) =>
         file.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
       // Combine folders and root files, then sort
-      const allItems = [...filteredFolders, ...filteredUserFolders, ...filteredRootFiles];
+      const allItems = [...filteredUserFolders, ...filteredRootFiles];
       return allItems.sort((a, b) => {
         // If both are folders or both are files, sort alphabetically
         if (a.type === b.type) {
@@ -343,68 +323,6 @@ export const FileExplorer = () => {
 
     // If we're in a specific folder or have a filter, show files
     let filteredFiles = files;
-
-    // Filter by folder/type
-    if (currentFolder === "Images" || selectedFilter === "photo") {
-      // For virtual folders, show all files with the exact path (not just photos)
-      if (currentApiPath.startsWith("/Home/")) {
-        filteredFiles = files.filter((f) => 
-          (f.file_path === currentApiPath) || 
-          (f.type === "folder" && f.file_path === currentApiPath)
-        );
-      } else {
-        // Fallback to original logic for safety
-        filteredFiles = files.filter((f) => f.fileType === "photo" || f.type === "folder");
-      }
-    } else if (currentFolder === "Documents" || selectedFilter === "document") {
-      // For virtual folders, show all files with the exact path (not just documents)
-      if (currentApiPath.startsWith("/Home/")) {
-        filteredFiles = files.filter((f) => 
-          (f.file_path === currentApiPath) || 
-          (f.type === "folder" && f.file_path === currentApiPath)
-        );
-      } else {
-        // Fallback to original logic for safety
-        filteredFiles = files.filter((f) => f.fileType === "document" || f.type === "folder");
-      }
-    } else if (currentFolder === "Videos" || selectedFilter === "video") {
-      // For virtual folders, show all files with the exact path (not just videos)
-      if (currentApiPath.startsWith("/Home/")) {
-        filteredFiles = files.filter((f) => 
-          (f.file_path === currentApiPath) || 
-          (f.type === "folder" && f.file_path === currentApiPath)
-        );
-      } else {
-        // Fallback to original logic for safety
-        filteredFiles = files.filter((f) => f.fileType === "video" || f.type === "folder");
-      }
-    } else if (currentFolder === "Audio" || selectedFilter === "audio") {
-      // For virtual folders, show all files with the exact path (not just audio)
-      if (currentApiPath.startsWith("/Home/")) {
-        filteredFiles = files.filter((f) => 
-          (f.file_path === currentApiPath) || 
-          (f.type === "folder" && f.file_path === currentApiPath)
-        );
-      } else {
-        // Fallback to original logic for safety
-        filteredFiles = files.filter((f) => f.fileType === "audio" || f.type === "folder");
-      }
-    } else if (currentFolder === "Voice Messages" || selectedFilter === "voice") {
-      // For virtual folders, show all files with the exact path (not just voice messages)
-      if (currentApiPath.startsWith("/Home/")) {
-        filteredFiles = files.filter((f) => 
-          (f.file_path === currentApiPath) || 
-          (f.type === "folder" && f.file_path === currentApiPath)
-        );
-      } else {
-        // Fallback to original logic for safety
-        filteredFiles = files.filter((f) => f.fileType === "voice" || f.type === "folder");
-      }
-    } else if (currentFolder !== "Home") {
-      // For user-created folders, we just show the files returned by the API
-      // The API already filters by path, so we don't need to filter here
-      filteredFiles = files;
-    }
 
     // Apply search filter
     if (searchQuery) {
@@ -431,11 +349,10 @@ export const FileExplorer = () => {
   const filteredItems = getFilteredItems();
 
   const handleNavigate = (folderName: string) => {
-    // Navigate into virtual folders OR user-created folders
-    const isVirtualFolder = virtualFolders.some(f => f.name === folderName);
+    // Navigate into user-created folders
     const isUserFolder = files.some(f => f.type === "folder" && f.name === folderName);
 
-    if (isVirtualFolder || isUserFolder) {
+    if (isUserFolder) {
       setCurrentPath([...currentPath, folderName]);
       setSelectedFilter("all"); // Reset filter when navigating
     }
@@ -521,23 +438,15 @@ export const FileExplorer = () => {
       }
       
       // Construct the target path
-      let targetPath = "/";
+      let targetPath = "/Home";
       if (targetFolderName !== "Home") {
-        // Map virtual folder names to their API paths
-        const virtualFolderMap: Record<string, string> = {
-          "Images": "/Home/Images",
-          "Documents": "/Home/Documents",
-          "Videos": "/Home/Videos",
-          "Audio": "/Home/Audio",
-          "Voice Messages": "/Home/Voice Messages"
-        };
-        
-        targetPath = virtualFolderMap[targetFolderName] || `/${targetFolderName}`;
+        // Since folders are now in the database, we can construct the path directly
+        targetPath = `/Home/${targetFolderName}`;
       }
       
       const baseUrl = getApiBaseUrl();
       // For the default case, we need to append /api to the base URL
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const apiUrl = baseUrl ? `${baseUrl}` : '';
       
       const response = await fetchWithTimeout(`${apiUrl}/files/move`, {
         method: "POST",
@@ -575,7 +484,7 @@ export const FileExplorer = () => {
       
       const baseUrl = getApiBaseUrl();
       // For the default case, we need to append /api to the base URL
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const apiUrl = baseUrl ? `${baseUrl}` : '';
       
       const response = await fetchWithTimeout(`${apiUrl}/folders/create`, {
         method: "POST",
@@ -657,12 +566,12 @@ export const FileExplorer = () => {
       if (targetFolder.name === "Home") {
         targetPath = "/";
       } 
-      // Handle virtual folders
+      // Handle default folders (they are now in the database)
       else if (targetFolder.name === "Images" || 
-               targetFolder.name === "Documents" || 
-               targetFolder.name === "Videos" || 
-               targetFolder.name === "Audio" || 
-               targetFolder.name === "Voice Messages") {
+           targetFolder.name === "Documents" || 
+           targetFolder.name === "Videos" || 
+           targetFolder.name === "Audio" || 
+           targetFolder.name === "Voice Messages") {
         targetPath = `/Home/${targetFolder.name}`;
       }
       // Handle user-created folders
@@ -738,7 +647,7 @@ export const FileExplorer = () => {
       
       const baseUrl = getApiBaseUrl();
       // For the default case, we need to append /api to the base URL
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const apiUrl = baseUrl ? `${baseUrl}` : '';
       
       const response = await fetchWithTimeout(`${apiUrl}/files/rename`, {
         method: "POST",
@@ -781,7 +690,7 @@ export const FileExplorer = () => {
       
       const baseUrl = getApiBaseUrl();
       // For the default case, we need to append /api to the base URL
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const apiUrl = baseUrl ? `${baseUrl}` : '';
       
       const response = await fetchWithTimeout(`${apiUrl}/files/delete`, {
         method: "POST",
@@ -824,7 +733,7 @@ export const FileExplorer = () => {
       "Voice Messages": "voice"
     };
     
-    // If we're in a virtual folder, select the corresponding filter
+    // If we're in a default folder, select the corresponding filter
     const currentFolderName = currentPath[currentPath.length - 1];
     const filter = folderMap[currentFolderName] || "all";
     
@@ -1035,7 +944,7 @@ export const FileExplorer = () => {
           isClipboardPasted={isClipboardPasted()} // Pass the clipboard pasted status
           hasClipboard={hasClipboard} // Pass the clipboard status function
           disableDelete={
-            // Disable delete for specific virtual folders in Home
+            // Disable delete for specific default folders in Home
             currentPath.length === 1 && 
             currentPath[0] === "Home" && 
             contextMenu.item && 

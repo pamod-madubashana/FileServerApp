@@ -76,7 +76,7 @@ export const useFileOperations = () => {
 
       const baseUrl = getApiBaseUrl();
       // For the default case, we need to append /api to the base URL
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const apiUrl = baseUrl ? `${baseUrl}` : '';
       const request: CopyMoveRequest = {
         file_id: clipboard.item.id || "",
         target_path: targetPath
@@ -178,7 +178,7 @@ export const useFileOperations = () => {
 
       const baseUrl = getApiBaseUrl();
       // For the default case, we need to append /api to the base URL
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const apiUrl = baseUrl ? `${baseUrl}` : '';
       const request: MoveRequest = {
         file_id: item.id || "",
         target_path: targetPath

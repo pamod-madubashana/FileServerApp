@@ -116,21 +116,21 @@ export const getApiBaseUrl = (): string => {
     return customUrl;
   }
   
-  // Return default URL (port 8000)
+  // Return default URL (port 8148)
   if (typeof window !== 'undefined') {
     // Check if running in Tauri
     const isTauri = !!(window as any).__TAURI__;
     console.log('[getApiBaseUrl] Tauri detection:', isTauri);
     
     if (isTauri) {
-      // In Tauri, always use localhost:8000 by default
-      console.log('[getApiBaseUrl] Returning Tauri default URL: http://localhost:8000');
-      return 'http://localhost:8000';
+      // In Tauri, always use localhost:8148 by default
+      console.log('[getApiBaseUrl] Returning Tauri default URL: http://localhost:8148');
+      return 'http://localhost:8148';
     }
     
-    // Assume backend is on port 8000 for web
+    // Assume backend is on port 8148 for web
     const url = new URL(window.location.origin);
-    url.port = "8000";
+    url.port = "8148";
     console.log('[getApiBaseUrl] Returning web default URL:', url.origin);
     return url.origin;
   }
@@ -163,9 +163,8 @@ export const getFullApiUrl = (endpoint: string): string => {
     return `${baseUrl}${formattedEndpoint}`;
   }
   
-  // For same-origin requests, prepend /api to the endpoint
-  const apiEndpoint = endpoint.startsWith('/api') ? endpoint : `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-  return apiEndpoint;
+  // For same-origin requests, use the endpoint directly (no /api prefix)
+  return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 };
 
 // Import Tauri HTTP plugin
@@ -287,8 +286,7 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
 export const api = {
     async fetchFiles(path: string = '/'): Promise<FilesResponse> {
         const baseUrl = getApiBaseUrl();
-        // For the default case, we need to append /api to the base URL
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -312,8 +310,8 @@ export const api = {
 
     async checkAuth() {
         const baseUrl = getApiBaseUrl();
-        // For the default case, we need to append /api to the base URL
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        // For the default case, we use the base URL directly (no /api prefix)
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -337,8 +335,8 @@ export const api = {
 
     async logout() {
         const baseUrl = getApiBaseUrl();
-        // For the default case, we need to append /api to the base URL
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        // For the default case, we use the base URL directly (no /api prefix)
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -368,7 +366,7 @@ export const api = {
 
     async fetchUserProfile(): Promise<UserProfile> {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -404,7 +402,7 @@ export const api = {
         return userProfile;
     },    async isUserOwner(): Promise<IsOwnerResponse> {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -437,7 +435,7 @@ export const api = {
 
     async getUsers(): Promise<UsersResponse> {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -451,7 +449,7 @@ export const api = {
         // Add auth headers to all requests
         const mergedOptions = addAuthHeaders(fetchOptions);
         
-        const response = await fetchWithTimeout(`${apiUrl}/users`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch users: ${response.statusText}`);
@@ -478,7 +476,7 @@ export const api = {
     },
     async addUser(userData: AddUserRequest): Promise<User> {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -496,7 +494,7 @@ export const api = {
         // Add auth headers to all requests
         const mergedOptions = addAuthHeaders(fetchOptions);
         
-        const response = await fetchWithTimeout(`${apiUrl}/users`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to add user: ${response.statusText}`);
@@ -507,7 +505,7 @@ export const api = {
 
     async updateUser(userId: string, userData: UpdateUserRequest): Promise<User> {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -525,7 +523,7 @@ export const api = {
         // Add auth headers to all requests
         const mergedOptions = addAuthHeaders(fetchOptions);
         
-        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user/${userId}`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to update user: ${response.statusText}`);
@@ -536,7 +534,7 @@ export const api = {
 
     async deleteUser(userId: string): Promise<void> {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -550,7 +548,7 @@ export const api = {
         // Add auth headers to all requests
         const mergedOptions = addAuthHeaders(fetchOptions);
         
-        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user/${userId}`, mergedOptions, 3000);
 
         if (!response.ok) {
             throw new Error(`Failed to delete user: ${response.statusText}`);
@@ -559,7 +557,7 @@ export const api = {
 
     async changeUserPassword(userId: string, passwordData: ChangePasswordRequest): Promise<{ message: string }> {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -577,7 +575,7 @@ export const api = {
         // Add auth headers to all requests
         const mergedOptions = addAuthHeaders(fetchOptions);
         
-        const response = await fetchWithTimeout(`${apiUrl}/users/${userId}/password`, mergedOptions, 5000);
+        const response = await fetchWithTimeout(`${apiUrl}/user/${userId}/password`, mergedOptions, 5000);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -589,7 +587,7 @@ export const api = {
 
     async getUserIndexChat(): Promise<IndexChatResponse> {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -614,7 +612,7 @@ export const api = {
 
     async updateUserIndexChat(indexChatData: UpdateIndexChatRequest): Promise<IndexChatResponse> {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -643,8 +641,8 @@ export const api = {
 
     async uploadFile(file: File, path: string = '/'): Promise<UploadFileResponse> {
         const baseUrl = getApiBaseUrl();
-        // For the default case, we need to append /api to the base URL
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        // For the default case, we use the base URL directly (no /api prefix)
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         const formData = new FormData();
         formData.append('file', file);
@@ -683,7 +681,7 @@ export const api = {
 
     async createFolder(folderName: string, currentPath: string): Promise<{ message: string }> {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;
@@ -712,8 +710,8 @@ export const api = {
 
     async createFolderPath(fullPath: string): Promise<{ message: string }> {
         const baseUrl = getApiBaseUrl();
-        // For the default case, we need to append /api to the base URL
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        // For the default case, we use the base URL directly (no /api prefix)
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         // Check if we're running in Tauri
         const isTauri = !!(window as any).__TAURI__;

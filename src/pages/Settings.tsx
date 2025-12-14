@@ -86,7 +86,7 @@ export default function Settings() {
     
     // Validate the URL before saving
     if (!validateUrl(tempServerUrl)) {
-      setError("Please enter a valid URL (e.g., http://localhost:8000)");
+      setError("Please enter a valid URL (e.g., http://localhost:8148)");
       return;
     }
 
@@ -97,7 +97,7 @@ export default function Settings() {
     // If the user entered the full URL that matches the default backend URL, save as "/"
     const defaultBackendUrl = (() => {
       const url = new URL(window.location.origin);
-      url.port = "8000";
+      url.port = "8148";
       return url.origin;
     })();
     
@@ -152,17 +152,23 @@ export default function Settings() {
     }
   };
 
-  const handleReset = () => {
-    // Reset to the default full URL (port 8000)
-    const url = new URL(window.location.origin);
-    url.port = "8000";
-    const defaultUrl = url.origin;
-    setTempServerUrl(defaultUrl);
-    setError(""); // Clear any error when resetting
+  const handleReset = async () => {
+    // Reset to default server URL
+    const defaultUrl = (() => {
+      const url = new URL(window.location.origin);
+      url.port = "8148";
+      return url.origin;
+    })();
     
-    // Reset player preference to default
-    setPlayerPreferenceState("built-in");
-    setPlayerPreferenceChanged(true);
+    setTempServerUrl(defaultUrl);
+    setTempIndexChatId("");
+    setError("");
+    
+    // Show confirmation
+    toast.info("Settings reset to default", {
+      description: `Default URL: ${defaultUrl}`,
+      duration: 3000,
+    });
   };
 
   const handleSavePlayerPreference = () => {
@@ -277,7 +283,7 @@ export default function Settings() {
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Enter the full URL to your backend server. Current default is {((): string => {
                         const url = new URL(window.location.origin);
-                        url.port = "8000";
+                        url.port = "8148";
                         return url.origin;
                       })()}
                     </p>

@@ -64,7 +64,7 @@ export function getAuthHeaders(): AuthHeaders {
 export async function isAuthenticated(): Promise<boolean> {
   try {
     const baseUrl = getApiBaseUrl();
-    const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+    const apiUrl = baseUrl ? `${baseUrl}` : '';
     
     const response = await fetch(`${apiUrl}/auth/check`, {
       method: 'GET',
@@ -90,7 +90,7 @@ export async function isAuthenticated(): Promise<boolean> {
 export async function getCurrentUser(): Promise<UserProfile> {
   try {
     const baseUrl = getApiBaseUrl();
-    const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+    const apiUrl = baseUrl ? `${baseUrl}` : '';
     
     const response = await fetch(`${apiUrl}/user/profile`, {
       method: 'GET',
@@ -128,7 +128,7 @@ export async function getCurrentUser(): Promise<UserProfile> {
 export async function logout(): Promise<void> {
   try {
     const baseUrl = getApiBaseUrl();
-    const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+    const apiUrl = baseUrl ? `${baseUrl}` : '';
     
     const response = await fetch(`${apiUrl}/auth/logout`, {
       method: 'POST',

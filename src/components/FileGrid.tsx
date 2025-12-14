@@ -1332,7 +1332,7 @@ export const FileGrid = ({
           hasClipboard={hasClipboard}
           isClipboardPasted={isClipboardPasted}
           disableDelete={
-            // Disable delete for specific virtual folders in Home
+            // Disable delete for specific default folders in Home
             currentPath.length === 1 && 
             currentPath[0] === "Home" && 
             ["Images", "Documents", "Audio", "Voice Messages", "Videos"].includes(contextMenu.itemName)

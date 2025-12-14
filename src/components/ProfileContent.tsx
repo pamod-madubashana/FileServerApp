@@ -35,7 +35,7 @@ export const ProfileContent = ({ onBack }: { onBack: () => void }) => {
       setIsLoading(true);
       try {
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         const response = await fetchWithTimeout(`${apiUrl}/user/profile`, {
           method: 'GET',
@@ -53,7 +53,7 @@ export const ProfileContent = ({ onBack }: { onBack: () => void }) => {
         // Try fallback method
         try {
           const baseUrl = getApiBaseUrl();
-          const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+          const apiUrl = baseUrl ? `${baseUrl}` : '';
           
           const authResponse = await fetchWithTimeout(`${apiUrl}/auth/check`, {
             method: 'GET',
@@ -91,7 +91,7 @@ export const ProfileContent = ({ onBack }: { onBack: () => void }) => {
     setIsVerifying(true);
     try {
       const baseUrl = getApiBaseUrl();
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const apiUrl = baseUrl ? `${baseUrl}` : '';
       
       // Request a verification code
       const response = await fetchWithTimeout(`${apiUrl}/telegram/generate-verification`, {

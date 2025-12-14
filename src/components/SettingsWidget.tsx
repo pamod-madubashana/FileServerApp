@@ -67,7 +67,7 @@ export const SettingsWidget = () => {
     
     // Validate the URL before saving
     if (!validateUrl(tempServerUrl)) {
-      setError("Please enter a valid URL (e.g., http://localhost:8000)");
+      setError("Please enter a valid URL (e.g., http://localhost:8148)");
       return;
     }
 
@@ -78,7 +78,7 @@ export const SettingsWidget = () => {
     // If the user entered the full URL that matches the default backend URL, save as "/"
     const defaultBackendUrl = (() => {
       const url = new URL(window.location.origin);
-      url.port = "8000";
+      url.port = "8148";
       return url.origin; // Changed from `${url.origin}/api` to just `url.origin`
     })();
     
@@ -130,9 +130,9 @@ export const SettingsWidget = () => {
   };
 
   const handleReset = () => {
-    // Reset to the default full URL (port 8000)
+    // Reset to the default full URL (port 8148)
     const url = new URL(window.location.origin);
-    url.port = "8000";
+    url.port = "8148";
     const defaultUrl = url.origin; // Changed from `${url.origin}/api` to just `url.origin`
     setTempServerUrl(defaultUrl);
     setError(""); // Clear any error when resetting
@@ -240,7 +240,7 @@ export const SettingsWidget = () => {
               <p className="text-sm text-muted-foreground">
                 Enter the full URL to your backend server. Current default is {((): string => {
                   const url = new URL(window.location.origin);
-                  url.port = "8000";
+                  url.port = "8148";
                   return url.origin; // Changed from `${url.origin}/api` to just `url.origin`
                 })()}
               </p>

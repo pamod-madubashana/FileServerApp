@@ -26,7 +26,7 @@ export const TelegramVerificationDialog = ({
     setIsGeneratingLink(true);
     try {
       const baseUrl = getApiBaseUrl();
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const apiUrl = baseUrl ? `${baseUrl}` : '';
       
       // Request a verification code
       const response = await fetchWithTimeout(`${apiUrl}/telegram/generate-verification`, {

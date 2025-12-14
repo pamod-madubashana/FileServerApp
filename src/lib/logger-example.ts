@@ -33,7 +33,7 @@ export class FileService {
     logger.info('Deleting file', { fileId });
     
     try {
-      const response = await fetch(`/api/files/${fileId}`, {
+      const response = await fetch(`/files/${fileId}`, {
         method: 'DELETE',
       });
       

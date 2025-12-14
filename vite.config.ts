@@ -20,18 +20,38 @@ export default defineConfig(({ mode }) => ({
       ignored: ['**/src-tauri/**']
     },
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
+      '/auth': {
+        target: 'http://localhost:8148',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/files': {
+        target: 'http://localhost:8148',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/folders': {
+        target: 'http://localhost:8148',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/system': {
+        target: 'http://localhost:8148',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/user': {
+        target: 'http://localhost:8148',
         changeOrigin: true,
         secure: false,
       },
       '/dl': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8148',
         changeOrigin: true,
         secure: false,
       },
       '/watch': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8148',
         changeOrigin: true,
         secure: false,
       },

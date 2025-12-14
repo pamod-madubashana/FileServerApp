@@ -48,7 +48,7 @@ const Login = () => {
 
     try {
       const baseUrl = getApiBaseUrl();
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const apiUrl = baseUrl ? `${baseUrl}` : '';
       
       logger.info("Attempting Google login with baseUrl", { baseUrl, apiUrl: `${apiUrl}/auth/google` });
       
@@ -136,7 +136,7 @@ const Login = () => {
 
     try {
       const baseUrl = getApiBaseUrl();
-      const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+      const apiUrl = baseUrl ? `${baseUrl}` : '';
       
       logger.info("Attempting login with baseUrl", { baseUrl, apiUrl: `${apiUrl}/auth/login` });
       

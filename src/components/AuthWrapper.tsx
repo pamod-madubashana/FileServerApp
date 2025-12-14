@@ -51,7 +51,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
         }
         
         const baseUrl = getApiBaseUrl();
-        const apiUrl = baseUrl ? `${baseUrl}/api` : '/api';
+        const apiUrl = baseUrl ? `${baseUrl}` : '';
         
         logger.info("Checking authentication", { url: `${apiUrl}/auth/check`, baseUrl });
         
