@@ -247,7 +247,7 @@ export const ContextMenu = ({
 
       <div
         ref={menuRef}
-        className="fixed z-50 bg-background/95 backdrop-blur-sm border border-border/50 rounded-md shadow-2xl overflow-hidden"
+        className="fixed z-50 bg-background/80 backdrop-blur-md border border-border/50 rounded-xl shadow-2xl overflow-hidden"
         style={{
           left: `${adjustedX}px`,
           top: `${adjustedY}px`,
