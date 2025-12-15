@@ -1,6 +1,7 @@
 // API base URL - will use proxy in development
 import logger from '@/lib/logger';
 import authService from './authService';
+import { handleApiError } from '@/lib/errorHandler';
 
 export interface ApiFile {
     id: string;
@@ -302,6 +303,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/files?path=${encodeURIComponent(path)}`, mergedOptions, 3000); // 3 second timeout
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to fetch files: ${response.statusText}`);
         }
 
@@ -327,6 +332,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/auth/check`, mergedOptions, 3000); // 3 second timeout
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to check auth: ${response.statusText}`);
         }
 
@@ -353,6 +362,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/auth/logout`, mergedOptions, 3000); // 3 second timeout
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to logout: ${response.statusText}`);
         }
 
@@ -383,6 +396,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/user/profile`, mergedOptions, 3000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to fetch user profile: ${response.statusText}`);
         }
 
@@ -419,6 +436,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/user/is-owner`, mergedOptions, 3000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to check owner status: ${response.statusText}`);
         }
 
@@ -452,6 +473,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/user`, mergedOptions, 3000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to fetch users: ${response.statusText}`);
         }
 
@@ -497,6 +522,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/user`, mergedOptions, 3000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to add user: ${response.statusText}`);
         }
 
@@ -526,6 +555,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/user/${userId}`, mergedOptions, 3000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to update user: ${response.statusText}`);
         }
 
@@ -551,6 +584,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/user/${userId}`, mergedOptions, 3000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to delete user: ${response.statusText}`);
         }
     },
@@ -578,6 +615,11 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/user/${userId}/password`, mergedOptions, 5000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
+            
             const errorText = await response.text();
             throw new Error(errorText || `Failed to change user password: ${response.status}`);
         }
@@ -604,6 +646,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, mergedOptions, 3000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to fetch index chat: ${response.statusText}`);
         }
 
@@ -633,6 +679,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, mergedOptions, 3000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to update index chat: ${response.statusText}`);
         }
 
@@ -664,6 +714,11 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/files/upload`, mergedOptions, 30000); // 30 second timeout for file uploads
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
+            
             // Try to get the error message from the response body
             let errorMessage = `Failed to upload file: ${response.statusText}`;
             try {
@@ -702,6 +757,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/folders/create`, mergedOptions, 3000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to create folder: ${response.statusText}`);
         }
 
@@ -732,6 +791,10 @@ export const api = {
         const response = await fetchWithTimeout(`${apiUrl}/folders/create-path`, mergedOptions, 3000);
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 401) {
+                throw new Error("Authentication required. Please log in again.");
+            }
             throw new Error(`Failed to create folder path: ${response.statusText}`);
         }
 

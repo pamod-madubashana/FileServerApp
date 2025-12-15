@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import Login from "./pages/Login";
-import Profile from "./pages/Profile";
+import { Profile } from "./pages/Profile";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
@@ -16,6 +16,8 @@ import logger from "@/lib/logger";
 // Import the new backend connection hook
 import { useBackendConnection } from "@/hooks/useViteConnection";
 import authService from "@/lib/authService";
+// Import the error provider
+import { ErrorProvider } from "@/contexts/ErrorHandlerContext";
 
 const queryClient = new QueryClient();
 
@@ -93,16 +95,18 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <div className="flex h-screen bg-background select-none">
-          <NavigationSidebar />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <AppRoutes />
-            <Toaster />
-            {/* Remove the floating DownloadQueue component */}
+      <ErrorProvider>
+        <BrowserRouter>
+          <div className="flex h-screen bg-background select-none">
+            <NavigationSidebar />
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <AppRoutes />
+              <Toaster />
+              {/* Remove the floating DownloadQueue component */}
+            </div>
           </div>
-        </div>
-      </BrowserRouter>
+        </BrowserRouter>
+      </ErrorProvider>
     </QueryClientProvider>
   );
 };

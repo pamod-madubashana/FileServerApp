@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { apiFileToFileItem, FileItem } from '@/components/types';
 import logger from '@/lib/logger';
+import { handleApiError } from '@/lib/errorHandler';
 
 export const useFiles = (path: string = '/') => {
     const query = useQuery({
@@ -14,6 +15,7 @@ export const useFiles = (path: string = '/') => {
                 return response.files.map(apiFileToFileItem);
             } catch (error) {
                 logger.error("Failed to fetch files", { path, error });
+                handleApiError(error, 'network');
                 throw error;
             }
         },

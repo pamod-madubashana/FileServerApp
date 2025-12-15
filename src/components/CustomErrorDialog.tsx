@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Wifi, Server, User, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Wifi, Server, User, RefreshCw, Link } from 'lucide-react';
 
 interface CustomErrorDialogProps {
   isOpen: boolean;
@@ -11,6 +11,7 @@ interface CustomErrorDialogProps {
   errorType: 'upload' | 'download' | 'network' | 'server' | 'auth' | 'unknown';
   onRetry?: () => void;
   onDismiss?: () => void;
+  onConfigureBackend?: () => void; // New prop for backend configuration
 }
 
 const CustomErrorDialog: React.FC<CustomErrorDialogProps> = ({
@@ -20,7 +21,8 @@ const CustomErrorDialog: React.FC<CustomErrorDialogProps> = ({
   message,
   errorType,
   onRetry,
-  onDismiss
+  onDismiss,
+  onConfigureBackend // New prop
 }) => {
   const getErrorIcon = () => {
     switch (errorType) {
@@ -87,6 +89,13 @@ const CustomErrorDialog: React.FC<CustomErrorDialogProps> = ({
     onClose();
   };
 
+  const handleConfigureBackend = () => {
+    if (onConfigureBackend) {
+      onConfigureBackend();
+    }
+    onClose();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -103,6 +112,12 @@ const CustomErrorDialog: React.FC<CustomErrorDialogProps> = ({
           <Button variant="outline" onClick={handleDismiss}>
             Dismiss
           </Button>
+          {errorType === 'auth' && onConfigureBackend && (
+            <Button variant="outline" onClick={handleConfigureBackend} className="flex items-center gap-2">
+              <Link className="h-4 w-4" />
+              Configure Backend
+            </Button>
+          )}
           {onRetry && (
             <Button onClick={handleRetry} className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4" />

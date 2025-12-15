@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import logger from "@/lib/logger";
 import authService from "@/lib/authService";
+import { useError } from "@/contexts/ErrorHandlerContext"; // Import the error context
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
   const [backendError, setBackendError] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { showError } = useError(); // Use the error context
 
   useEffect(() => {
     logger.info("AuthWrapper mounted, checking authentication...");
@@ -99,18 +101,39 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
           }
         } else {
           logger.warn("Auth check failed with status", response.status);
-          // Redirect to login but indicate there might be a backend issue
-          setIsAuthenticated(false);
-          // Clear Tauri auth token on failure
-          if (authService.isTauri) {
-            localStorage.removeItem('tauri_auth_token');
+          // Handle 401 specifically with our error dialog
+          if (response.status === 401) {
+            showError(
+              "Authentication Required",
+              "Your session has expired or you're not logged in. Please log in again.",
+              "auth",
+              undefined, // No retry
+              () => navigate("/login"), // On dismiss, go to login
+              () => navigate("/login") // On configure backend, go to login
+            );
+          } else {
+            // For other errors, redirect to login but indicate there might be a backend issue
+            setIsAuthenticated(false);
+            // Clear Tauri auth token on failure
+            if (authService.isTauri) {
+              localStorage.removeItem('tauri_auth_token');
+            }
+            setBackendError(response.status !== 401 && response.status !== 403);
+            navigate("/login");
           }
-          setBackendError(response.status !== 401 && response.status !== 403);
-          navigate("/login");
           return;
         }
       } catch (error) {
         logger.error("Auth check failed with error", error);
+        // Handle network errors with our error dialog
+        showError(
+          "Connection Error",
+          "Failed to connect to the backend server. Please check your connection and try again.",
+          "network",
+          undefined, // No retry for now
+          () => navigate("/login"), // On dismiss, go to login
+          () => navigate("/login") // On configure backend, go to login
+        );
         // Redirect to login and indicate there's a backend connectivity issue
         setIsAuthenticated(false);
         // Clear Tauri auth token on error
@@ -126,7 +149,7 @@ export const AuthWrapper = ({ children }: AuthWrapperProps) => {
     };
 
     checkAuth();
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, showError]);
 
   // Show loading state while checking authentication
   if (isLoading || isAuthenticated === null) {
