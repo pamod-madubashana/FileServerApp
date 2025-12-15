@@ -289,18 +289,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri (using direct detection to avoid circular dependencies)
-        const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
-            credentials: isTauri ? undefined : 'include', // Include cookies for session-based auth
+            method: 'GET',
+            headers: authService.getAuthHeaders(),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/files?path=${encodeURIComponent(path)}`, mergedOptions, 3000); // 3 second timeout
+        const response = await fetchWithTimeout(`${apiUrl}/files?path=${encodeURIComponent(path)}`, fetchOptions, 3000); // 3 second timeout
 
         if (!response.ok) {
             // Handle specific error cases
@@ -318,18 +313,13 @@ export const api = {
         // For the default case, we use the base URL directly (no /api prefix)
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri (using direct detection to avoid circular dependencies)
-        const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
-            credentials: isTauri ? undefined : 'include',
+            method: 'GET',
+            headers: authService.getAuthHeaders(),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/auth/check`, mergedOptions, 3000); // 3 second timeout
+        const response = await fetchWithTimeout(`${apiUrl}/auth/check`, fetchOptions, 3000); // 3 second timeout
 
         if (!response.ok) {
             // Handle specific error cases
@@ -347,19 +337,13 @@ export const api = {
         // For the default case, we use the base URL directly (no /api prefix)
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri (using direct detection to avoid circular dependencies)
-        const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'POST',
-            credentials: isTauri ? undefined : 'include',
+            headers: authService.getAuthHeaders(),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/auth/logout`, mergedOptions, 3000); // 3 second timeout
+        const response = await fetchWithTimeout(`${apiUrl}/auth/logout`, fetchOptions, 3000); // 3 second timeout
 
         if (!response.ok) {
             // Handle specific error cases
@@ -371,7 +355,7 @@ export const api = {
 
         // Clear auth token from localStorage
         if (typeof window !== 'undefined') {
-            localStorage.removeItem('authToken');
+            localStorage.removeItem('auth_token');
         }
 
         return response.json();
@@ -381,19 +365,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri (using direct detection to avoid circular dependencies)
-        const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'GET',
-            credentials: isTauri ? undefined : 'include',
+            headers: authService.getAuthHeaders(),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/user/profile`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user/profile`, fetchOptions, 3000);
 
         if (!response.ok) {
             // Handle specific error cases
@@ -421,19 +399,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'GET',
-            credentials: isTauri ? undefined : 'include',
+            headers: authService.getAuthHeaders(),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/user/is-owner`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user/is-owner`, fetchOptions, 3000);
 
         if (!response.ok) {
             // Handle specific error cases
@@ -458,19 +430,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'GET',
-            credentials: isTauri ? undefined : 'include',
+            headers: authService.getAuthHeaders(),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/user`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user`, fetchOptions, 3000);
 
         if (!response.ok) {
             // Handle specific error cases
@@ -503,23 +469,17 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'POST',
-            credentials: isTauri ? undefined : 'include',
             headers: {
                 'Content-Type': 'application/json',
+                ...authService.getAuthHeaders()
             },
             body: JSON.stringify(userData),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/user`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user`, fetchOptions, 3000);
 
         if (!response.ok) {
             // Handle specific error cases
@@ -536,23 +496,17 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'PUT',
-            credentials: isTauri ? undefined : 'include',
             headers: {
                 'Content-Type': 'application/json',
+                ...authService.getAuthHeaders()
             },
             body: JSON.stringify(userData),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/user/${userId}`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user/${userId}`, fetchOptions, 3000);
 
         if (!response.ok) {
             // Handle specific error cases
@@ -569,19 +523,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'DELETE',
-            credentials: isTauri ? undefined : 'include',
+            headers: authService.getAuthHeaders(),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/user/${userId}`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user/${userId}`, fetchOptions, 3000);
 
         if (!response.ok) {
             // Handle specific error cases
@@ -596,23 +544,17 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+                ...authService.getAuthHeaders()
             },
-            credentials: isTauri ? undefined : 'include',
             body: JSON.stringify(passwordData),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/user/${userId}/password`, mergedOptions, 5000);
+        const response = await fetchWithTimeout(`${apiUrl}/user/${userId}/password`, fetchOptions, 5000);
 
         if (!response.ok) {
             // Handle specific error cases
@@ -631,19 +573,13 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'GET',
-            credentials: isTauri ? undefined : 'include',
+            headers: authService.getAuthHeaders(),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, fetchOptions, 3000);
 
         if (!response.ok) {
             // Handle specific error cases
@@ -660,23 +596,17 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'PUT',
-            credentials: isTauri ? undefined : 'include',
             headers: {
                 'Content-Type': 'application/json',
+                ...authService.getAuthHeaders()
             },
             body: JSON.stringify(indexChatData),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/user/index-chat`, fetchOptions, 3000);
 
         if (!response.ok) {
             // Handle specific error cases
@@ -698,20 +628,14 @@ export const api = {
         formData.append('file', file);
         formData.append('path', path);
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'POST',
-            credentials: isTauri ? undefined : 'include',
+            headers: authService.getAuthHeaders(),
             body: formData,
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/files/upload`, mergedOptions, 30000); // 30 second timeout for file uploads
+        const response = await fetchWithTimeout(`${apiUrl}/files/upload`, fetchOptions, 30000); // 30 second timeout for file uploads
 
         if (!response.ok) {
             // Handle specific error cases
@@ -738,23 +662,17 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'POST',
-            credentials: isTauri ? undefined : 'include',
             headers: {
                 'Content-Type': 'application/json',
+                ...authService.getAuthHeaders()
             },
             body: JSON.stringify({ folderName, currentPath }),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/folders/create`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/folders/create`, fetchOptions, 3000);
 
         if (!response.ok) {
             // Handle specific error cases
@@ -772,23 +690,17 @@ export const api = {
         // For the default case, we use the base URL directly (no /api prefix)
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
-        
         // Prepare fetch options
         const fetchOptions: RequestInit = {
             method: 'POST',
-            credentials: isTauri ? undefined : 'include',
             headers: {
                 'Content-Type': 'application/json',
+                ...authService.getAuthHeaders()
             },
             body: JSON.stringify({ fullPath }),
         };
         
-        // Add auth headers to all requests
-        const mergedOptions = addAuthHeaders(fetchOptions);
-        
-        const response = await fetchWithTimeout(`${apiUrl}/folders/create-path`, mergedOptions, 3000);
+        const response = await fetchWithTimeout(`${apiUrl}/folders/create-path`, fetchOptions, 3000);
 
         if (!response.ok) {
             // Handle specific error cases

@@ -60,7 +60,6 @@ const Login = () => {
           "Content-Type": "application/json",
           ...authService.getAuthHeaders()
         },
-        credentials: authService.isTauri ? undefined : "include",
         body: JSON.stringify({ token: response.credential }),
       }, 5000);
 
@@ -69,6 +68,12 @@ const Login = () => {
       if (res.ok) {
         const responseData = await res.json();
         logger.info("Google login successful", responseData);
+        
+        // Store auth token in localStorage for both Tauri and browser
+        if (responseData.auth_token) {
+          localStorage.setItem('auth_token', responseData.auth_token);
+        }
+        
         // Force a small delay to ensure session is properly set
         await new Promise(resolve => setTimeout(resolve, 100));
         navigate("/");
@@ -156,7 +161,6 @@ const Login = () => {
           "Content-Type": "application/json",
           ...authService.getAuthHeaders()
         },
-        credentials: authService.isTauri ? undefined : "include",
         body: JSON.stringify({ username, password }),
       };
       
@@ -170,15 +174,9 @@ const Login = () => {
         const responseData = await response.json();
         logger.info("Login response data", responseData);
         
-        // For Tauri, we might need to manually handle cookies
-        if (authService.isTauri) {
-          logger.info("In Tauri environment, storing auth state locally");
-          localStorage.setItem('tauri_auth_token', JSON.stringify({ 
-            authenticated: true, 
-            username: responseData.username,
-            auth_token: responseData.auth_token,
-            timestamp: new Date().toISOString()
-          }));
+        // Store auth token in localStorage for both Tauri and browser
+        if (responseData.auth_token) {
+          localStorage.setItem('auth_token', responseData.auth_token);
         }
         
         // Force a small delay to ensure session is properly set
