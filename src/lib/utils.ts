@@ -15,11 +15,70 @@ let save: ((options: any) => Promise<string | null>) | null = null;
 let httpFetch: ((url: string, options?: any) => Promise<any>) | null = null;
 
 // Dynamically import Tauri modules only in Tauri environment
-const isTauri = typeof window !== 'undefined' && authService.isTauri();
-console.log('[utils.ts] Tauri detection:', { isTauri, hasWindowTAURI: window.__TAURI__ !== undefined, TAURI: window.__TAURI__ });
-if (isTauri) {
-  import('@tauri-apps/plugin-dialog').then(module => save = module.save);
-  import('@tauri-apps/plugin-http').then(module => httpFetch = module.fetch);
+// Use a function for Tauri detection to ensure it's checked at runtime rather than module load time
+const isTauriEnv = () => {
+  // First check with authService
+  if (authService.isTauri()) {
+    return true;
+  }
+  
+  // Then check directly
+  if (typeof window !== 'undefined' && !!(window as any).__TAURI__) {
+    return true;
+  }
+  
+  // Finally, check if we're in a Tauri-like environment by checking for Tauri-specific globals
+  if (typeof window !== 'undefined') {
+    // Check for other Tauri indicators
+    return !!(window as any).__TAURI_IPC__ || 
+           !!(window as any).__TAURI_METADATA__ || 
+           (typeof (window as any).ipc !== 'undefined');
+  }
+  
+  return false;
+};
+console.log('[utils.ts] Tauri detection at module load:', { 
+  isTauri: isTauriEnv(), 
+  authServiceResult: typeof window !== 'undefined' ? authService.isTauri() : undefined,
+  hasWindowTAURI: typeof window !== 'undefined' && window.__TAURI__ !== undefined, 
+  TAURI: typeof window !== 'undefined' ? window.__TAURI__ : undefined 
+});
+
+// Function to ensure Tauri modules are loaded
+async function ensureTauriModules() {
+  // Check if we're in Tauri environment at runtime
+  if (!isTauriEnv()) {
+    throw new Error('Not running in Tauri environment');
+  }
+  
+  // Load modules if not already loaded
+  if (!save) {
+    try {
+      const dialogModule = await import('@tauri-apps/plugin-dialog');
+      save = dialogModule.save;
+    } catch (e) {
+      console.error('Failed to load @tauri-apps/plugin-dialog:', e);
+      throw new Error('Failed to load Tauri dialog plugin');
+    }
+  }
+  
+  if (!httpFetch) {
+    try {
+      const httpModule = await import('@tauri-apps/plugin-http');
+      httpFetch = httpModule.fetch;
+    } catch (e) {
+      console.error('Failed to load @tauri-apps/plugin-http:', e);
+      throw new Error('Failed to load Tauri HTTP plugin');
+    }
+  }
+}
+
+// Preload Tauri modules if we're in a Tauri environment
+// But also handle the case where Tauri environment detection might be delayed
+if (isTauriEnv()) {
+  ensureTauriModules().catch(err => {
+    console.error('Failed to preload Tauri modules:', err);
+  });
 }
 
 /**
@@ -43,11 +102,19 @@ export async function downloadFile(
     // Construct full URL
     const url = path.startsWith('http') ? path : `${window.location.origin}${path}`;
     
-    // Check if we're in a Tauri environment - more robust detection
-    const isTauriEnv = typeof window !== 'undefined' && authService.isTauri();
-    console.log('Download environment check:', { isTauriEnv, hasTAURI: window.__TAURI__ !== undefined, userAgent: navigator.userAgent, path, url });
+    // Check if we're in a Tauri environment - more robust detection at runtime
+    // Use both authService and direct window check for consistency
+    const isTauriEnvResult = isTauriEnv(); // Use our improved detection function
+    console.log('Download environment check:', { 
+      isTauriEnv: isTauriEnvResult,
+      authServiceResult: authService.isTauri(), 
+      hasTAURI: typeof window !== 'undefined' && window.__TAURI__ !== undefined, 
+      userAgent: navigator.userAgent, 
+      path, 
+      url 
+    });
     
-    if (isTauriEnv) {
+    if (isTauriEnvResult) {
       // Use Tauri APIs for downloading
       console.log('Using Tauri download API');
       return await downloadFileTauri(url, filename, onProgress, cancellationToken);
@@ -81,8 +148,15 @@ async function downloadFileTauri(
   cancellationToken?: AbortController
 ): Promise<string> {
   // Ensure Tauri modules are loaded
-  if (!save || !invoke) {
-    throw new Error('Tauri modules not loaded');
+  try {
+    await ensureTauriModules();
+  } catch (error) {
+    console.error('Failed to ensure Tauri modules are loaded:', error);
+    throw new Error(`Tauri environment setup failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  
+  if (!invoke) {
+    throw new Error('Tauri core module not available');
   }
 
   console.log('[downloadFileTauri] Starting download:', { url, filename });
@@ -96,7 +170,9 @@ async function downloadFileTauri(
   if (downloadFolder) {
     // Use configured download folder
     // Ensure the path uses the correct separator for the platform
-    const separator = authService.isTauri() ? '\\' : '/';
+    // Use both authService and direct window check for consistency
+    const isTauriEnvResult = isTauriEnv(); // Use our improved detection function
+    const separator = isTauriEnvResult ? '\\' : '/';
     console.log('Constructing path with separator:', { downloadFolder, separator, endsWithSeparator: downloadFolder.endsWith(separator) });
     filePath = downloadFolder.endsWith(separator) ? `${downloadFolder}${filename}` : `${downloadFolder}${separator}${filename}`;
     console.log('Constructed filePath:', filePath);
@@ -145,7 +221,8 @@ async function downloadFileTauri(
   try {
     // Get auth token for Tauri environment
     let authToken = null;
-    const isTauri = authService.isTauri();
+    // Use both authService and direct window check for consistency
+    const isTauri = typeof window !== 'undefined' && (authService.isTauri() || !!(window as any).__TAURI__);
     if (isTauri) {
       try {
         const tauri_auth = localStorage.getItem('tauri_auth_token');
@@ -224,8 +301,13 @@ async function downloadFileBrowser(
   const headers: Record<string, string> = {};
   
   // Check if we're in Tauri and have an auth token
-  const isTauri = !!(window as any).__TAURI__;
-  console.log('[downloadFileBrowser] Environment check:', { isTauri });
+  // Use both authService and direct window check for consistency
+  const isTauri = isTauriEnv(); // Use our improved detection function
+  console.log('[downloadFileBrowser] Environment check:', { 
+    isTauri, 
+    authServiceResult: authService.isTauri(), 
+    hasTAURI: typeof window !== 'undefined' && window.__TAURI__ !== undefined 
+  });
   
   if (isTauri) {
     try {
@@ -246,13 +328,33 @@ async function downloadFileBrowser(
   // Include credentials for browser environment to send cookies
   const fetchOptions: RequestInit = {
     headers,
+    // For browser environments, we need to be careful about CORS
+    // If we're in Tauri, no credentials needed as we use headers
+    // If we're in browser, we might need to avoid credentials if CORS is misconfigured
     credentials: isTauri ? undefined : 'include', // Include cookies for authentication
     signal: cancellationToken?.signal // Add cancellation signal
   };
   
   console.log('[downloadFileBrowser] Fetching with options:', { url, fetchOptions });
   
-  const response = await fetch(url, fetchOptions);
+  // Try the fetch with credentials first
+  let response: Response;
+  try {
+    response = await fetch(url, fetchOptions);
+  } catch (error) {
+    // If we get a CORS error in browser mode, try without credentials
+    if (!isTauri && error instanceof TypeError && error.message.includes('CORS')) {
+      console.log('[downloadFileBrowser] CORS error detected, retrying without credentials');
+      const fetchOptionsWithoutCredentials: RequestInit = {
+        headers,
+        credentials: 'omit',
+        signal: cancellationToken?.signal
+      };
+      response = await fetch(url, fetchOptionsWithoutCredentials);
+    } else {
+      throw error;
+    }
+  }
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
