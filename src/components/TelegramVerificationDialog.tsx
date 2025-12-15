@@ -1,8 +1,16 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import { openUrl } from "@/lib/tauri-fs";
+import logger from "@/lib/logger";
 
 interface TelegramVerificationDialogProps {
   open: boolean;
@@ -10,17 +18,19 @@ interface TelegramVerificationDialogProps {
   onVerificationComplete?: () => void;
 }
 
-export const TelegramVerificationDialog = ({ 
-  open, 
+interface VerificationData {
+  botUsername: string;
+  link: string;
+  code: string;
+}
+
+export const TelegramVerificationDialog = ({
+  open,
   onOpenChange,
-  onVerificationComplete
+  onVerificationComplete,
 }: TelegramVerificationDialogProps) => {
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
-  const [verificationData, setVerificationData] = useState<{ 
-    botUsername: string; 
-    link: string; 
-    code: string 
-  } | null>(null);
+  const [verificationData, setVerificationData] = useState<VerificationData | null>(null);
 
   const handleGenerateLink = async () => {
     setIsGeneratingLink(true);
@@ -34,7 +44,6 @@ export const TelegramVerificationDialog = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({
           user_id: "None"
         }),
@@ -51,7 +60,7 @@ export const TelegramVerificationDialog = ({
         throw new Error("Failed to generate verification link");
       }
     } catch (error) {
-      console.error("Failed to generate Telegram verification link", error);
+      logger.error("Failed to generate Telegram verification link", error);
       alert("Failed to generate verification link. Please try again.");
     } finally {
       setIsGeneratingLink(false);
