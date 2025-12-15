@@ -41,22 +41,14 @@ export function isTauri(): boolean {
 export function getAuthHeaders(): AuthHeaders {
   const headers: Record<string, string> = {};
   
-  if (isTauri()) {
-    // For Tauri environment, use auth token from localStorage
-    try {
-      const tauriAuth = localStorage.getItem('tauri_auth_token');
-      if (tauriAuth) {
-        const authData = JSON.parse(tauriAuth);
-        if (authData.auth_token) {
-          headers['X-Auth-Token'] = authData.auth_token;
-        }
-      }
-    } catch (e) {
-      logger.error('Failed to get auth token from localStorage:', e);
+  // For both Tauri and browser environments, use x-Auth-token header
+  try {
+    const authToken = localStorage.getItem('auth_token');
+    if (authToken) {
+      headers['X-Auth-Token'] = authToken;
     }
-  } else {
-    // For browser environment, cookies are handled automatically with credentials
-    // No additional headers needed here
+  } catch (e) {
+    logger.error('Failed to get auth token from localStorage:', e);
   }
   
   return headers;
@@ -72,7 +64,6 @@ export async function isAuthenticated(): Promise<boolean> {
     
     const response = await fetch(`${apiUrl}/auth/check`, {
       method: 'GET',
-      credentials: isTauri() ? undefined : 'include',
       headers: getAuthHeaders(),
     });
     
@@ -98,7 +89,6 @@ export async function getCurrentUser(): Promise<UserProfile> {
     
     const response = await fetch(`${apiUrl}/user/profile`, {
       method: 'GET',
-      credentials: isTauri() ? undefined : 'include',
       headers: getAuthHeaders(),
     });
     
@@ -136,7 +126,6 @@ export async function logout(): Promise<void> {
     
     const response = await fetch(`${apiUrl}/auth/logout`, {
       method: 'POST',
-      credentials: isTauri() ? undefined : 'include',
       headers: getAuthHeaders(),
     });
     
@@ -145,9 +134,7 @@ export async function logout(): Promise<void> {
     }
     
     // Clear local storage items
-    if (isTauri()) {
-      localStorage.removeItem('tauri_auth_token');
-    }
+    localStorage.removeItem('auth_token');
     
     logger.info('User logged out successfully');
   } catch (error) {
@@ -165,9 +152,7 @@ export async function refreshToken(): Promise<boolean> {
     const authenticated = await isAuthenticated();
     if (!authenticated) {
       // If not authenticated, clear any stored tokens
-      if (isTauri()) {
-        localStorage.removeItem('tauri_auth_token');
-      }
+      localStorage.removeItem('auth_token');
       return false;
     }
     
@@ -183,26 +168,18 @@ export async function refreshToken(): Promise<boolean> {
  * Check if token needs refresh
  */
 export function isTokenExpired(): boolean {
-  if (isTauri()) {
-    try {
-      const tauriAuth = localStorage.getItem('tauri_auth_token');
-      if (tauriAuth) {
-        const authData = JSON.parse(tauriAuth);
-        if (authData.expires_at) {
-          const expirationTime = new Date(authData.expires_at).getTime();
-          const currentTime = new Date().getTime();
-          // Refresh if token expires in less than 5 minutes
-          return (expirationTime - currentTime) < 5 * 60 * 1000;
-        }
-      }
-      return true; // If we can't determine expiration, assume it's expired
-    } catch (e) {
-      logger.error('Failed to check token expiration:', e);
-      return true;
+  try {
+    const authToken = localStorage.getItem('auth_token');
+    if (authToken) {
+      // For now, we don't have expiration info in the token
+      // Just return false to indicate it's not expired
+      return false;
     }
+    return true; // If we can't determine expiration, assume it's expired
+  } catch (e) {
+    logger.error('Failed to check token expiration:', e);
+    return true;
   }
-  // For browser environment, cookie expiration is handled by the browser
-  return false;
 }
 
 export default {
