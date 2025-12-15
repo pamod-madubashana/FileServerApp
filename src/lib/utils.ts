@@ -222,7 +222,7 @@ async function downloadFileTauri(
     // Get auth token for Tauri environment
     let authToken = null;
     // Use both authService and direct window check for consistency
-    const isTauri = typeof window !== 'undefined' && (authService.isTauri() || !!(window as any).__TAURI__);
+    const isTauri = isTauriEnv(); // Use our improved detection function
     if (isTauri) {
       try {
         const tauri_auth = localStorage.getItem('tauri_auth_token');
