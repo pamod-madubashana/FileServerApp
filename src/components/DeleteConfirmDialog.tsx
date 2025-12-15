@@ -47,12 +47,12 @@ export const DeleteConfirmDialog = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
       onKeyDown={handleKeyDown}
     >
       <div 
         ref={dialogRef}
-        className="bg-background border border-border rounded-lg shadow-lg w-full max-w-md"
+        className="bg-background/80 backdrop-blur-md border border-border rounded-xl shadow-2xl w-full max-w-md"
       >
         <div className="p-6">
           <h2 className="text-xl font-semibold text-foreground mb-2">Delete {itemType}?</h2>

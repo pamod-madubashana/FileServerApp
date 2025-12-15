@@ -28,7 +28,7 @@ export const DeleteDialog = ({
   // The main delete confirmation uses DeleteConfirmDialog
   return (
     <AlertDialog open={open} onOpenChange={(open) => !open && onCancel()}>
-      <AlertDialogContent>
+      <AlertDialogContent className="bg-background/80 backdrop-blur-md border border-border rounded-xl shadow-2xl">
         <AlertDialogHeader>
           <AlertDialogTitle>Delete {itemType}?</AlertDialogTitle>
           <AlertDialogDescription>
