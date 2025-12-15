@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { invoke } from "@tauri-apps/api/core";
+import authService from "@/lib/authService";
 
 // Extend window interface to include __TAURI__
 declare global {
@@ -14,7 +15,7 @@ let save: ((options: any) => Promise<string | null>) | null = null;
 let httpFetch: ((url: string, options?: any) => Promise<any>) | null = null;
 
 // Dynamically import Tauri modules only in Tauri environment
-const isTauri = typeof window !== 'undefined' && window.__TAURI__ !== undefined;
+const isTauri = typeof window !== 'undefined' && authService.isTauri();
 console.log('[utils.ts] Tauri detection:', { isTauri, hasWindowTAURI: window.__TAURI__ !== undefined, TAURI: window.__TAURI__ });
 if (isTauri) {
   import('@tauri-apps/plugin-dialog').then(module => save = module.save);
@@ -43,7 +44,7 @@ export async function downloadFile(
     const url = path.startsWith('http') ? path : `${window.location.origin}${path}`;
     
     // Check if we're in a Tauri environment - more robust detection
-    const isTauriEnv = typeof window !== 'undefined' && window.__TAURI__ !== undefined;
+    const isTauriEnv = typeof window !== 'undefined' && authService.isTauri();
     console.log('Download environment check:', { isTauriEnv, hasTAURI: window.__TAURI__ !== undefined, userAgent: navigator.userAgent, path, url });
     
     if (isTauriEnv) {
@@ -95,7 +96,7 @@ async function downloadFileTauri(
   if (downloadFolder) {
     // Use configured download folder
     // Ensure the path uses the correct separator for the platform
-    const separator = window.__TAURI__ ? '\\' : '/';
+    const separator = authService.isTauri() ? '\\' : '/';
     console.log('Constructing path with separator:', { downloadFolder, separator, endsWithSeparator: downloadFolder.endsWith(separator) });
     filePath = downloadFolder.endsWith(separator) ? `${downloadFolder}${filename}` : `${downloadFolder}${separator}${filename}`;
     console.log('Constructed filePath:', filePath);
@@ -144,7 +145,7 @@ async function downloadFileTauri(
   try {
     // Get auth token for Tauri environment
     let authToken = null;
-    const isTauri = !!(window as any).__TAURI__;
+    const isTauri = authService.isTauri();
     if (isTauri) {
       try {
         const tauri_auth = localStorage.getItem('tauri_auth_token');

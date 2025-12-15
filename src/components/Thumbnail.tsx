@@ -118,11 +118,22 @@ export const Thumbnail = ({ item, size = 'lg', thumbnailSrc: propThumbnailSrc, l
     // If we already have pre-loaded data, don't load again
     if (propThumbnailSrc !== undefined || !item.thumbnail || thumbnailError) return;
     
-    // Construct the full thumbnail URL using the API base URL
-    const baseUrl = getApiBaseUrl();
-    let thumbnailUrl = baseUrl 
-      ? `${baseUrl}/files/thumbnail/${item.thumbnail}` 
-      : `/files/thumbnail/${item.thumbnail}`;
+    // Check if we're in Tauri environment
+    const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
+    
+    // Construct the thumbnail URL
+    // For browser environments, use relative path to avoid CORS issues
+    // For Tauri environments, use the full API base URL
+    let thumbnailUrl: string;
+    if (isTauri) {
+      const baseUrl = getApiBaseUrl();
+      thumbnailUrl = baseUrl 
+        ? `${baseUrl}/files/thumbnail/${item.thumbnail}` 
+        : `/files/thumbnail/${item.thumbnail}`;
+    } else {
+      // Use relative path for browser to avoid CORS issues
+      thumbnailUrl = `/files/thumbnail/${item.thumbnail}`;
+    }
 
     // For Tauri environment, the X-Auth-Token header is automatically added by the fetch implementation
     // No need to add auth token as query parameter

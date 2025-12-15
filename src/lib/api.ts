@@ -119,7 +119,7 @@ export const getApiBaseUrl = (): string => {
   // Return default URL (port 8148)
   if (typeof window !== 'undefined') {
     // Check if running in Tauri
-    const isTauri = !!(window as any).__TAURI__;
+    const isTauri = authService.isTauri();
     console.log('[getApiBaseUrl] Tauri detection:', isTauri);
     
     if (isTauri) {
@@ -172,7 +172,7 @@ let http: typeof import('@tauri-apps/plugin-http') | null = null;
 let isTauriEnv = false;
 let httpReady: Promise<void> | null = null;
 
-// Check if we're running in Tauri
+// Check if we're running in Tauri (using direct detection to avoid circular dependencies)
 if (typeof window !== 'undefined' && (window as any).__TAURI__) {
   isTauriEnv = true;
   logger.info('[API] Detected Tauri environment');
@@ -217,8 +217,8 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
   // Add auth headers to all requests
   const mergedOptions = addAuthHeaders(options);
   
-  // Check if we're running in Tauri
-  const isTauri = authService.isTauri();
+  // Check if we're running in Tauri (using direct detection to avoid circular dependencies)
+  const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
   
   // For Tauri environment, we don't want to send credentials as they don't work the same way
   let tauriCredentials = (mergedOptions as any).credentials;
@@ -288,8 +288,8 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
+        // Check if we're running in Tauri (using direct detection to avoid circular dependencies)
+        const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -313,8 +313,8 @@ export const api = {
         // For the default case, we use the base URL directly (no /api prefix)
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
+        // Check if we're running in Tauri (using direct detection to avoid circular dependencies)
+        const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -338,8 +338,8 @@ export const api = {
         // For the default case, we use the base URL directly (no /api prefix)
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
+        // Check if we're running in Tauri (using direct detection to avoid circular dependencies)
+        const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {
@@ -368,8 +368,8 @@ export const api = {
         const baseUrl = getApiBaseUrl();
         const apiUrl = baseUrl ? `${baseUrl}` : '';
         
-        // Check if we're running in Tauri
-        const isTauri = authService.isTauri();
+        // Check if we're running in Tauri (using direct detection to avoid circular dependencies)
+        const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
         
         // Prepare fetch options
         const fetchOptions: RequestInit = {

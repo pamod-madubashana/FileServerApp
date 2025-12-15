@@ -7,6 +7,7 @@ import { downloadManager, DownloadItem } from "@/lib/downloadManager";
 import { useNavigate } from "react-router-dom";
 
 import { invoke } from "@tauri-apps/api/core";
+import authService from "@/lib/authService";
 
 interface DownloadQueueProps {
   className?: string;
@@ -150,7 +151,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                           // Open file when clicking on completed downloads
                           if (download.status === 'completed') {
                             // Check if we're in Tauri environment
-                            const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+                            const isTauri = authService.isTauri();
                             console.log('Download item clicked:', { isTauri, filePath: download.filePath, download });
                             
                             if (isTauri) {
@@ -172,7 +173,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                         {download.filename}
                       </div>
                       {/* Folder icon - only show for Tauri app and completed downloads */}
-                      {download.status === 'completed' && typeof window !== 'undefined' && (window as any).__TAURI__ && (
+                      {download.status === 'completed' && authService.isTauri() && (
                         <Button 
                           variant="ghost" 
                           size="sm" 
@@ -180,7 +181,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                           onClick={(e) => {
                             e.stopPropagation();
                             // Check if we're in Tauri environment
-                            const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+                            const isTauri = authService.isTauri();
                             if (isTauri && download.filePath) {
                               openDownloadedFile(download.filePath);
                             }
@@ -190,7 +191,7 @@ const DownloadQueue: React.FC<DownloadQueueProps> = ({ className, isOpen: extern
                         </Button>
                       )}
                       {/* Save icon - only show for browser and completed downloads */}
-                      {download.status === 'completed' && (typeof window === 'undefined' || !(window as any).__TAURI__) && (
+                      {download.status === 'completed' && !authService.isTauri() && (
                         <Button 
                           variant="ghost" 
                           size="sm" 

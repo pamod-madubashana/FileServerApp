@@ -14,6 +14,8 @@ import { open } from '@tauri-apps/plugin-dialog';
 // Add Tauri path import for getting user profile directory
 import { homeDir } from '@tauri-apps/api/path';
 
+import authService from "@/lib/authService";
+
 interface SettingsContentProps {
   onBack: () => void;
 }
@@ -48,7 +50,7 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
     setTempDownloadFolder(savedDownloadFolder);
     
     // Set default download folder for Tauri app if not already set
-    if (typeof window !== 'undefined' && window.__TAURI__ && !savedDownloadFolder) {
+    if (typeof window !== 'undefined' && authService.isTauri() && !savedDownloadFolder) {
       setDefaultDownloadFolder();
     }
     
@@ -70,7 +72,7 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
   // Function to set default download folder
   const setDefaultDownloadFolder = async () => {
     try {
-      if (typeof window !== 'undefined' && window.__TAURI__) {
+      if (typeof window !== 'undefined' && authService.isTauri()) {
         const homeDirectory = await homeDir();
         // Use correct path separator for Windows
         const defaultDownloadFolder = `${homeDirectory}Downloads\\fileServer`;
@@ -108,7 +110,7 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
   const selectDownloadFolder = async () => {
     try {
       // Check if we're in a Tauri environment
-      if (typeof window !== 'undefined' && window.__TAURI__) {
+      if (typeof window !== 'undefined' && authService.isTauri()) {
         const selected = await open({
           directory: true,
           multiple: false,
@@ -399,7 +401,7 @@ export const SettingsContent = ({ onBack }: SettingsContentProps) => {
                   </p>
                   
                   {/* Show a note for browser users */}
-                  {typeof window !== 'undefined' && !window.__TAURI__ && (
+                  {typeof window !== 'undefined' && !authService.isTauri() && (
                     <p className="text-xs text-yellow-600 dark:text-yellow-400">
                       Note: Folder selection is only available in the desktop app. In browsers, files will be saved to your default download location.
                     </p>

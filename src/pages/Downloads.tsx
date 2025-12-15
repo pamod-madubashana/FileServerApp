@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { downloadManager, DownloadItem } from "@/lib/downloadManager";
 import { useDownloadManager } from "@/hooks/useDownloadManager";
 import { invoke } from "@tauri-apps/api/core";
+import authService from "@/lib/authService";
 
 const Downloads = () => {
   const navigate = useNavigate();
@@ -116,7 +117,7 @@ const Downloads = () => {
                             e.stopPropagation();
                             // Open file when clicking on completed downloads in Tauri
                             if (download.status === 'completed') {
-                              const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+                              const isTauri = authService.isTauri();
                               if (isTauri && download.filePath) {
                                 openDownloadedFile(download.filePath);
                               }
@@ -127,7 +128,7 @@ const Downloads = () => {
                         </div>
                         <div className="flex gap-1">
                           {/* Folder icon - only show for Tauri app and completed downloads */}
-                          {download.status === 'completed' && typeof window !== 'undefined' && (window as any).__TAURI__ && (
+                          {download.status === 'completed' && typeof window !== 'undefined' && authService.isTauri() && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -135,7 +136,7 @@ const Downloads = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 // Check if we're in Tauri environment
-                                const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+                                const isTauri = authService.isTauri();
                                 if (isTauri && download.filePath) {
                                   openDownloadedFile(download.filePath);
                                 }
@@ -145,7 +146,7 @@ const Downloads = () => {
                             </Button>
                           )}
                           {/* Save icon - only show for browser and completed downloads */}
-                          {download.status === 'completed' && (typeof window === 'undefined' || !(window as any).__TAURI__) && (
+                          {download.status === 'completed' && (typeof window === 'undefined' || !authService.isTauri()) && (
                             <Button 
                               variant="ghost" 
                               size="sm" 

@@ -52,11 +52,22 @@ export function useBatchThumbnailLoader(items: FileItem[], batchSize: number = 5
             // Import the API client dynamically
             const { fetchWithTimeout, getApiBaseUrl } = await import('@/lib/api');
             
-            // Construct the thumbnail URL using the API base URL
-            const baseUrl = getApiBaseUrl();
-            const thumbnailUrl = baseUrl 
-              ? `${baseUrl}/files/thumbnail/${thumbnailId}` 
-              : `/files/thumbnail/${thumbnailId}`;
+            // Check if we're in Tauri environment
+            const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
+            
+            // Construct the thumbnail URL
+            // For browser environments, use relative path to avoid CORS issues
+            // For Tauri environments, use the full API base URL
+            let thumbnailUrl: string;
+            if (isTauri) {
+              const baseUrl = getApiBaseUrl();
+              thumbnailUrl = baseUrl 
+                ? `${baseUrl}/files/thumbnail/${thumbnailId}` 
+                : `/files/thumbnail/${thumbnailId}`;
+            } else {
+              // Use relative path for browser to avoid CORS issues
+              thumbnailUrl = `/files/thumbnail/${thumbnailId}`;
+            }
               
             // Fetch the thumbnail using our authenticated API client
             const response = await fetchWithTimeout(thumbnailUrl, { method: 'GET' }, 5000);
