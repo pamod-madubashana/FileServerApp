@@ -82,8 +82,8 @@ export const Thumbnail = ({ item, size = 'lg', thumbnailSrc: propThumbnailSrc, l
   // Define size classes based on the size prop
   const sizeClasses = {
     sm: 'w-5 h-5',
-    md: 'w-10 h-10',
-    lg: 'w-20 h-20'
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16'
   };
   
   const currentSizeClass = sizeClasses[size];
@@ -165,8 +165,8 @@ export const Thumbnail = ({ item, size = 'lg', thumbnailSrc: propThumbnailSrc, l
   if (item.type === "folder") {
     return (
       <div className={`${currentSizeClass} flex items-center justify-center transition-all duration-200 hover:scale-105`}>
-        <div className={`${currentSizeClass} text-primary flex items-center justify-center transition-all duration-200 hover:scale-110`}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className={`text-primary flex items-center justify-center transition-all duration-200 hover:scale-110`}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
             <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
           </svg>
         </div>
@@ -177,7 +177,7 @@ export const Thumbnail = ({ item, size = 'lg', thumbnailSrc: propThumbnailSrc, l
   // If no thumbnail or thumbnail already failed, show default icon
   if (!item.thumbnail || thumbnailError) {
     return (
-      <div className={`${currentSizeClass} flex items-center justify-center transition-all duration-200 hover:scale-105`}>
+      <div className={`flex items-center justify-center transition-all duration-200 hover:scale-105`}>
         {getDefaultFileIcon(item)}
       </div>
     );
@@ -211,24 +211,24 @@ export const Thumbnail = ({ item, size = 'lg', thumbnailSrc: propThumbnailSrc, l
 const getDefaultFileIcon = (item: FileItem) => {
   switch (item.fileType) {
     case 'photo':
-      return <ImageIcon className="w-10 h-10 text-blue-500" />;
+      return <ImageIcon className="w-8 h-8 text-blue-500" />;
     case 'video':
-      return <FileVideo className="w-10 h-10 text-purple-500" />;
+      return <FileVideo className="w-8 h-8 text-purple-500" />;
     case 'audio':
     case 'voice':
-      return <FileAudio className="w-10 h-10 text-green-500" />;
+      return <FileAudio className="w-8 h-8 text-green-500" />;
     case 'document':
       if (item.extension === 'pdf') {
-        return <FileText className="w-10 h-10 text-red-500" />;
+        return <FileText className="w-8 h-8 text-red-500" />;
       } else if (['doc', 'docx'].includes(item.extension || '')) {
-        return <FileText className="w-10 h-10 text-blue-700" />;
+        return <FileText className="w-8 h-8 text-blue-700" />;
       } else if (['xls', 'xlsx'].includes(item.extension || '')) {
-        return <FileText className="w-10 h-10 text-green-600" />;
+        return <FileText className="w-8 h-8 text-green-600" />;
       } else if (['zip', 'rar', '7z'].includes(item.extension || '')) {
-        return <FileArchive className="w-10 h-10 text-yellow-500" />;
+        return <FileArchive className="w-8 h-8 text-yellow-500" />;
       }
-      return <FileText className="w-10 h-10 text-muted-foreground" />;
+      return <FileText className="w-8 h-8 text-muted-foreground" />;
     default:
-      return <FileText className="w-10 h-10 text-muted-foreground" />;
+      return <FileText className="w-8 h-8 text-muted-foreground" />;
   }
 };

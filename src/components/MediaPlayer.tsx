@@ -45,7 +45,7 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, startPosition, onClo
         const wrapper = document.createElement('div');
         wrapper.style.width = '100%';
         wrapper.style.height = '100%';
-        wrapper.style.maxHeight = '70vh';
+        wrapper.style.maxHeight = '40rem';
         wrapper.style.display = 'flex';
         wrapper.style.alignItems = 'center';
         wrapper.style.justifyContent = 'center';
@@ -501,8 +501,8 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, startPosition, onClo
         className="flex items-center justify-center w-full h-full"
         style={{ 
           padding: '2rem',
-          maxHeight: '90vh',
-          maxWidth: '90vw',
+          maxHeight: 'calc(100vh - 10rem)',
+          maxWidth: 'calc(100vw - 10rem)',
           margin: '0 auto'
         }}
       />
@@ -510,21 +510,21 @@ export const MediaPlayer = ({ mediaUrl, fileName, fileType, startPosition, onClo
       <style>{`
         .plyr {
           width: 100% !important;
-          max-height: 70vh !important;
+          max-height: 40rem !important;
           height: auto !important;
         }
         .plyr__video-wrapper {
           height: auto !important;
-          max-height: 70vh !important;
+          max-height: 40rem !important;
         }
         .plyr__video-embed, .plyr__video-wrapper--fixed-ratio {
           height: auto !important;
-          max-height: 70vh !important;
+          max-height: 40rem !important;
         }
         video {
           width: 100% !important;
           height: auto !important;
-          max-height: 70vh !important;
+          max-height: 40rem !important;
           object-fit: contain !important;
         }
         audio {

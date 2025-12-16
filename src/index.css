@@ -94,6 +94,21 @@ All colors MUST be HSL.
     --tracking-normal: 0em;
 
     --spacing: 0.25rem;
+    
+    /* Base font size for responsive scaling */
+    font-size: 16px;
+  }
+
+  @media (max-width: 1280px) {
+    :root {
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    :root {
+      font-size: 13px;
+    }
   }
 
   .dark {
@@ -143,17 +158,17 @@ All colors MUST be HSL.
 
 /* Custom scrollbar styles */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
+  width: 0.5rem;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
   background: hsl(210 40% 98%);
-  border-radius: 4px;
+  border-radius: 0.25rem;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: hsl(215 24% 26%);
-  border-radius: 4px;
+  border-radius: 0.25rem;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {

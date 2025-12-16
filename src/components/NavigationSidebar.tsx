@@ -268,8 +268,8 @@ export const NavigationSidebar = ({ className }: NavigationSidebarProps) => {
             className={cn(
               "fixed left-0 top-0 z-50 h-full bg-sidebar/80 backdrop-blur-md shadow-xl select-none border-r border-sidebar-border/50",
               isMobile 
-                ? "w-64" 
-                : "w-64"
+                ? "w-56" 
+                : "w-56"
             )}
             initial={{ x: "-100%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
