@@ -4,8 +4,6 @@ import { TraversedFile } from "@/lib/folderTraversal"; // Add this import
 import { Folder, FileText, Image as ImageIcon, FileArchive } from "lucide-react";
 import { ContextMenu } from "./ContextMenu";
 import { RenameInput } from "./RenameInput";
-import { GridItem } from "./GridItem"; // Add this import
-import { ListItem } from "./ListItem"; // Add this import
 import { ImageViewer } from "./ImageViewer";
 import { MediaPlayer } from "./MediaPlayer";
 import { Thumbnail } from "./Thumbnail";
@@ -15,8 +13,7 @@ import { TelegramVerificationDialog } from "./TelegramVerificationDialog";
 import { IndexChatDialog } from "./IndexChatDialog"; // Add this import
 import { getApiBaseUrl } from "@/lib/api";
 import { getPlayerPreference } from "@/lib/playerSettings";
-import { useBatchThumbnailLoader } from "@/hooks/useBatchThumbnailLoader";
-import { useResponsiveGrid, getGridClassNames, getGridItemClassNames, getFileNameClassNames, getItemIconClasses } from "@/hooks/useResponsiveGrid"; // Add this import
+import { useBatchThumbnailLoader } from "@/hooks/useBatchThumbnailLoader"; // Add this import
 import authService from "@/lib/authService";
 import type { Event } from '@tauri-apps/api/event';
 interface FileGridProps {
@@ -112,9 +109,6 @@ export const FileGrid = ({
   
   // Use the batch thumbnail loader hook
   const { loadedThumbnails, loadingStates, retryLoad } = useBatchThumbnailLoader(items);
-  
-  // Use the responsive grid configuration hook
-  const gridConfig = useResponsiveGrid();
   
   // Reset drag counter on component mount and unmount
   useEffect(() => {
@@ -1069,7 +1063,20 @@ export const FileGrid = ({
     }
   };
 
-
+  const getFileIcon = (item: FileItem) => {
+    // For folders, use the Folder icon directly
+    if (item.type === "folder") {
+      // Use smaller icons for list view
+      const folderIconSize = viewMode === 'list' ? 'w-5 h-5' : 'w-20 h-20';
+      return <Folder className={`${folderIconSize} text-primary`} />;
+    }
+    
+    // Use the new Thumbnail component with pre-loaded data for better performance
+    const thumbnailData = item.thumbnail ? loadedThumbnails[item.thumbnail] : undefined;
+    const loadingState = item.thumbnail ? loadingStates[item.thumbnail] : undefined;
+    
+    return <Thumbnail item={item} size={viewMode === 'list' ? 'sm' : 'lg'} thumbnailSrc={thumbnailData} loadingState={loadingState} />;
+  };
 
   // Format file size in a human-readable format
   const formatFileSize = (bytes: number): string => {
@@ -1195,31 +1202,52 @@ export const FileGrid = ({
         )}
         
         {viewMode === "grid" ? (
-          <div className={getGridClassNames(gridConfig)}>
+          <div className="grid grid-cols-4 xs:grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-9 2xl:grid-cols-12 gap-1">
             {items.map((item, index) => {
               const isRenaming = renamingItem?.index === index;
               const isDragging = draggedItem?.name === item.name;
               const isCut = cutItem?.name === item.name && cutItem?.id === item.id; // Check if this item is cut
 
               return (
-                <GridItem
+                <div
                   key={index}
-                  item={item}
-                  index={index}
-                  viewMode={viewMode}
-                  isRenaming={isRenaming}
-                  isDragging={isDragging}
-                  isCut={isCut}
-                  draggedItem={draggedItem}
-                  onContextMenu={handleContextMenu}
-                  onDragStart={handleDragStart}
+                  draggable={!isRenaming}
+                  onDragStart={(e) => handleDragStart(e, item)}
                   onDragEnd={handleDragEnd}
-                  onItemDragOver={item.type === "folder" ? handleItemDragOver : undefined}
-                  onItemDrop={item.type === "folder" ? handleItemDrop : undefined}
-                  onItemClick={handleItemClick}
-                  onRenameConfirm={onRenameConfirm}
-                  onRenameCancel={onRenameCancel}
-                />
+                  onDragOver={item.type === "folder" ? (e) => handleItemDragOver(e, item) : undefined}
+                  onDrop={item.type === "folder" ? (e) => handleItemDrop(e, item) : undefined}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Additional prevention of default context menu
+                    e.nativeEvent.preventDefault();
+                    !isRenaming && handleContextMenu(e, item, index);
+                  }}
+                  className={`flex flex-col items-center p-1.5 rounded-lg transition-all duration-200 hover:scale-[1.03] hover:shadow-md active:scale-[0.98] ${isDragging ? "opacity-50 scale-95" : ""}
+                    ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
+                    ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
+                      ? "scale-105 transition-all duration-200"
+                      : ""
+                    }`}
+                >
+                  <button
+                    onClick={() => !isRenaming && handleItemClick(item)}
+                    className="flex flex-col items-center w-full hover:bg-accent rounded-md p-1 transition-all duration-200 group hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <div className="mb-1">{getFileIcon(item)}</div>
+                    {isRenaming ? (
+                      <RenameInput
+                        initialName={item.name}
+                        onSave={onRenameConfirm}
+                        onCancel={onRenameCancel}
+                      />
+                    ) : (
+                      <span className="text-xs text-center break-words w-full text-foreground group-hover:text-accent-foreground">
+                        {item.name}
+                      </span>
+                    )}
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -1239,24 +1267,52 @@ export const FileGrid = ({
                 const isCut = cutItem?.name === item.name && cutItem?.id === item.id; // Check if this item is cut
 
                 return (
-                  <ListItem
+                  <div
                     key={index}
-                    item={item}
-                    index={index}
-                    isRenaming={isRenaming}
-                    isDragging={isDragging}
-                    isCut={isCut}
-                    draggedItem={draggedItem}
-                    onContextMenu={handleContextMenu}
-                    onDragStart={handleDragStart}
+                    draggable={!isRenaming}
+                    onDragStart={(e) => handleDragStart(e, item)}
                     onDragEnd={handleDragEnd}
-                    onItemDragOver={item.type === "folder" ? handleItemDragOver : undefined}
-                    onItemDrop={item.type === "folder" ? handleItemDrop : undefined}
-                    onItemClick={handleItemClick}
-                    onRenameConfirm={onRenameConfirm}
-                    onRenameCancel={onRenameCancel}
-                    formatFileSize={formatFileSize}
-                  />
+                    onDragOver={item.type === "folder" ? (e) => handleItemDragOver(e, item) : undefined}
+                    onDrop={item.type === "folder" ? (e) => handleItemDrop(e, item) : undefined}
+                    onContextMenu={(e) => !isRenaming && handleContextMenu(e, item, index)}
+                    className={`transition-all duration-200 hover:shadow-md active:scale-[0.98] ${isDragging ? "opacity-50" : ""} 
+                      ${isCut ? "opacity-50" : ""} // Apply fade effect to cut items
+                      ${item.type === "folder" && draggedItem && draggedItem.name !== item.name
+                      ? "scale-105 transition-all duration-200"
+                      : ""
+                      }`}
+                  >
+                    <button
+                      onClick={() => !isRenaming && handleItemClick(item)}
+                      className="col-span-12 w-full grid grid-cols-12 gap-4 p-1.5 rounded transition-all duration-200 group hover:bg-accent/50 active:scale-[0.995]"
+                    >
+                      <div className="col-span-5 flex items-center gap-3">
+                        <div className="flex-shrink-0 w-5 h-5">{getFileIcon(item)}</div>
+                        {isRenaming ? (
+                          <div className="flex-1">
+                            <RenameInput
+                              initialName={item.name}
+                              onSave={onRenameConfirm}
+                              onCancel={onRenameCancel}
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-sm text-foreground group-hover:text-accent-foreground truncate">
+                            {item.name}
+                          </span>
+                        )}
+                      </div>
+                      <div className="col-span-3 flex items-center text-xs text-muted-foreground">
+                        {item.modified ? new Date(item.modified).toLocaleDateString() : ''}
+                      </div>
+                      <div className="col-span-2 flex items-center text-xs text-muted-foreground capitalize">
+                        {item.type === 'folder' ? 'Folder' : (item.fileType || 'File')}
+                      </div>
+                      <div className="col-span-2 flex items-center justify-end text-xs text-muted-foreground">
+                        {item.type === 'folder' ? '' : (item.size ? formatFileSize(item.size) : '')}
+                      </div>
+                    </button>
+                  </div>
                 );
               })}
             </div>
