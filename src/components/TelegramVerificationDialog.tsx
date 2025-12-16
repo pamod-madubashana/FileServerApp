@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { getApiBaseUrl, fetchWithTimeout } from "@/lib/api";
 import { openUrl } from "@/lib/tauri-fs";
 import logger from "@/lib/logger";
+import { Bot, Link, Check } from "lucide-react";
 
 interface TelegramVerificationDialogProps {
   open: boolean;
@@ -83,10 +84,13 @@ export const TelegramVerificationDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl text-gray-900 dark:text-white">Telegram Verification Required</DialogTitle>
-          <DialogDescription className="text-gray-600 dark:text-gray-400">
+          <DialogTitle className="flex items-center gap-2">
+            <Bot className="h-6 w-6 text-blue-500" />
+            Telegram Verification Required
+          </DialogTitle>
+          <DialogDescription className="pt-2">
             Please verify your Telegram account to enable file uploads.
           </DialogDescription>
         </DialogHeader>
@@ -99,7 +103,7 @@ export const TelegramVerificationDialog = ({
             <Button 
               onClick={handleGenerateLink} 
               disabled={isGeneratingLink}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full flex items-center gap-2"
             >
               {isGeneratingLink ? (
                 <>
@@ -107,7 +111,10 @@ export const TelegramVerificationDialog = ({
                   Generating Link...
                 </>
               ) : (
-                "Generate Verification Link"
+                <>
+                  <Link className="h-4 w-4" />
+                  Generate Verification Link
+                </>
               )}
             </Button>
           </div>
@@ -123,19 +130,13 @@ export const TelegramVerificationDialog = ({
           </div>
         )}
         
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={handleVerificationCancel}
-            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            Cancel
-          </Button>
+        <DialogFooter>
           {verificationData && (
             <Button
               onClick={handleVerificationConfirm}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="flex items-center gap-2 w-full"
             >
+              <Check className="h-4 w-4" />
               Verify on Telegram
             </Button>
           )}

@@ -1395,10 +1395,6 @@ export const FileGrid = ({
       <IndexChatDialog
         open={showIndexChatDialog}
         onOpenChange={setShowIndexChatDialog}
-        onIndexChatSet={() => {
-          // Refresh or retry upload if needed
-          console.log("Index chat ID has been set");
-        }}
       />
     </div>
   );
